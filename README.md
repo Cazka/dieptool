@@ -2,7 +2,7 @@
 
 ## The Protocol
 
-### Serverbound
+### Serverbound Packets
 
 | ID   | Description         |
 | ---- | ------------------- |
@@ -13,7 +13,12 @@
 | `fe` | diep.io serverbound |
 | `ff` | diep.io clientbound |
 
-### Clientbound
+#### `00` login
+
+id {VarUint}  
+authToken {String}
+
+### Clientbound Packets
 
 | ID   | Description                |
 | ---- | -------------------------- |
