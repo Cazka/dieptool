@@ -10,17 +10,45 @@
 | `01` | init                |
 | `02` | update              |
 | `03` | command             |
-| `fe` | diep.io serverbound |
-| `ff` | diep.io clientbound |
+| `09` | diep.io serverbound |
+| `10` | diep.io clientbound |
 
 #### `00` login
 
-id {VarUint}  
-authToken {String}
+`{varuint}` id
+`{String}` authToken
+
+#### `01` init
+
+`{varuint}` id  
+`{String}` version  
+`{String}` name  
+`{String}` wsURL  
+`{String}` party  
+`{String}` gamemode
+
+#### `02` update
+
+`{varuint}` id  
+`{String}` type  
+`{String}` value
+
+#### `03` command
+
+`{varuint}` id  
+`{String}` type
+`{varuint}` value
+
+#### `09` diep.io serverbound
+
+`{varuint}` id
+`...*` serverbound packet
+
+#### `10` diep.io clientbound
 
 ### Clientbound Packets
 
 | ID   | Description                |
 | ---- | -------------------------- |
-| `fe` | custom diep.io serverbound |
-| `ff` | custom diep.io clientbound |
+| `09` | custom diep.io serverbound |
+| `09` | custom diep.io clientbound |
