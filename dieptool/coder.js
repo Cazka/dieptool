@@ -1,3 +1,5 @@
+'use strict';
+
 let convo = new ArrayBuffer(4);
 let u8 = new Uint8Array(convo);
 let i32 = new Uint32Array(convo);

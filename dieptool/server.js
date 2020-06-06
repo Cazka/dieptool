@@ -1,3 +1,4 @@
+'use strict';
 const Client = require('./client.js');
 const Admin = require('./admin.js');
 const User = require('./user.js');

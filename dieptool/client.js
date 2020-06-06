@@ -1,3 +1,5 @@
+'use strict';
+
 const EventEmitter = require('event');
 const { Reader, Writer } = require('./coder.js');
 
@@ -40,7 +42,7 @@ class Client extends EventEmitter {
         }
     }
     onLogin(data){
-        
+
         super.emit('login', )
     }
 }
