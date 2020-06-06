@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+      integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+      crossorigin="anonymous"
+    />
+
+    <!-- Custom styles for this template -->
+    <link href="/dashboard-style.css" rel="stylesheet" />
+
+    <!-- Chartist -->
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    
+    <title>Dashboard - Diep Tool</title>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
+      <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Diep Tool</a>
+      <ul class="navbar-nav px-3">
+        <li class="nav-item text-nowrap">
+          <a class="nav-link" href="/logout">Sign out</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+          <div class="sidebar-sticky">
+            <ul class="nav flex-column">
+              <!-- categories -->
+              <li class="nav-item">
+                <a class="nav-link active" href="#">
+                  <span data-feather="home"></span>
+                  Dashboard <span class="sr-only">(current)</span>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">
+                  <span data-feather="bar-chart-2"></span>
+                  Users
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      
+      <main role="main" class="col-md-10 ml-sm-auto px-0">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+          <h1 class="h2">Dashboard</h1>
+        </div>
+
+        <h4 class="h4">
+          Active Users: <a id="activeUsers">Loading&hellip;</a>
+        </h4>
+
+        <div class="ct-chart ct-minor-seventh"></div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-sm" id="player table">
+            <thead>
+              <tr>
+                <th>IP</th>
+                <th>Username</th>
+                <th>Mode</th>
+                <th>Party Link</th>
+                <th>Status</th>
+                <th>Bots</th>
+                <th>Connection Time</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+      integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+      integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+      crossorigin="anonymous"
+    ></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+    <script>
+      feather.replace();
+    </script>
+    <!-- Graphs -->
+    <script src="//cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.25.3/moment.min.js"></script>
+    <script>
+      var chart = new Chartist.Line('.ct-chart', {
+        series: [
+          []
+        ]
+      }, {
+        axisX: {
+          type: Chartist.FixedScaleAxis,
+          low: moment().startOf('day').valueOf(),
+          high: moment().endOf('day').valueOf()+1,
+          divisor: 24,
+          labelInterpolationFnc: function(value) {
+            return moment(value).format('HH');
+          },
+          //showGrid: false,
+          //showLabel: false
+        },
+        axisY: {
+          type: Chartist.AutoScaleAxis,
+          low: 0,
+          onlyInteger: true,
+          //showGrid: false
+        },
+        showPoint: false,
+        lineSmooth: Chartist.Interpolation.step()
+      });
+    </script>
+    <!-- DiepToolServerSocket -->
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <script>
+      const nodeSocket = io("https://dieptool.glitch.me/", {transports: ["websocket"]});
+      nodeSocket.on("connect", () => {
+        nodeSocket.emit("login", "T3F28FhSsdWX3K8JLzRkqJ9j");
+      });
+      nodeSocket.on("player chart", data => {
+        chart.data.series[0] = data;
+        chart.update();
+      })
+      nodeSocket.on("player count", count => {
+        if (count+"" !== document.getElementById("activeUsers").innerHTML) {
+          chart.data.series[0].push({x: moment().valueOf(), y: count})
+          chart.update();
+        }
+        document.getElementById("activeUsers").innerHTML = count;
+      });
+      nodeSocket.on('player table', table => {
+        let playertable = document.getElementById('player table');
+        document.getElementById('tbody').innerHTML = '<tr></tr>';
+        console.log(table);
+        table.forEach( player => {
+          const row = playertable.insertRow(-1);
+          row.insertCell(-1).innerHTML = player.ip;
+          row.insertCell(-1).innerHTML = player.name;
+          row.insertCell(-1).innerHTML = player.gamemode;
+          row.insertCell(-1).innerHTML = `<a href=${player.link} target=_blank>${player.link}</a>`;
+          row.insertCell(-1).innerHTML = player.status? player.status : "nothing";
+          row.insertCell(-1).innerHTML = player.bots;
+          row.insertCell(-1).innerHTML = moment(player.time).fromNow(true);
+          row.insertCell(-1).innerHTML = player.latency;
+        })
+      });
+    </script>
+  </body>
+</html>
