@@ -19,7 +19,7 @@ Currently i use only Strings in UTF8. the packets with id 09 are the only except
 #### `00` login
 
 This packet is used to tell the server who we are.  
-`{String}` packetid The packet id  
+`{varuint}` packetid The packet id  
 `{String}` authToken The Authentication Token
 
 #### `02` update
@@ -33,7 +33,7 @@ Currently all user information:
 - {String} party The server partycode
 - {String} gamemode The server gamemode
 
-`{String}` packetid The packet id  
+`{varuint}` packetid The packet id  
 `{String}` type  
 `{String}` value
 
@@ -44,18 +44,18 @@ Currently all commands:
 - {String} type
 - {String} value
 
-`{String}` packetid The packet id  
+`{varuint}` packetid The packet id  
 `{String}` type
 `{varuint}` value
 
 #### `09` diep.io serverbound
 
-`{String}` packetid The packet id  
+`{varuint}` packetid The packet id  
 `...*` serverbound packet
 
 #### `10` diep.io clientbound
 
-`{String}` packetid The packet id  
+`{varuint}` packetid The packet id  
 `...*` clientbound packet
 
 ### Clientbound Packets
