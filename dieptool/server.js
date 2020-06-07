@@ -1,13 +1,14 @@
 'use strict';
+
 const Client = require('./client.js');
-const Admin = require('./admin.js');
-const User = require('./user.js');
-const Buddy = require('./buddy.js');
+//const Admin = require('./admin.js');
+//const User = require('./user.js');
+//const Buddy = require('./buddy.js');
 
 const DiepToolManager = (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
-    new DiepToolManager(wss);
+    new DiepToolServer(wss);
 };
 
 class DiepToolServer {
@@ -17,10 +18,11 @@ class DiepToolServer {
         this.ips = new Set();
 
         wss.on('connection', (ws, req) => {
+            console.log('connected');
             const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
-            const client = new Client(ws);
+            const client = new Client(ws, ip);
 
-            client.on('close', () => {});
+            //client.once('login', (client, authToken) => this.onLoginHandler(client, authToken));
             client.on('error', (err) => {});
         });
 
