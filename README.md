@@ -63,4 +63,4 @@ Currently all commands:
 | ID   | Description                |
 | ---- | -------------------------- |
 | `09` | custom diep.io serverbound |
-| `09` | custom diep.io clientbound |
+| `10` | custom diep.io clientbound |
