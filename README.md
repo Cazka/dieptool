@@ -110,7 +110,7 @@ to display custom notifications and more...
 | +0     | 1 byte   | `uint`        | packet id          |
 | +1     | ... byte | `ArrayBuffer` | serverbound packet |
 
-#### `09` custom diep.io serverbound
+#### `a0` custom diep.io serverbound
 
 to send movement packets and more...
 
