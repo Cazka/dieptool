@@ -4,15 +4,11 @@
 
 ### Encodings
 
-So. I was thinking allot about how I encode the packets to increase performance.
-This is what i came up with:
+IDs will always be one byte. and should be read as uint.
+Every other datatype will be a `String` in UTF8 with `0x00` indicating their end.
 
-The first Byte will always indicate the packet id, which means I'm restricted to 256 packets which is good enough.
-The next bytes are either varuint or strings.
-
-Clientbound packets will not use varuint.
-
-Note: Strings will end with a 00 byte.
+when we redirect diep.io packets. these are send as raw bytes, which means we cut
+off the ID byte and read the rest how it is.
 
 ### Serverbound Packets
 
@@ -27,25 +23,34 @@ Note: Strings will end with a 00 byte.
 
 #### `00` login
 
-This packet is used to tell the server who we are.  
-First byte packetid The packet id  
-`{String}` authToken The Authentication Token
+This packet is used to tell the server who we are by sending the authToken.
+
+| OFFSET | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | uint       | packet id   |
+| +1     | n byte  | String+0   | authToken   |
 
 #### `01` update
 
-This packet is used to send user information to the server that may have changed.  
-The last two datatypes can be repeated to update more information.  
-Currently all user information at once:
+This packet is used to update user information.
+A user information contains a ID and is followed by the information.
+Its possible to update more than one information by repeating the id+string.
 
--   {String} version The version of the users script
--   {String} name The name the user choose ingame
--   {String} wsURL The server websocket url
--   {String} party The server partycode
--   {String} gamemode The server gamemode
+Currently all user information:
 
-First byte packetid The packet id  
-`{String}` type  
-`{String}` value
+| ID   | Description   |
+| ---- | ------------- |
+| `00` | version       |
+| `01` | name          |
+| `02` | WebSocket URL |
+| `03` | party code    |
+| `04` | gamemode      |
+
+| OFFSET | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | uint       | packet id   |
+| +1     | 1 byte  | uint       | update id   |
+| +2     | n byte  | String+0   | data        |
 
 #### `02` command
 
