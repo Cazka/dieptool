@@ -87,7 +87,34 @@ Currently all commands:
 
 | ID   | Description                |
 | ---- | -------------------------- |
-| `00` | send a new authtoken       |
+| `00` | send a new authToken       |
 | `09` | custom diep.io serverbound |
-| `09` | custom diep.io serverbound |
-| `10` | custom diep.io clientbound |
+| `a0` | custom diep.io clientbound |
+
+#### `00` send a new authToken
+
+If the client uses the standart authToken `'user'`, we will sent a unique authToken
+to the client, which will be stored in localStorage.
+
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint`     | packet id   |
+| +1     | n byte  | `String`   | authToken   |
+
+#### `09` custom diep.io serverbound
+
+to display custom notifications and more...
+
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
+| +1     | ... byte | `ArrayBuffer` | serverbound packet |
+
+#### `09` custom diep.io serverbound
+
+to send movement packets and more...
+
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
+| +1     | ... byte | `ArrayBuffer` | clientbound packet |
