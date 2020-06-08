@@ -33,7 +33,6 @@ This packet is used to identify ourself by sending the authToken. The authToken 
 
 This packet is used to update user information.
 A user information contains an update-ID followed by the information.
-Its possible to update more than one information by repeating the id+string pattern.
 
 Currently all user information:
 
@@ -50,7 +49,6 @@ Currently all user information:
 | +0     | 1 byte   | `uint`     | packet id     |
 | +1     | 1 byte   | `uint`     | update id     |
 | +2     | n byte   | `String`+0 | data          |
-| +x     | ... byte | `*`        | other updates |
 
 #### `02` command
 
@@ -72,23 +70,23 @@ Currently all commands:
 
 #### `08` heartbeat
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint`     | packet id   |
 
 #### `09` diep.io serverbound
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
-| +1     | ... byte | `ArrayBuffer` | serverbound packet |
+| Offset | Size(s)  | Value Type  | Description        |
+| ------ | -------- | ----------- | ------------------ |
+| +0     | 1 byte   | `uint`      | packet id          |
+| +1     | ... byte | `Int8Array` | serverbound packet |
 
 #### `a0` diep.io clientbound
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
-| +1     | ... byte | `ArrayBuffer` | clientbound packet |
+| Offset | Size(s)  | Value Type   | Description        |
+| ------ | -------- | ------------ | ------------------ |
+| +0     | 1 byte   | `uint`       | packet id          |
+| +1     | ... byte | `Uint8Array` | clientbound packet |
 
 ### Clientbound Packets
 
@@ -111,9 +109,9 @@ to the client, which will be stored in localStorage.
 
 #### `08` heartbeat
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint`     | packet id   |
 
 #### `09` custom diep.io serverbound
 
