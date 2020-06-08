@@ -11,7 +11,10 @@ const server = require('http').createServer(app);
 
 const diepServer = require('./DiepTool/server.js')(server); // run Diep Server
 
-server.listen(process.env.PORT || 3000);
+//server.listen(parseInt(process.env.PORT,10) || 3000);
+server.listen(3000, () => {
+    console.log('listening on port 3000');
+});
 
 app.use(express.static('public'));
 app.use(
