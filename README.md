@@ -7,8 +7,7 @@
 IDs will always be one byte. and should be read as uint.
 Every other datatype will be a `String` in UTF8 with `0x00` indicating their end.
 
-when we redirect diep.io packets. these are send as raw bytes, which means we cut
-off the ID byte and read the rest how it is.
+when we redirect diep.io packets. these are send as raw bytes, which means we skip the ID and read the rest how it is.
 
 ### Serverbound Packets
 
@@ -17,18 +16,17 @@ off the ID byte and read the rest how it is.
 | `00` | login                      |
 | `01` | update                     |
 | `02` | command                    |
-| `03` | request new authToken      |
 | `09` | diep.io serverbound packet |
 | `10` | diep.io clientbound packet |
 
 #### `00` login
 
-This packet is used to tell the server who we are by sending the authToken.
+This packet is used to identify ourself by sending the authToken.
 
-| OFFSET | Size(s) | Value Type | Description |
+| Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | uint       | packet id   |
-| +1     | n byte  | String+0   | authToken   |
+| +0     | 1 byte  | `uint`     | packet id   |
+| +1     | n byte  | `String`+0 | authToken   |
 
 #### `01` update
 
@@ -48,9 +46,9 @@ Currently all user information:
 
 | OFFSET | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | uint       | packet id   |
-| +1     | 1 byte  | uint       | update id   |
-| +2     | n byte  | String+0   | data        |
+| +0     | 1 byte  | `uint`     | packet id   |
+| +1     | 1 byte  | `uint`     | update id   |
+| +2     | n byte  | `String`+0 | data        |
 
 #### `02` command
 

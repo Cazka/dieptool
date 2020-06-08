@@ -5,6 +5,7 @@ const { Reader, Writer } = require('./coder.js');
 
 class Client extends EventEmitter {
     constructor(socket, ip) {
+        super();
         this.socket = socket;
         this.ip = ip;
         this.socket.on('message', (data) => this.onMessage(data));
@@ -17,23 +18,23 @@ class Client extends EventEmitter {
         const read = new Reader(data);
         const id = read.vu();
         switch (id) {
-            case 0x00:
+            case 0:
                 // login
                 break;
-            case 0x01:
+            case 1:
                 // init
                 break;
-            case 0x02:
+            case 2:
                 // update
                 break;
-            case 0x03:
+            case 3:
                 // command
                 break;
-            case 0x09:
+            case 9:
                 // diep.io serverbound
-                super.emit('clientbound', data);
+                super.emit('serverbound', data);
                 break;
-            case 0x10:
+            case 10:
                 // diep.io clientbound
                 break;
             default:
