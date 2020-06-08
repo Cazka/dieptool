@@ -19,7 +19,8 @@ class DiepToolServer {
 
         wss.on('connection', (ws, req) => {
             console.log('connected');
-            const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+            //const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+            const ip = '127.0.0.1';
             const client = new Client(ws, ip);
 
             //client.once('login', (client, authToken) => this.onLoginHandler(client, authToken));
