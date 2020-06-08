@@ -17,11 +17,11 @@ when we redirect diep.io packets. these are send as raw bytes, which means we sk
 | `01` | update                     |
 | `02` | command                    |
 | `09` | diep.io serverbound packet |
-| `10` | diep.io clientbound packet |
+| `a0` | diep.io clientbound packet |
 
 #### `00` login
 
-This packet is used to identify ourself by sending the authToken.
+This packet is used to identify ourself by sending the authToken. The authToken is stored in the webbrowsers localStorage, when the localStroge is missing the authToken the standart `'user'` token will be sent.
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
@@ -31,8 +31,8 @@ This packet is used to identify ourself by sending the authToken.
 #### `01` update
 
 This packet is used to update user information.
-A user information contains a ID and is followed by the information.
-Its possible to update more than one information by repeating the id+string.
+A user information contains an update-ID followed by the information.
+Its possible to update more than one information by repeating the id+string pattern.
 
 Currently all user information:
 
@@ -44,44 +44,44 @@ Currently all user information:
 | `03` | party code    |
 | `04` | gamemode      |
 
-| OFFSET | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
-| +1     | 1 byte  | `uint`     | update id   |
-| +2     | n byte  | `String`+0 | data        |
+| Offset | Size(s)  | Value Type | Description   |
+| ------ | -------- | ---------- | ------------- |
+| +0     | 1 byte   | `uint`     | packet id     |
+| +1     | 1 byte   | `uint`     | update id     |
+| +2     | n byte   | `String`+0 | data          |
+| +x     | ... byte | `*`        | other updates |
 
 #### `02` command
 
 This packet is used to execute commands.
+
 Currently all commands:
 
--   {String} 'joinBots'
--   {String} amount
+| ID   | Description |
+| ---- | ----------- |
+| `00` | Join Bots   |
+| `01` | Multibox    |
+| `02` | AFK         |
 
--   {String} 'afk'
--   {String} boolean
-
--   {String} 'multibox'
--   {String} boolean
-
-First byte packetid The packet id  
-`{String}` type
-`{String}` value
-
-#### `03` request new authToken
-
-This packet is used to requst a new authtoken. 5 authtoken per ip per day.
-First byte packetid The packet id
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint`     | packet id   |
+| +1     | 1 byte  | `uint`     | command id  |
+| +2     | n byte  | `String`+0 | data        |
 
 #### `09` diep.io serverbound
 
-First byte packetid The packet id  
-`...Buffer` serverbound packet
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
+| +1     | ... byte | `ArrayBuffer` | serverbound packet |
 
 #### `10` diep.io clientbound
 
-First byte packetid The packet id  
-`...Buffer` clientbound packet
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
+| +1     | ... byte | `ArrayBuffer` | clientbound packet |
 
 ### Clientbound Packets
 
