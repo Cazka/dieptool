@@ -67,7 +67,7 @@ Currently all commands:
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint`     | packet id   |
 | +1     | 1 byte  | `uint`     | command id  |
-| +2     | n byte  | `String`+0 | data        |
+| +2     | 1 byte  | `uint`     | data        |
 
 #### `09` diep.io serverbound
 
