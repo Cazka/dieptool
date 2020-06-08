@@ -148,7 +148,7 @@
     <!-- DiepToolServerSocket -->
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
     <script>
-      const nodeSocket = io("https://dieptool.glitch.me/", {transports: ["websocket"]});
+      const nodeSocket = io(document.URL, {transports: ["websocket"]});
       nodeSocket.on("connect", () => {
         nodeSocket.emit("login", "T3F28FhSsdWX3K8JLzRkqJ9j");
       });
