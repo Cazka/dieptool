@@ -83,7 +83,7 @@ Currently all commands:
 | +0     | 1 byte   | `uint`        | packet id          |
 | +1     | ... byte | `ArrayBuffer` | serverbound packet |
 
-#### `10` diep.io clientbound
+#### `a0` diep.io clientbound
 
 | Offset | Size(s)  | Value Type    | Description        |
 | ------ | -------- | ------------- | ------------------ |
