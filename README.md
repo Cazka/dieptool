@@ -16,6 +16,7 @@ when we redirect diep.io packets. these are send as raw bytes, which means we sk
 | `00` | login                      |
 | `01` | update                     |
 | `02` | command                    |
+| `08` | heartbeat                  |
 | `09` | diep.io serverbound packet |
 | `a0` | diep.io clientbound packet |
 
@@ -69,6 +70,12 @@ Currently all commands:
 | +1     | 1 byte  | `uint`     | command id  |
 | +2     | 1 byte  | `uint`     | data        |
 
+#### `08` heartbeat
+
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
+
 #### `09` diep.io serverbound
 
 | Offset | Size(s)  | Value Type    | Description        |
@@ -88,6 +95,7 @@ Currently all commands:
 | ID   | Description                |
 | ---- | -------------------------- |
 | `00` | send a new authToken       |
+| `08` | heartbeat                  |
 | `09` | custom diep.io serverbound |
 | `a0` | custom diep.io clientbound |
 
@@ -100,6 +108,12 @@ to the client, which will be stored in localStorage.
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint`     | packet id   |
 | +1     | n byte  | `String`   | authToken   |
+
+#### `08` heartbeat
+
+| Offset | Size(s)  | Value Type    | Description        |
+| ------ | -------- | ------------- | ------------------ |
+| +0     | 1 byte   | `uint`        | packet id          |
 
 #### `09` custom diep.io serverbound
 
