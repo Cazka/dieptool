@@ -43,6 +43,13 @@ app.get('/', (req, res) => {
     if (req.session.loggedin) res.sendFile(__dirname + '/dashboard/');
     else res.sendFile(__dirname + '/views/');
 });
+app.get('/logout', (req, res) => {
+    if (req.session.loggedin) req.session.loggedin = false;
+    res.redirect('/');
+});
+app.get('/status', (req, res) => {
+    res.send('coming soon');
+});
 app.post('/login', (req, res) => {
     const username = req.body.username + '';
     const password = req.body.password + '';
@@ -50,9 +57,5 @@ app.post('/login', (req, res) => {
         req.session.loggedin = true;
         req.session.username = username;
     }
-    res.redirect('/');
-});
-app.get('/logout', (req, res) => {
-    if (req.session.loggedin) req.session.loggedin = false;
     res.redirect('/');
 });
