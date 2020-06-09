@@ -4,10 +4,12 @@
 
 ### Encodings
 
-IDs will always be one byte. and should be read as uint.
-Every other datatype will be a `String` in UTF8 with `0x00` indicating their end.
+Every Packet contains a ID followed with the data.
+IDs will always be one byte and are encoded in `uint8`.
+The data has his own encoding described in the sections below.
 
-when we redirect diep.io packets. these are send as raw bytes, which means we skip the ID and read the rest how it is.
+There are only three encodings: uint, String and TypedArrays.
+The String is always the last datastructure in a packet.
 
 ### Serverbound Packets
 
@@ -22,12 +24,12 @@ when we redirect diep.io packets. these are send as raw bytes, which means we sk
 
 #### `00` login
 
-This packet is used to identify ourself by sending the authToken. The authToken is stored in the webbrowsers localStorage, when the localStroge is missing the authToken the standart `'user'` token will be sent.
+This packet is used to identify ourself by sending the authToken. The authToken is stored in the webbrowsers localStorage. When the localStroge is missing the authToken, the standart `'user'` token will be sent.
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint`     | packet id   |
-| +1     | n byte  | `String`+0 | authToken   |
+| +1     | n bytes | `String`   | authToken   |
 
 #### `01` update
 
@@ -44,11 +46,11 @@ Currently all user information:
 | `03` | party code    |
 | `04` | gamemode      |
 
-| Offset | Size(s)  | Value Type | Description   |
-| ------ | -------- | ---------- | ------------- |
-| +0     | 1 byte   | `uint`     | packet id     |
-| +1     | 1 byte   | `uint`     | update id     |
-| +2     | n byte   | `String`+0 | data          |
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint`     | packet id   |
+| +1     | 1 byte  | `uint`     | update id   |
+| +2     | n bytes | `String`   | data        |
 
 #### `02` command
 
@@ -61,6 +63,13 @@ Currently all commands:
 | `00` | Join Bots   |
 | `01` | Multibox    |
 | `02` | AFK         |
+
+also:
+
+| ID   | Description |
+| ---- | ----------- |
+| `00` | FALSE       |
+| `01` | TRUE        |
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
@@ -76,17 +85,17 @@ Currently all commands:
 
 #### `09` diep.io serverbound
 
-| Offset | Size(s)  | Value Type  | Description        |
-| ------ | -------- | ----------- | ------------------ |
-| +0     | 1 byte   | `uint`      | packet id          |
-| +1     | ... byte | `Int8Array` | serverbound packet |
+| Offset | Size(s) | Value Type  | Description        |
+| ------ | ------- | ----------- | ------------------ |
+| +0     | 1 byte  | `uint`      | packet id          |
+| +1     | n bytes | `Int8Array` | serverbound packet |
 
 #### `a0` diep.io clientbound
 
-| Offset | Size(s)  | Value Type   | Description        |
-| ------ | -------- | ------------ | ------------------ |
-| +0     | 1 byte   | `uint`       | packet id          |
-| +1     | ... byte | `Uint8Array` | clientbound packet |
+| Offset | Size(s) | Value Type   | Description        |
+| ------ | ------- | ------------ | ------------------ |
+| +0     | 1 byte  | `uint`       | packet id          |
+| +1     | n bytes | `Uint8Array` | clientbound packet |
 
 ### Clientbound Packets
 
@@ -105,7 +114,7 @@ to the client, which will be stored in localStorage.
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint`     | packet id   |
-| +1     | n byte  | `String`   | authToken   |
+| +1     | n bytes | `String`   | authToken   |
 
 #### `08` heartbeat
 
@@ -117,16 +126,16 @@ to the client, which will be stored in localStorage.
 
 to display custom notifications and more...
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
-| +1     | ... byte | `ArrayBuffer` | serverbound packet |
+| Offset | Size(s) | Value Type   | Description        |
+| ------ | ------- | ------------ | ------------------ |
+| +0     | 1 byte  | `uint`       | packet id          |
+| +1     | n bytes | `TypedArray` | serverbound packet |
 
 #### `a0` custom diep.io serverbound
 
 to send movement packets and more...
 
-| Offset | Size(s)  | Value Type    | Description        |
-| ------ | -------- | ------------- | ------------------ |
-| +0     | 1 byte   | `uint`        | packet id          |
-| +1     | ... byte | `ArrayBuffer` | clientbound packet |
+| Offset | Size(s) | Value Type   | Description        |
+| ------ | ------- | ------------ | ------------------ |
+| +0     | 1 byte  | `uint`       | packet id          |
+| +1     | n bytes | `TypedArray` | clientbound packet |
