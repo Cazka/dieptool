@@ -30,6 +30,9 @@ class Client extends EventEmitter {
             case 3:
                 // command
                 break;
+            case 0x08:
+                this.socket.send([8]);
+                break;
             case 9:
                 // diep.io serverbound
                 super.emit('serverbound', data);
