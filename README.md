@@ -4,12 +4,9 @@
 
 ### Encodings
 
-Every Packet contains a ID followed with the data.
-IDs will always be one byte and are encoded in `uint8`.
-The data has his own encoding described in the sections below.
-
-There are only three encodings: uint, String and TypedArrays.
-The String is always the last datastructure in a packet.
+All Datatypes: `uint8`, `uint16`, `String`, `Uint8Array`
+Strings end with `00`;
+If the packet contains `Uint8Array` its also the last datatype.
 
 ### Serverbound Packets
 
@@ -20,7 +17,7 @@ The String is always the last datastructure in a packet.
 | `02` | command                    |
 | `08` | heartbeat                  |
 | `09` | diep.io serverbound packet |
-| `a0` | diep.io clientbound packet |
+| `10` | diep.io clientbound packet |
 
 #### `00` login
 
@@ -28,7 +25,7 @@ This packet is used to identify ourself by sending the authToken. The authToken 
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
+| +0     | 1 byte  | `uint8`    | packet id   |
 | +1     | n bytes | `String`   | authToken   |
 
 #### `01` update
@@ -48,8 +45,8 @@ Currently all user information:
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
-| +1     | 1 byte  | `uint`     | update id   |
+| +0     | 1 byte  | `uint8`    | packet id   |
+| +1     | 1 byte  | `uint8`    | update id   |
 | +2     | n bytes | `String`   | data        |
 
 #### `02` command
@@ -71,56 +68,63 @@ also:
 | `00` | FALSE   |
 | `01` | TRUE    |
 
-| Offset | Size(s) | Value Type         | Description |
-| ------ | ------- | ------------------ | ----------- |
-| +0     | 1 byte  | `uint`             | packet id   |
-| +1     | 1 byte  | `uint`             | command id  |
-| +2     | n bytes | `uint` \| `String` | data        |
+| Offset | Size(s) | Value Type          | Description                         |
+| ------ | ------- | ------------------- | ----------------------------------- |
+| +0     | 1 byte  | `uint8`             | packet id                           |
+| +1     | 1 byte  | `uint8`             | command id                          |
+| +2     | n bytes | `uint8` \| `String` | data Datatype depends on command id |
 
 #### `08` heartbeat
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
+| +0     | 1 byte  | `uint8`    | packet id   |
 
 #### `09` diep.io serverbound
 
-| Offset | Size(s) | Value Type  | Description        |
-| ------ | ------- | ----------- | ------------------ |
-| +0     | 1 byte  | `uint`      | packet id          |
-| +1     | n bytes | `Int8Array` | serverbound packet |
+| Offset | Size(s) | Value Type   | Description        |
+| ------ | ------- | ------------ | ------------------ |
+| +0     | 1 byte  | `uint8`      | packet id          |
+| +1     | n bytes | `Uint8Array` | serverbound packet |
 
-#### `a0` diep.io clientbound
+#### `10` diep.io clientbound
 
 | Offset | Size(s) | Value Type   | Description        |
 | ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint`       | packet id          |
+| +0     | 1 byte  | `uint8`      | packet id          |
 | +1     | n bytes | `Uint8Array` | clientbound packet |
 
 ### Clientbound Packets
 
 | ID   | Description                |
 | ---- | -------------------------- |
-| `00` | send a new authToken       |
+| `00` | authToken       |
+| `01` | accept                     |
 | `08` | heartbeat                  |
 | `09` | custom diep.io serverbound |
-| `a0` | custom diep.io clientbound |
+| `10` | custom diep.io clientbound |
 
-#### `00` send a new authToken
+#### `00` authToken
 
 If the client uses the standart authToken `'user'`, we will sent a unique authToken
 to the client, which will be stored in localStorage.
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
+| +0     | 1 byte  | `uint8`    | packet id   |
 | +1     | n bytes | `String`   | authToken   |
+
+#### `01` accept
+
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint8`    | packet id   |
 
 #### `08` heartbeat
 
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
+| +0     | 1 byte  | `uint8`    | packet id   |
 
 #### `09` custom diep.io serverbound
 
@@ -128,14 +132,14 @@ to display custom notifications and more...
 
 | Offset | Size(s) | Value Type   | Description        |
 | ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint`       | packet id          |
-| +1     | n bytes | `TypedArray` | serverbound packet |
+| +0     | 1 byte  | `uint8`      | packet id          |
+| +1     | n bytes | `Uint8Array` | serverbound packet |
 
-#### `a0` custom diep.io serverbound
+#### `10` custom diep.io serverbound
 
 to send movement packets and more...
 
 | Offset | Size(s) | Value Type   | Description        |
 | ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint`       | packet id          |
-| +1     | n bytes | `TypedArray` | clientbound packet |
+| +0     | 1 byte  | `uint8`      | packet id          |
+| +1     | n bytes | `Uint8Array` | clientbound packet |

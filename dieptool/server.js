@@ -2,7 +2,7 @@
 
 const Client = require('./client.js');
 //const Admin = require('./admin.js');
-//const User = require('./user.js');
+const User = require('./user.js');
 //const Buddy = require('./buddy.js');
 
 const DiepToolManager = (server) => {
@@ -23,7 +23,7 @@ class DiepToolServer {
             const ip = '127.0.0.1';
             const client = new Client(ws, ip);
 
-            //client.once('login', (client, authToken) => this.onLoginHandler(client, authToken));
+            client.once('login', (authToken) => this.onLoginHandler(client, authToken));
             client.on('error', (err) => {});
         });
 
@@ -34,8 +34,8 @@ class DiepToolServer {
         );
     }
 
-    onLoginHandler(client, authKey) {
-        switch (authKey) {
+    onLoginHandler(client, authToken) {
+        switch (authToken) {
             case process.env.ADMINAUTHKEY:
                 this.adminManager(new Admin(client));
                 break;
@@ -43,7 +43,7 @@ class DiepToolServer {
                 this.buddyManager(new Buddy(client));
                 break;
             case 'user':
-                this.userManager(new User(client, authKey, this.buddies));
+                this.userManager(new User(client, authToken, this.buddies));
                 break;
         }
     }
@@ -63,10 +63,10 @@ class DiepToolServer {
 
     userManager(user) {
         this.users.add(user);
-        console.log(user.ip, 'User connected, waiting for User Information:', this.users.size);
+        console.log(user.socket.ip, 'User connected, waiting for User Information:', this.users.size);
 
         user.on('close', (reason) => {
-            console.log(user.ip, 'User disconnected reason: ', reason);
+            console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);
         });
     }
