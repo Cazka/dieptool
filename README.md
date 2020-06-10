@@ -66,16 +66,16 @@ Currently all commands:
 
 also:
 
-| ID   | Description |
-| ---- | ----------- |
-| `00` | FALSE       |
-| `01` | TRUE        |
+| ID   | Boolean |
+| ---- | ------- |
+| `00` | FALSE   |
+| `01` | TRUE    |
 
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint`     | packet id   |
-| +1     | 1 byte  | `uint`     | command id  |
-| +2     | 1 byte  | `uint`     | data        |
+| Offset | Size(s) | Value Type         | Description |
+| ------ | ------- | ------------------ | ----------- |
+| +0     | 1 byte  | `uint`             | packet id   |
+| +1     | 1 byte  | `uint`             | command id  |
+| +2     | n bytes | `uint` \| `String` | data        |
 
 #### `08` heartbeat
 
