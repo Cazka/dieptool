@@ -1,7 +1,7 @@
 'use strict';
 
 const EventEmitter = require('events');
-const {Writer, Reader} = require('./coder.js');
+const { Writer, Reader } = require('./coder.js');
 
 /*
  * G E N E R A L   P A C K E T S
@@ -35,7 +35,7 @@ const PACKET_BUDDY_SERVERBOUND = {
     BOT_ACCEPT: 23,
     BOT_MESSAGE: 24,
     BOT_CLOSE: 25,
-    BOT_ERROR: 26
+    BOT_ERROR: 26,
 };
 const PACKET_BUDDY_CLIENTBOUND = {
     BOT_OPEN: 20,
@@ -107,7 +107,7 @@ class Client extends EventEmitter {
             case PACKET_BUDDY_SERVERBOUND.BOT_ERROR: {
                 const index = reader.u16();
                 const link = reader.string();
-                super.emit('Bot accept', index, link);
+                super.emit('Bot error', index, link);
                 break;
             }
             case PACKET_BUDDY_SERVERBOUND.BOT_MESSAGE: {
@@ -123,10 +123,10 @@ class Client extends EventEmitter {
     }
 
     send(id, data = []) {
-        if(this.isClosed()) return;
+        if (this.isClosed()) return;
 
         const writer = new Writer().u8(id);
-        switch(id){
+        switch (id) {
             case PACKET_USER_CLIENTBOUND.AUTHTOKEN:
                 writer.string(data[0]);
                 break;
@@ -143,7 +143,7 @@ class Client extends EventEmitter {
                 break;
             case PACKET_BUDDY_CLIENTBOUND.BOT_SEND:
                 writer.u16(data[0]);
-                writer.array(data[2]);
+                writer.array(data[1]);
                 break;
             case PACKET_BUDDY_CLIENTBOUND.BOT_CLOSE:
                 writer.u16(data[0]);

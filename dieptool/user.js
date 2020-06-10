@@ -2,7 +2,7 @@
 
 const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
-const Bot = require('./Bot.js');
+const Bot = require('./bot.js');
 
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
@@ -175,13 +175,13 @@ class User extends EventEmitter {
                 this.joinBots(data);
                 this.sendNotification(`Joining ${data} bots`, color.PINK);
                 break;
-            case 'multibox':
-                if (command.status !== this.multibox) {
+            case COMMAND.MULTIBOX:
+                if (!!data !== this.multibox) {
                     this.sendNotification(
-                        `Multiboxing ${command.status ? 'enabled' : 'disabled'}`,
+                        `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,
                         color.PINK
                     );
-                    this.multibox = command.status;
+                    this.multibox = !!data;
                 }
                 break;
             default:
@@ -234,11 +234,11 @@ class User extends EventEmitter {
             if (this.socket.isClosed()) bot.close();
 
             bot.removeAllListeners('error');
-            this.actionJoinBotsBuddy(--amount, i);
+            this.joinBots(--amount, i);
         });
         bot.once('error', () => {
             bot.removeAllListeners('accept');
-            this.actionJoinBotsBuddy(amount, ++i);
+            this.joinBots(amount, ++i);
         });
     }
 
