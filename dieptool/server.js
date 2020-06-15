@@ -60,11 +60,7 @@ class DiepToolServer {
 
     userManager(user) {
         this.users.add(user);
-        console.log(
-            user.socket.ip,
-            'User connected, waiting for User Information:',
-            this.users.size
-        );
+        console.log(user.socket.ip, 'User connected, waiting for User Information:', this.users.size);
 
         user.on('close', (reason) => {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);

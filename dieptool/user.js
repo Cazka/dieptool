@@ -59,15 +59,16 @@ class User extends EventEmitter {
         this.buddies = buddies;
         this.bots = new Set();
         this.botsjoining = false;
-        this.botsMaximum = 200;
+        this.botsMaximum = 5;
         this.multibox = false;
 
         // Gameplay
         this.upgradePath = {};
         this.tankPath = [];
-
-        this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT, []);
-
+      
+        // Initialize
+        this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT, []);      
+      
         this.socket.on('close', (reason) => {
             super.emit('close', reason);
         });
@@ -108,7 +109,7 @@ class User extends EventEmitter {
                 break;
             case UPDATE.PARTY:
                 this.party = data;
-                this.link = DiepSocket.getLink(this.wsURL, this.party);
+                if(this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
                 this.gamemode = data;
@@ -130,12 +131,8 @@ class User extends EventEmitter {
             case 0x02:
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
-                    this.sendNotification('Thank you for using Diep.io Tool🔥');
-                    this.sendNotification('Made by Cazka', '#f5e042');
-                    this.sendNotification(
-                        'Bots disconnect sometimes :( But you can now join unlimited bots :)',
-                        color.PINK
-                    );
+                    this.sendNotification('💎Made by Cazka💎', '#f5e042');
+                    this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
                 }
 
                 this.upgradePath = {};
@@ -150,11 +147,30 @@ class User extends EventEmitter {
                 break;
             case 0x04:
                 this.tankPath.push(data[1]);
-                console.log(this.tankPath);
                 break;
         }
     }
-    onClientBoundHandler(data) {}
+    onClientBoundHandler(data) {
+        switch(data[0]){
+            case 0x04: {
+                this.gamemode = new TextDecoder().decode(data.slice(1,data.length)).split('\u0000')[0];
+                break;
+            }
+            case 0x06:{
+                let party = '';
+                for (let i = 1; i < data.byteLength; i++) {
+                    let byte = data[i].toString(16).split('');
+                    if (byte.length === 1) {
+                        party += (byte[0] + '0');
+                    } else {
+                        party += (byte[1] + byte[0]);
+                    }
+                }
+                this.party = party;
+                break;
+            }            
+        }
+    }
     onCommandHandler(id, data) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED);
@@ -171,11 +187,15 @@ class User extends EventEmitter {
                     return;
                 }
                 if (this.botsJoining) return;
+                if(!this.link) return;
+            
+                const amount = data;
                 this.botsJoining = true;
-                this.joinBots(data);
-                this.sendNotification(`Joining ${data} bots`, color.PINK);
+                this.joinBots(amount);
+                this.sendNotification(`Joining ${amount} bots`, color.PINK);
                 break;
             case COMMAND.MULTIBOX:
+                if(this.gamemode === 'sandbox') return this.sendNotification('disabled in sandbox 🎈');
                 if (!!data !== this.multibox) {
                     this.sendNotification(
                         `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,

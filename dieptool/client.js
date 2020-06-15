@@ -1,7 +1,7 @@
 'use strict';
 
 const EventEmitter = require('events');
-const { Writer, Reader } = require('./coder.js');
+const {Writer, Reader} = require('./coder.js');
 
 /*
  * G E N E R A L   P A C K E T S
@@ -35,7 +35,7 @@ const PACKET_BUDDY_SERVERBOUND = {
     BOT_ACCEPT: 23,
     BOT_MESSAGE: 24,
     BOT_CLOSE: 25,
-    BOT_ERROR: 26,
+    BOT_ERROR: 26
 };
 const PACKET_BUDDY_CLIENTBOUND = {
     BOT_OPEN: 20,
@@ -123,10 +123,10 @@ class Client extends EventEmitter {
     }
 
     send(id, data = []) {
-        if (this.isClosed()) return;
+        if(this.isClosed()) return;
 
         const writer = new Writer().u8(id);
-        switch (id) {
+        switch(id){
             case PACKET_USER_CLIENTBOUND.AUTHTOKEN:
                 writer.string(data[0]);
                 break;

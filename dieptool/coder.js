@@ -7,7 +7,7 @@ const u16 = new Uint16Array(convo);
 class Writer {
     constructor() {
         this.length = 0;
-        this.buffer = new Uint8Array(4096);
+        this.buffer = new Uint8Array(8192);
     }
     u8(num) {
         this.buffer[this.length] = num;

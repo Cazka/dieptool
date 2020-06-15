@@ -44,7 +44,7 @@ class Bot extends EventEmitter {
         super.emit('close');
     }
     onErrorHandler(index, link) {
-        if (this.index !== -1 || this.link === link) return;
+        if (this.index !== -1 || this.link !== link) return;
         this.index = index;
 
         this.buddy.off('Bot accept', this.onaccept);
