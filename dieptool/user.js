@@ -2,7 +2,8 @@
 
 const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
-const Bot = require('./bot.js');
+const fs = require('fs');
+const ipv6pool = fs.readFileSync("./ipv6").toString('utf-8').split("\n");
 
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
@@ -29,7 +30,7 @@ const BOOLEAN = {
 };
 
 class User extends EventEmitter {
-    constructor(socket, authToken, buddies) {
+    constructor(socket, authToken) {
         super();
         // Socket information
         this.socket = socket;
@@ -215,7 +216,7 @@ class User extends EventEmitter {
      *    C O M M A N D S
      */
     joinBots(amount, i = 0) {
-        if (i >= this.buddies.size) {
+        if (i >= ipv6pool.length) {
             this.sendNotification(
                 `Not enough Proxies available. You have ${this.bots.size} bots`,
                 color.GREEN
@@ -232,7 +233,7 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        let bot = new Bot(this.link, Array.from(this.buddies)[i]);
+        let bot = new DiepSocket(this.link, {ipv6: ipv6pool[i]});
         bot.once('accept', () => {
             this.bots.add(bot);
             console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');

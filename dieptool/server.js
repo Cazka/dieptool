@@ -3,7 +3,6 @@
 const Client = require('./client.js');
 //const Admin = require('./admin.js');
 const User = require('./user.js');
-const Buddy = require('./buddy.js');
 
 const DiepToolManager = (server) => {
     const WebSocket = require('ws');
@@ -36,9 +35,6 @@ class DiepToolServer {
             case process.env.ADMINAUTHKEY:
                 //this.adminManager(new Admin(client));
                 break;
-            case process.env.BUDDYAUTHKEY:
-                this.buddyManager(new Buddy(client));
-                break;
             case 'user':
                 this.userManager(new User(client, authToken, this.buddies));
                 break;
@@ -65,16 +61,6 @@ class DiepToolServer {
         user.on('close', (reason) => {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);
-        });
-    }
-
-    buddyManager(buddy) {
-        this.buddies.add(buddy);
-        console.log('Buddy connected:', this.buddies.size);
-
-        buddy.on('close', (reason) => {
-            this.buddies.delete(buddy);
-            console.error('buddy closed: ', this.buddies.size, ' reason: ', reason);
         });
     }
 }
