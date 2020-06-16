@@ -28,20 +28,6 @@ const PACKET_USER_CLIENTBOUND = {
     CUSTOM_SERVERBOUND: 9,
     CUSTOM_CLIENTBOUND: 10,
 };
-/*
- * B U D D Y   P A C K E T S
- */
-const PACKET_BUDDY_SERVERBOUND = {
-    BOT_ACCEPT: 23,
-    BOT_MESSAGE: 24,
-    BOT_CLOSE: 25,
-    BOT_ERROR: 26
-};
-const PACKET_BUDDY_CLIENTBOUND = {
-    BOT_OPEN: 20,
-    BOT_SEND: 21,
-    BOT_CLOSE: 22,
-};
 
 class Client extends EventEmitter {
     constructor(socket, ip) {
@@ -92,30 +78,6 @@ class Client extends EventEmitter {
                 super.emit('clientbound', reader.array());
                 break;
             }
-            // B U D D Y
-            case PACKET_BUDDY_SERVERBOUND.BOT_ACCEPT: {
-                const index = reader.u16();
-                const link = reader.string();
-                super.emit('Bot accept', index, link);
-                break;
-            }
-            case PACKET_BUDDY_SERVERBOUND.BOT_CLOSE: {
-                const index = reader.u16();
-                super.emit('Bot close', index);
-                break;
-            }
-            case PACKET_BUDDY_SERVERBOUND.BOT_ERROR: {
-                const index = reader.u16();
-                const link = reader.string();
-                super.emit('Bot error', index, link);
-                break;
-            }
-            case PACKET_BUDDY_SERVERBOUND.BOT_MESSAGE: {
-                const index = reader.u16();
-                const message = reader.array();
-                super.emit('Bot message', index, message);
-                break;
-            }
             default:
                 console.log('not recognized packet: ', data);
                 break;
@@ -137,16 +99,6 @@ class Client extends EventEmitter {
                 break;
             case PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND:
                 writer.array(data);
-                break;
-            case PACKET_BUDDY_CLIENTBOUND.BOT_OPEN:
-                writer.string(data[0]);
-                break;
-            case PACKET_BUDDY_CLIENTBOUND.BOT_SEND:
-                writer.u16(data[0]);
-                writer.array(data[1]);
-                break;
-            case PACKET_BUDDY_CLIENTBOUND.BOT_CLOSE:
-                writer.u16(data[0]);
                 break;
         }
         this.socket.send(writer.out());
