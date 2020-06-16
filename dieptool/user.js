@@ -254,11 +254,11 @@ class User extends EventEmitter {
             if (this.socket.isClosed()) bot.close();
 
             bot.removeAllListeners('error');
-            this.joinBots(--amount, i);
+            setTimeout(() => this.joinBots(--amount, i), 500);
         });
         bot.once('error', () => {
             bot.removeAllListeners('accept');
-            this.joinBots(amount, ++i);
+            setTimeout(() => this.joinBots(amount, ++i), 500);
         });
     }
 
