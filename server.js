@@ -9,7 +9,7 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const server = require('http').createServer(app);
 
-const diepServer = require('./DiepTool/server.js')(server); // run Diep Server
+const diepServer = require('./dieptool/server.js')(server); // run Diep Server
 
 //server.listen(parseInt(process.env.PORT,10) || 3000);
 server.listen(3000, () => {
