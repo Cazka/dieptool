@@ -3,7 +3,7 @@
 const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
 const fs = require('fs');
-const ipv6pool = fs.readFileSync("./ipv6").toString('utf-8').split("\n");
+const ipv6pool = fs.readFileSync("./dieptool/ipv6").toString('utf-8').split("\n");
 
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
@@ -57,7 +57,6 @@ class User extends EventEmitter {
         this.rateLimitTime = 100;
 
         // Bots
-        this.buddies = buddies;
         this.bots = new Set();
         this.botsjoining = false;
         this.botsMaximum = 5;
