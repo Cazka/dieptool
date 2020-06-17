@@ -3,7 +3,7 @@
 const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
 const fs = require('fs');
-const ipv6pool = fs.readFileSync("./dieptool/ipv6").toString('utf-8').split("\n");
+const ipv6pool = fs.readFileSync('./dieptool/ipv6').toString('utf-8').split('\n');
 
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
@@ -61,14 +61,15 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = 5;
         this.multibox = false;
+        this.botname = () => (this.name ? `DT ${this.name}` : 'DT');
 
         // Gameplay
         this.upgradePath = {};
         this.tankPath = [];
-      
+
         // Initialize
-        this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT, []);      
-      
+        this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT);
+
         this.socket.on('close', (reason) => {
             super.emit('close', reason);
         });
@@ -109,7 +110,7 @@ class User extends EventEmitter {
                 break;
             case UPDATE.PARTY:
                 this.party = data;
-                if(this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
+                if (this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
                 this.gamemode = data;
@@ -151,24 +152,26 @@ class User extends EventEmitter {
         }
     }
     onClientBoundHandler(data) {
-        switch(data[0]){
+        switch (data[0]) {
             case 0x04: {
-                this.gamemode = new TextDecoder().decode(data.slice(1,data.length)).split('\u0000')[0];
+                this.gamemode = new TextDecoder()
+                    .decode(data.slice(1, data.length))
+                    .split('\u0000')[0];
                 break;
             }
-            case 0x06:{
+            case 0x06: {
                 let party = '';
                 for (let i = 1; i < data.byteLength; i++) {
                     let byte = data[i].toString(16).split('');
                     if (byte.length === 1) {
-                        party += (byte[0] + '0');
+                        party += byte[0] + '0';
                     } else {
-                        party += (byte[1] + byte[0]);
+                        party += byte[1] + byte[0];
                     }
                 }
                 this.party = party;
                 break;
-            }            
+            }
         }
     }
     onCommandHandler(id, data) {
@@ -187,15 +190,16 @@ class User extends EventEmitter {
                     return;
                 }
                 if (this.botsJoining) return;
-                if(!this.link) return;
-            
+                if (!this.link) return;
+
                 const amount = data;
                 this.botsJoining = true;
                 this.joinBots(amount);
                 this.sendNotification(`Joining ${amount} bots`, color.PINK);
                 break;
             case COMMAND.MULTIBOX:
-                if(this.gamemode === 'sandbox') return this.sendNotification('disabled in sandbox 🎈');
+                if (this.gamemode === 'sandbox')
+                    return this.sendNotification('disabled in sandbox 🎈');
                 if (!!data !== this.multibox) {
                     this.sendNotification(
                         `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,
@@ -232,13 +236,13 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        let bot = new DiepSocket(this.link, {ipv6: ipv6pool[i]});
+        let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i] });
         bot.once('accept', () => {
             this.bots.add(bot);
             //console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
 
             let int = setInterval(() => {
-                bot.send(2, `DT ${this.name}`, 0);
+                bot.send(2, this.botname, 0);
                 for (let [key, value] of Object.entries(this.upgradePath)) {
                     bot.sendBinary(new Uint8Array([3, key, value]));
                 }
@@ -254,11 +258,11 @@ class User extends EventEmitter {
             if (this.socket.isClosed()) bot.close();
 
             bot.removeAllListeners('error');
-            this.joinBots(--amount, i)
+            this.joinBots(--amount, i);
         });
         bot.once('error', () => {
             bot.removeAllListeners('accept');
-            this.joinBots(amount, ++i)
+            this.joinBots(amount, ++i);
         });
     }
 
