@@ -100,7 +100,7 @@ class User extends EventEmitter {
                 this.version = data;
                 break;
             case UPDATE.NAME:
-                this.name = UTF8ToString(data);
+                this.name = data;
                 break;
             case UPDATE.WSURL:
                 this.wsURL = data;
@@ -242,7 +242,7 @@ class User extends EventEmitter {
             //console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
 
             let int = setInterval(() => {
-                bot.send(2, this.botname, 0);
+                bot.send(2, Array.from(new TextEncoder().encode(this.botname())), 0);
                 for (let [key, value] of Object.entries(this.upgradePath)) {
                     bot.sendBinary(new Uint8Array([3, key, value]));
                 }
@@ -286,7 +286,7 @@ class User extends EventEmitter {
             authKey: this.authKey,
             ip: this.socket.ip,
             version: this.version,
-            name: encodeURI(this.name),
+            name: this.name,
             wsURL: this.wsURL,
             party: this.party,
             link: this.link,
@@ -348,14 +348,5 @@ const newNotification = (message, hexcolor = '#000000', time = 5000) => {
 
     return data.slice(0, length);
 };
-
-function UTF8ToString(utf8) {
-    return decodeURI(
-        utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
-    );
-}
 
 module.exports = User;
