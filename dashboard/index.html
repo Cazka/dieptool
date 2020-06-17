@@ -146,7 +146,6 @@
         <!-- coder.js-->
         <script src="/js/coder.js"></script>
         <!-- DiepToolServerSocket -->
-        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
         <script>
             const PACKET_SERVERBOUND = {
                 LOGIN: 0,
@@ -199,8 +198,8 @@
                     case PACKET_CLIENTBOUND.PLAYER_COUNT:
                         const count = reader.u16();
                         document.getElementById('activeUsers').innerHTML = count;
-                        if (count+"" !== document.getElementById("activeUsers").innerHTML) {
-                            chart.data.series[0].push({x: moment().valueOf(), y: count})
+                        if (count + '' !== document.getElementById('activeUsers').innerHTML) {
+                            chart.data.series[0].push({ x: moment().valueOf(), y: count });
                             chart.update();
                         }
                         break;
