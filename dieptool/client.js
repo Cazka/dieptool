@@ -122,7 +122,6 @@ class Client extends EventEmitter {
                 writer.string(JSON.stringify(data[0]));
                 break;
         }
-        console.log(writer.out().constructor.name);
         this.socket.send(writer.out());
     }
 
