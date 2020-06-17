@@ -51,7 +51,6 @@ class Client extends EventEmitter {
     }
 
     onMessage(data) {
-        console.log(data)
         const reader = new Reader(data);
         switch (reader.u8()) {
             // G E N E R A L
