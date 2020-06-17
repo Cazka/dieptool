@@ -208,7 +208,7 @@
                         const table = JSON.parse(reader.string());
                         let playertable = document.getElementById('player table');
                         document.getElementById('tbody').innerHTML = '<tr></tr>';
-                        console.log(table);
+                        //console.log(table);
                         table.forEach((player) => {
                             const row = playertable.insertRow(-1);
                             row.insertCell(-1).innerHTML = player.ip;
