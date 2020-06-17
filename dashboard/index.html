@@ -198,11 +198,11 @@
                         break;
                     case PACKET_CLIENTBOUND.PLAYER_COUNT:
                         const count = reader.u16();
-                        document.getElementById('activeUsers').innerHTML = count;
-                        if (count+"" !== document.getElementById("activeUsers").innerHTML) {
+                        if (parseInt(count,10) !== parseInt(document.getElementById("activeUsers").innerHTML)) {
                             chart.data.series[0].push({x: moment().valueOf(), y: count})
                             chart.update();
                         }
+                        document.getElementById('activeUsers').innerHTML = count;
                         break;
                     case PACKET_CLIENTBOUND.PLAYER_DATA: {
                         const table = JSON.parse(reader.string());
