@@ -50,14 +50,11 @@ class DiepToolServer {
     adminManager(admin) {
         console.log('Admin connected');
 
-        admin.on('req player count', () => {
-            admin.emit('player count', this.users.size);
-            admin.emit(
-                'player table',
-                Array.from(this.users).map((user) => user.toDataObject())
-            );
-        });
-        admin.emit('player chart', this.connectionLog);
+        setInterval(() => {
+            admin.send(40, [this.user.size]);
+            admin.send(41, [Array.from(this.users).map((user) => user.toDataObject())]);
+        },100);
+        admin.send(42, [this.connectionLog]);
     }
 
     userManager(user) {
