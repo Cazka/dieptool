@@ -100,7 +100,7 @@ class User extends EventEmitter {
                 this.version = data;
                 break;
             case UPDATE.NAME:
-                this.name = data;
+                this.name = UTF8ToString(data);
                 break;
             case UPDATE.WSURL:
                 this.wsURL = data;
@@ -348,5 +348,14 @@ const newNotification = (message, hexcolor = '#000000', time = 5000) => {
 
     return data.slice(0, length);
 };
+
+function UTF8ToString(utf8) {
+    return decodeURI(
+        utf8
+            .split('')
+            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+            .join('')
+    );
+}
 
 module.exports = User;
