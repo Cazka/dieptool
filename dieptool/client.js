@@ -51,6 +51,7 @@ class Client extends EventEmitter {
     }
 
     onMessage(data) {
+        console.log(data)
         const reader = new Reader(data);
         switch (reader.u8()) {
             // G E N E R A L
@@ -121,6 +122,7 @@ class Client extends EventEmitter {
                 writer.string(JSON.stringify(data[0]));
                 break;
         }
+        console.log(writer.out().constructor.name);
         this.socket.send(writer.out());
     }
 

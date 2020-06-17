@@ -17,8 +17,10 @@ class DiepToolServer {
         this.ips = new Set();
 
         wss.on('connection', (ws, req) => {
-            const ip = (req.headers['x-forwarded-for'])? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] : req.connection.remoteAddress;
-            if(this.ips.has(ip)){
+            const ip = req.headers['x-forwarded-for']
+                ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
+                : req.connection.remoteAddress;
+            if (this.ips.has(ip)) {
                 ws.close();
                 return;
             }
@@ -39,7 +41,7 @@ class DiepToolServer {
     onLoginHandler(client, authToken) {
         switch (authToken) {
             case process.env.ADMINAUTHTOKEN:
-                this.adminManager(new Admin(client));
+                this.adminManager(client);
                 break;
             case 'user':
                 this.userManager(new User(client, authToken, this.buddies));
@@ -51,15 +53,19 @@ class DiepToolServer {
         console.log('Admin connected');
 
         setInterval(() => {
-            admin.send(40, [this.user.size]);
+            admin.send(40, [this.users.size]);
             admin.send(41, [Array.from(this.users).map((user) => user.toDataObject())]);
-        },100);
+        }, 100);
         admin.send(42, [this.connectionLog]);
     }
 
     userManager(user) {
         this.users.add(user);
-        console.log(user.socket.ip, 'User connected, waiting for User Information:', this.users.size);
+        console.log(
+            user.socket.ip,
+            'User connected, waiting for User Information:',
+            this.users.size
+        );
 
         user.on('close', (reason) => {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);
