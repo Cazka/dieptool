@@ -59,7 +59,7 @@ class User extends EventEmitter {
         // Bots
         this.bots = new Set();
         this.botsjoining = false;
-        this.botsMaximum = 5;
+        this.botsMaximum = 30;
         this.multibox = false;
 
         // Gameplay
@@ -235,7 +235,7 @@ class User extends EventEmitter {
         let bot = new DiepSocket(this.link, {ipv6: ipv6pool[i]});
         bot.once('accept', () => {
             this.bots.add(bot);
-            console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
+            //console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
 
             let int = setInterval(() => {
                 bot.send(2, `DT ${this.name}`, 0);
