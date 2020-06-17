@@ -17,7 +17,13 @@ class DiepToolServer {
         this.ips = new Set();
 
         wss.on('connection', (ws, req) => {
-            const ip = req.headers['x-forwarded-for'].split(/\s*,\s*/)[0];
+            const ip = (req.headers['x-forwarded-for'])? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0] : req.connection.remoteAddress;
+            if(this.ips.has(ip)){
+                ws.close();
+                return;
+            }
+            this.ips.add(ip);
+            ws.on('close', () => this.ips.delete(ip));
             const client = new Client(ws, ip);
             client.once('login', (authToken) => this.onLoginHandler(client, authToken));
             client.on('error', (err) => {});
@@ -32,8 +38,8 @@ class DiepToolServer {
 
     onLoginHandler(client, authToken) {
         switch (authToken) {
-            case process.env.ADMINAUTHKEY:
-                //this.adminManager(new Admin(client));
+            case process.env.ADMINAUTHTOKEN:
+                this.adminManager(new Admin(client));
                 break;
             case 'user':
                 this.userManager(new User(client, authToken, this.buddies));
