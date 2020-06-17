@@ -5,7 +5,7 @@
 ### Encodings
 
 All Datatypes: `uint8`, `uint16`, `String`, `Uint8Array`
-Strings end with `00`;
+Strings end with `00`  
 If the packet contains `Uint8Array` its also the last datatype.
 
 ### Serverbound Packets
@@ -98,7 +98,7 @@ also:
 
 | ID   | Description                |
 | ---- | -------------------------- |
-| `00` | authToken       |
+| `00` | authToken                  |
 | `01` | accept                     |
 | `08` | heartbeat                  |
 | `09` | custom diep.io serverbound |
