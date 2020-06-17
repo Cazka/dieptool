@@ -1,7 +1,7 @@
 'use strict';
 
 const EventEmitter = require('events');
-const {Writer, Reader} = require('./coder.js');
+const { Writer, Reader } = require('./coder.js');
 
 /*
  * G E N E R A L   P A C K E T S
@@ -27,6 +27,15 @@ const PACKET_USER_CLIENTBOUND = {
     ACCEPT: 1,
     CUSTOM_SERVERBOUND: 9,
     CUSTOM_CLIENTBOUND: 10,
+};
+/*
+ * A D M I N   P A C K E T S
+ */
+const PACKET_ADMIN_SERVERBOUND = {};
+const PACKET_ADMIN_CLIENTBOUND = {
+    PLAYER_COUNT: 40,
+    PLAYER_DATA: 41,
+    PLAYER_CHART: 42,
 };
 
 class Client extends EventEmitter {
@@ -78,6 +87,7 @@ class Client extends EventEmitter {
                 super.emit('clientbound', reader.array());
                 break;
             }
+            // A D M I N
             default:
                 console.log('not recognized packet: ', data);
                 break;
@@ -85,10 +95,10 @@ class Client extends EventEmitter {
     }
 
     send(id, data = []) {
-        if(this.isClosed()) return;
+        if (this.isClosed()) return;
 
         const writer = new Writer().u8(id);
-        switch(id){
+        switch (id) {
             case PACKET_USER_CLIENTBOUND.AUTHTOKEN:
                 writer.string(data[0]);
                 break;
@@ -99,6 +109,16 @@ class Client extends EventEmitter {
                 break;
             case PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND:
                 writer.array(data);
+                break;
+            // A D M I N
+            case PACKET_ADMIN_CLIENTBOUND.PLAYER_COUNT:
+                writer.u16(data[0]);
+                break;
+            case PACKET_ADMIN_CLIENTBOUND.PLAYER_DATA:
+                writer.string(JSON.stringify(data[0]));
+                break;
+            case PACKET_ADMIN_CLIENTBOUND.PLAYER_CHART:
+                writer.string(JSON.stringify(data[0]));
                 break;
         }
         this.socket.send(writer.out());
