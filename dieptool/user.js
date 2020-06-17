@@ -59,7 +59,7 @@ class User extends EventEmitter {
         // Bots
         this.bots = new Set();
         this.botsjoining = false;
-        this.botsMaximum = 30;
+        this.botsMaximum = 5;
         this.multibox = false;
 
         // Gameplay
@@ -282,7 +282,7 @@ class User extends EventEmitter {
             authKey: this.authKey,
             ip: this.socket.ip,
             version: this.version,
-            name: this.name,
+            name: encodeURI(this.name),
             wsURL: this.wsURL,
             party: this.party,
             link: this.link,

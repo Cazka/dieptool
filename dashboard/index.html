@@ -212,7 +212,7 @@
                         table.forEach((player) => {
                             const row = playertable.insertRow(-1);
                             row.insertCell(-1).innerHTML = player.ip;
-                            row.insertCell(-1).innerHTML = player.name;
+                            row.insertCell(-1).innerHTML = decodeURI(player.name);
                             row.insertCell(-1).innerHTML = player.gamemode;
                             row.insertCell(
                                 -1
