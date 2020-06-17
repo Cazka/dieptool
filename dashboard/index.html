@@ -197,7 +197,12 @@
                         nodeSocket.lastPing = Date.now();
                         break;
                     case PACKET_CLIENTBOUND.PLAYER_COUNT:
-                        document.getElementById('activeUsers').innerHTML = reader.u16();
+                        const count = reader.u16();
+                        document.getElementById('activeUsers').innerHTML = count;
+                        if (count+"" !== document.getElementById("activeUsers").innerHTML) {
+                            chart.data.series[0].push({x: moment().valueOf(), y: count})
+                            chart.update();
+                        }
                         break;
                     case PACKET_CLIENTBOUND.PLAYER_DATA: {
                         const table = JSON.parse(reader.string());
