@@ -189,7 +189,6 @@
             }
 
             function onMessage(event) {
-                console.log(event.data);
                 const reader = new Reader(event.data);
                 switch (reader.u8()) {
                     case PACKET_CLIENTBOUND.HEARTBEAT:
@@ -200,7 +199,7 @@
                     case PACKET_CLIENTBOUND.PLAYER_COUNT:
                         document.getElementById('activeUsers').innerHTML = reader.u16();
                         break;
-                    case PACKET_CLIENTBOUND.PLAYER_TABLE: {
+                    case PACKET_CLIENTBOUND.PLAYER_DATA: {
                         const table = JSON.parse(reader.string());
                         let playertable = document.getElementById('player table');
                         document.getElementById('tbody').innerHTML = '<tr></tr>';
@@ -223,7 +222,7 @@
                         break;
                     }
                     case PACKET_CLIENTBOUND.PLAYER_CHART:
-                        chart.data.series[0] = JSON.parse(reader.strin());
+                        chart.data.series[0] = JSON.parse(reader.string());
                         chart.update();
                         break;
                 }
