@@ -138,9 +138,9 @@ class User extends EventEmitter {
                 if (this.multibox) {
                     this.bots.forEach((bot) => bot.sendBinary(data));
                 }
-                if (afk) {
+                if (this.afk) {
                     data = this.stayAFK(data);
-                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_CLIENTBOUND, data);
+                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND,data);
                 }
                 break;
             case 0x02:
@@ -222,6 +222,7 @@ class User extends EventEmitter {
                 if (!!data === this.afk) return;
                 this.sendNotification(`AFK ${!!data ? 'enabled' : 'disabled'}`, color.PINK);
                 this.afk = !!data;
+                break;
             default:
                 this.sendNotification(
                     `This feature will be available in the next update!`,
@@ -284,7 +285,7 @@ class User extends EventEmitter {
      */
     stayAFK(data) {
         if (this.slow) return data;
-        slow = true;
+        this.slow = true;
 
         // BLOCKWIDTH = 50 units.
         const tolerance = 2 * 50;
@@ -296,7 +297,7 @@ class User extends EventEmitter {
         // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
         let timeout = (-Math.log(euclid_distance - 150) + 5.3) * 100;
         timeout = (timeout !== timeout || timeout >= 250)? 250 : (timeout <= 0)? 0 : timeout;
-        setTimeout(() => (slow = false), timeout);
+        setTimeout(() => (this.slow = false), timeout);
         const flags = this.calcFlags();
         if (euclid_distance > tolerance) return changeFlags(data, flags);
         return data;
@@ -337,7 +338,7 @@ class User extends EventEmitter {
         this.mouseX = reader.vf();
         this.mouseY = reader.vf();
 
-        if (!afk) {
+        if (!this.afk) {
             this.mouseXFixed = this.mouseX;
             this.mouseYFixed = this.mouseY;
         }
