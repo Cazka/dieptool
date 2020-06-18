@@ -200,14 +200,15 @@ class User extends EventEmitter {
             case COMMAND.MULTIBOX:
                 if (this.gamemode === 'sandbox')
                     return this.sendNotification('disabled in sandbox 🎈');
-                if (!!data !== this.multibox) {
-                    this.sendNotification(
-                        `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,
-                        color.PINK
-                    );
-                    this.multibox = !!data;
-                }
+                if (!!data === this.multibox) return;
+                this.sendNotification(
+                    `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,
+                    color.PINK
+                );
+                this.multibox = !!data;
                 break;
+            case COMMAND.AFK:
+
             default:
                 this.sendNotification(
                     `This feature will be available in the next update!`,
