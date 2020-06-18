@@ -135,7 +135,7 @@ class User extends EventEmitter {
         switch (data[0]) {
             case 0x01:
                 this.updatePosition(data);
-                if (this.multibox) {
+                if (this.multibox && this.gamemode != 'sandbox') {
                     this.bots.forEach((bot) => bot.sendBinary(data));
                 }
                 if (this.afk) {
