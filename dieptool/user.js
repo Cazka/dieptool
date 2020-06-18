@@ -4,6 +4,7 @@ const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
 const fs = require('fs');
 const ipv6pool = fs.readFileSync('./dieptool/ipv6').toString('utf-8').split('\n');
+const { Writer, Reader } = require('./coder.js');
 
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
@@ -60,12 +61,20 @@ class User extends EventEmitter {
         this.bots = new Set();
         this.botsjoining = false;
         this.botsMaximum = 5;
-        this.multibox = false;
         this.botname = () => (this.name ? `DT ${this.name}` : 'DT');
+        this.multibox = false;
+        this.afk = false;
 
         // Gameplay
         this.upgradePath = {};
         this.tankPath = [];
+
+        // AFK
+        this.slow = false;
+        this.mouseX;
+        this.mouseY;
+        this.mouseXFixed;
+        this.mouseYFixed;
 
         // Initialize
         this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT);
@@ -125,8 +134,13 @@ class User extends EventEmitter {
     onServerBoundHandler(data) {
         switch (data[0]) {
             case 0x01:
+                this.updatePosition(data);
                 if (this.multibox) {
                     this.bots.forEach((bot) => bot.sendBinary(data));
+                }
+                if (afk) {
+                    data = this.stayAFK(data);
+                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_CLIENTBOUND, data);
                 }
                 break;
             case 0x02:
@@ -201,14 +215,13 @@ class User extends EventEmitter {
                 if (this.gamemode === 'sandbox')
                     return this.sendNotification('disabled in sandbox 🎈');
                 if (!!data === this.multibox) return;
-                this.sendNotification(
-                    `Multiboxing ${!!data ? 'enabled' : 'disabled'}`,
-                    color.PINK
-                );
+                this.sendNotification(`Multiboxing ${!!data ? 'enabled' : 'disabled'}`, color.PINK);
                 this.multibox = !!data;
                 break;
             case COMMAND.AFK:
-
+                if (!!data === this.afk) return;
+                this.sendNotification(`AFK ${!!data ? 'enabled' : 'disabled'}`, color.PINK);
+                this.afk = !!data;
             default:
                 this.sendNotification(
                     `This feature will be available in the next update!`,
@@ -266,6 +279,44 @@ class User extends EventEmitter {
             this.joinBots(amount, ++i);
         });
     }
+    /*
+     *    A F K
+     */
+    stayAFK(data) {
+        if (this.slow) return data;
+        slow = true;
+
+        // BLOCKWIDTH = 50 units.
+        const tolerance = 2 * 50;
+        const euclid_distance = Math.sqrt(
+            Math.pow(this.mouseX - this.mouseXFixed, 2) +
+                Math.pow(this.mouseY - this.mouseYFixed, 2)
+        );
+
+        // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
+        let timeout = (-Math.log(euclid_distance - 150) + 5.3) * 100;
+        timeout = (timeout !== timeout || timeout >= 250)? 250 : (timeout <= 0)? 0 : timeout;
+        setTimeout(() => (slow = false), timeout);
+        const flags = this.calcFlags();
+        if (euclid_distance > tolerance) return changeFlags(data, flags);
+        return data;
+    }
+    calcFlags() {
+        let flags = 2048;
+        const distanceX = this.mouseX - this.mouseXFixed;
+        const distanceY = this.mouseY - this.mouseYFixed;
+        if (distanceX > 0) {
+            flags += 4; // move west
+        } else if (distanceX < 0) {
+            flags += 16; //move east
+        }
+        if (distanceY > 0) {
+            flags += 2; // move north
+        } else if (distanceY < 0) {
+            flags += 8; // move south
+        }
+        return flags;
+    }
 
     /*
      *    H E L P E R   F U N C T I O N S
@@ -276,6 +327,20 @@ class User extends EventEmitter {
             newNotification(message, hexcolor, time)
         );
         this.updateStatus(message);
+    }
+    updatePosition(data) {
+        const reader = new Reader(data);
+        // skip packet id and flags
+        reader.vu();
+        reader.vu();
+
+        this.mouseX = reader.vf();
+        this.mouseY = reader.vf();
+
+        if (!afk) {
+            this.mouseXFixed = this.mouseX;
+            this.mouseYFixed = this.mouseY;
+        }
     }
     ban(reason) {
         this.sendNotification(reason, color.RED, 0);
@@ -321,6 +386,22 @@ const color = {
     GREEN: '#00ff00',
     RED: '#ff0000',
 };
+
+const changeFlags = (data, flags) => {
+    const reader = new Reader(data);
+    reader.vu();
+    flags |= reader.vu();
+
+    const writer = new Writer()
+        .vu(0x01)        //packet id
+        .vu(flags)       //flags
+        .vf(reader.vf()) //mousex
+        .vf(reader.vf()) //mousey
+        .vf(reader.vf()) //movementx
+        .vf(reader.vf());//movementy
+
+    return writer.out();
+}
 
 const newNotification = (message, hexcolor = '#000000', time = 5000) => {
     const data = new Uint8Array(512);
