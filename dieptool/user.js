@@ -129,7 +129,11 @@ class User extends EventEmitter {
                 break;
             case UPDATE.PARTY:
                 this.party = data;
-                if (this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
+                try {
+                    this.link = DiepSocket.getLink(this.wsURL, this.party);
+                } catch (error) {
+                    this.socket.close();
+                }
                 break;
             case UPDATE.GAMEMODE:
                 this.gamemode = data;
