@@ -61,7 +61,13 @@ class User extends EventEmitter {
         this.bots = new Set();
         this.botsjoining = false;
         this.botsMaximum = 5;
-        this.botname = () => (this.name ? `DT ${this.name}` : 'DT');
+        this.botname = () => {
+            if (Math.random() <= 0.02) {
+                return this.name ? `DMC ${this.name}` : 'DMC';
+            } else {
+                return this.name ? `DT ${this.name}` : 'DT';
+            }
+        };
         this.multibox = false;
         this.afk = false;
 
@@ -114,7 +120,11 @@ class User extends EventEmitter {
             case UPDATE.WSURL:
                 this.wsURL = data;
                 this.party = undefined;
-                this.link = DiepSocket.getLink(this.wsURL, this.party);
+                try {
+                    this.link = DiepSocket.getLink(this.wsURL, this.party);
+                } catch (error) {
+                    this.socket.close();
+                }
                 this.bots.forEach((bot) => bot.close());
                 break;
             case UPDATE.PARTY:
@@ -140,7 +150,7 @@ class User extends EventEmitter {
                 }
                 if (this.afk) {
                     data = this.stayAFK(data);
-                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND,data);
+                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND, data);
                 }
                 break;
             case 0x02:
@@ -257,7 +267,7 @@ class User extends EventEmitter {
             //console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
 
             let int = setInterval(() => {
-                bot.send(2, Array.from(new TextEncoder().encode(this.botname())), 0);
+                bot.send(2, this.botname(), 0);
                 for (let [key, value] of Object.entries(this.upgradePath)) {
                     bot.sendBinary(new Uint8Array([3, key, value]));
                 }
@@ -296,7 +306,7 @@ class User extends EventEmitter {
 
         // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
         let timeout = (-Math.log(euclid_distance - 150) + 5.3) * 100;
-        timeout = (timeout !== timeout || timeout >= 250)? 250 : (timeout <= 0)? 0 : timeout;
+        timeout = timeout !== timeout || timeout >= 250 ? 250 : timeout <= 0 ? 0 : timeout;
         setTimeout(() => (this.slow = false), timeout);
         const flags = this.calcFlags();
         if (euclid_distance > tolerance) return changeFlags(data, flags);
@@ -394,15 +404,15 @@ const changeFlags = (data, flags) => {
     flags |= reader.vu();
 
     const writer = new Writer()
-        .vu(0x01)        //packet id
-        .vu(flags)       //flags
+        .vu(0x01) //packet id
+        .vu(flags) //flags
         .vf(reader.vf()) //mousex
         .vf(reader.vf()) //mousey
         .vf(reader.vf()) //movementx
-        .vf(reader.vf());//movementy
+        .vf(reader.vf()); //movementy
 
     return writer.out();
-}
+};
 
 const newNotification = (message, hexcolor = '#000000', time = 5000) => {
     const data = new Uint8Array(512);
