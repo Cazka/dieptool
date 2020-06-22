@@ -12,7 +12,7 @@ let endianSwap = (val) =>
 class Writer {
     constructor() {
         this.length = 0;
-        this.buffer = new Uint8Array(4096);
+        this.buffer = new Uint8Array(65536);
     }
     vu(num) {
         do {
@@ -47,26 +47,15 @@ class Writer {
         return this;
     }
     string(str) {
-        const bytes = new TextEncoder().encode(str);
-
-        const temp = new Uint8Array(this.length + bytes.length + 4096);
-        temp.set(this.out());
-        temp.set(bytes, this.length);
-
-        this.buffer = temp;
-        this.length = temp.length;
-
+        let bytes = new TextEncoder().encode(str);
+        this.buffer.set(bytes, this.length);
+        this.length += bytes.length;
         this.buffer[this.length++] = 0;
         return this;
     }
     array(arr) {
-        const temp = new Uint8Array(this.length + arr.length + 4096);
-        temp.set(this.out());
-        temp.set(arr, this.length);
-
-        this.buffer = temp;
-        this.length = temp.length;
-
+        this.buffer.set(arr, this.length);
+        this.length += arr.byteLength;
         return this;
     }
     out() {

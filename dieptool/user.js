@@ -51,6 +51,8 @@ class User extends EventEmitter {
         this.timeConnected = Date.now();
         this.status;
         this.statusTimeout;
+        this.multibox = false;
+        this.afk = false;
 
         // Flags
         this.welcomeMessageSend = false;
@@ -62,14 +64,12 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = 5;
         this.botname = () => {
-            if (Math.random() <= 0.02) {
+            if (Math.random() <= 0.001) {
                 return this.name ? `DMC ${this.name}` : 'DMC';
             } else {
                 return this.name ? `DT ${this.name}` : 'DT';
             }
         };
-        this.multibox = false;
-        this.afk = false;
 
         // Gameplay
         this.upgradePath = {};
@@ -104,7 +104,8 @@ class User extends EventEmitter {
 
         switch (id) {
             case UPDATE.VERSION:
-                if (data !== process.env.SERVERVERSION) {
+                this.version = data;
+                if (this.version !== process.env.SERVERVERSION) {
                     this.sendNotification(
                         'Please update Diep.io Tool to the newest Version',
                         color.RED,
@@ -112,7 +113,6 @@ class User extends EventEmitter {
                     );
                     this.socket.close();
                 }
-                this.version = data;
                 break;
             case UPDATE.NAME:
                 this.name = data;
@@ -120,23 +120,33 @@ class User extends EventEmitter {
             case UPDATE.WSURL:
                 this.wsURL = data;
                 this.party = undefined;
+                this.bots.forEach((bot) => bot.close());
+
                 try {
                     this.link = DiepSocket.getLink(this.wsURL, this.party);
                 } catch (error) {
                     this.socket.close();
                 }
-                this.bots.forEach((bot) => bot.close());
                 break;
             case UPDATE.PARTY:
                 this.party = data;
-                try {
-                    this.link = DiepSocket.getLink(this.wsURL, this.party);
-                } catch (error) {
-                    this.socket.close();
-                }
                 break;
             case UPDATE.GAMEMODE:
                 this.gamemode = data;
+                if (
+                    ![
+                        'dom',
+                        'ffa',
+                        'tag',
+                        'maze',
+                        'teams',
+                        '4teams',
+                        'sandbox',
+                        'survival',
+                    ].includes(this.gamemode)
+                )
+                    this.socket.close();
+
                 break;
             default:
                 console.error(`UPDATE NOT RECOGNIZED: ${id} with data ${data}`);
