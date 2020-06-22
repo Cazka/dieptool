@@ -47,9 +47,14 @@ class Writer {
         return this;
     }
     string(str) {
-        let bytes = new TextEncoder().encode(str);
-        this.buffer.set(bytes, this.length);
-        this.length += bytes.length;
+        const bytes = new TextEncoder().encode(str);
+        const temp = new Uint8Array(this.length + bytes.length);
+        temp.set(this.out());
+        temp.set(bytes, this.length);
+
+        this.buffer = temp;
+        this.length = temp.length;
+        
         this.buffer[this.length++] = 0;
         return this;
     }
