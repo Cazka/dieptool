@@ -1,7 +1,6 @@
 'use strict';
 
 const Client = require('./client.js');
-//const Admin = require('./admin.js');
 const User = require('./user.js');
 
 const DiepToolManager = (server) => {
@@ -36,6 +35,8 @@ class DiepToolServer {
             () => this.connectionLog.push({ x: Date.now(), y: this.users.size }),
             1000 * 60 * 5
         );
+        // reset connectionLog every 24 hours
+        setInterval(() => (this.connectionLog = []), 1000 * 60 * 60 * 24);
     }
 
     onLoginHandler(client, authToken) {

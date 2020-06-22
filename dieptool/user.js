@@ -146,7 +146,6 @@ class User extends EventEmitter {
                     ].includes(this.gamemode)
                 )
                     this.socket.close();
-
                 break;
             default:
                 console.error(`UPDATE NOT RECOGNIZED: ${id} with data ${data}`);
