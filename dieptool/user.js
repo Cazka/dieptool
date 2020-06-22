@@ -277,24 +277,26 @@ class User extends EventEmitter {
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i] });
         bot.once('accept', () => {
             this.bots.add(bot);
-            //console.log(this.socket.ip + ' joined bots ' + (amount - 1) + ' left to join');
 
             let int = setInterval(() => {
+                // spawn
                 bot.send(2, this.botname(), 0);
+                // upgrade path
                 for (let [key, value] of Object.entries(this.upgradePath)) {
                     bot.sendBinary(new Uint8Array([3, key, value]));
                 }
+                // tank path
                 this.tankPath.forEach((upgrade) => bot.sendBinary(new Uint8Array([4, upgrade])));
             }, 1000);
-
             bot.on('close', () => {
                 clearInterval(int);
                 this.bots.delete(bot);
             });
 
-            this.socket.on('close', () => bot.close());
             if (this.socket.isClosed()) bot.close();
-
+            this.socket.on('close', () => bot.close());
+            if(bot.gamemode !== this.gamemode) bot.close(); // when someone fakes gamemode this will check.
+    
             bot.removeAllListeners('error');
             this.joinBots(--amount, i);
         });
