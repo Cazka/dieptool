@@ -120,6 +120,7 @@ class User extends EventEmitter {
             case UPDATE.WSURL:
                 this.wsURL = data;
                 this.party = undefined;
+                this.gamemode = undefined;
                 this.bots.forEach((bot) => bot.close());
 
                 try {
@@ -129,10 +130,12 @@ class User extends EventEmitter {
                 }
                 break;
             case UPDATE.PARTY:
+                if(this.party) return;
                 this.party = data;
                 this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
+                if(this.gamemode) return;
                 this.gamemode = data;
                 if (
                     ![
@@ -190,7 +193,11 @@ class User extends EventEmitter {
         }
     }
     onClientBoundHandler(data) {
-        switch (data[0]) {
+        /*switch (data[0]) {
+            case 0x02: {
+                this.name = new TextDecoder().decode(data.slice(1, data.length - 1));
+                break;
+            }
             case 0x04: {
                 this.gamemode = new TextDecoder()
                     .decode(data.slice(1, data.length))
@@ -210,7 +217,7 @@ class User extends EventEmitter {
                 this.party = party;
                 break;
             }
-        }
+        }*/
     }
     onCommandHandler(id, data) {
         if (this.rateLimited) {
