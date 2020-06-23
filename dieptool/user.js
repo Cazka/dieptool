@@ -130,6 +130,7 @@ class User extends EventEmitter {
                 break;
             case UPDATE.PARTY:
                 this.party = data;
+                this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
                 this.gamemode = data;
@@ -277,7 +278,6 @@ class User extends EventEmitter {
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i] });
         bot.once('accept', () => {
             this.bots.add(bot);
-
             let int = setInterval(() => {
                 // spawn
                 bot.send(2, this.botname(), 0);
