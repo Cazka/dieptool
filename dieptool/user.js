@@ -132,7 +132,7 @@ class User extends EventEmitter {
             case UPDATE.PARTY:
                 if(this.party) return;
                 this.party = data;
-                this.link = DiepSocket.getLink(this.wsURL, this.party);
+                if(this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
                 if(this.gamemode) return;
