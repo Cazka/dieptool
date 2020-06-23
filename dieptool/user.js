@@ -62,7 +62,7 @@ class User extends EventEmitter {
         // Bots
         this.bots = new Set();
         this.botsjoining = false;
-        this.botsMaximum = 4;
+        this.botsMaximum = 5;
         this.botname = () => {
             if (Math.random() <= 0.001) {
                 return this.name ? `DMC ${this.name}` : 'DMC';

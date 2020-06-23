@@ -12,7 +12,7 @@ let endianSwap = (val) =>
 class Writer {
     constructor() {
         this.length = 0;
-        this.buffer = new Uint8Array(4096);
+        this.buffer = new Uint8Array(64000);
     }
     vu(num) {
         do {
