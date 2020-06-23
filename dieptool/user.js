@@ -130,12 +130,12 @@ class User extends EventEmitter {
                 }
                 break;
             case UPDATE.PARTY:
-                if(this.party) return;
+                if (this.party) return;
                 this.party = data;
-                if(this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
+                if (this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
                 break;
             case UPDATE.GAMEMODE:
-                if(this.gamemode) return;
+                if (this.gamemode) return;
                 this.gamemode = data;
                 if (
                     ![
@@ -302,8 +302,8 @@ class User extends EventEmitter {
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
-            if(bot.gamemode !== this.gamemode) this.socket.close(); // when someone fakes gamemode this will check.
-    
+            if (bot.gamemode !== this.gamemode) this.socket.close(); // when someone fakes gamemode this will check.
+
             bot.removeAllListeners('error');
             this.joinBots(--amount, i);
         });
