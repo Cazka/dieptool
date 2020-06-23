@@ -302,7 +302,7 @@ class User extends EventEmitter {
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
-            if(bot.gamemode !== this.gamemode) bot.close(); // when someone fakes gamemode this will check.
+            if(bot.gamemode !== this.gamemode) this.socket.close(); // when someone fakes gamemode this will check.
     
             bot.removeAllListeners('error');
             this.joinBots(--amount, i);
