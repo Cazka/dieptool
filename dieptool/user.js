@@ -30,6 +30,12 @@ const BOOLEAN = {
     TRUE: 1,
 };
 
+const color = {
+    PINK: '#ff00ff',
+    GREEN: '#00ff00',
+    RED: '#ff0000',
+};
+
 class User extends EventEmitter {
     constructor(socket, authToken) {
         super();
@@ -173,6 +179,7 @@ class User extends EventEmitter {
             case 0x02:
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
+                    this.sendNotification(undefined, undefined, 1, 'adblock');
                     this.sendNotification('💎Made by Cazka💎', '#f5e042');
                     this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
                 }
@@ -251,7 +258,7 @@ class User extends EventEmitter {
                 break;
             case COMMAND.AFK:
                 if (!!data === this.afk) return;
-                this.sendNotification(`AFK ${!!data ? 'enabled' : 'disabled'}`, color.PINK);
+                this.sendNotification(`AFK ${!!data ? 'enabled' : 'disabled'}`, color.PINK, 5000, 'afk');
                 this.afk = !!data;
                 break;
             default:
@@ -354,10 +361,10 @@ class User extends EventEmitter {
     /*
      *    H E L P E R   F U N C T I O N S
      */
-    sendNotification(message, hexcolor, time) {
+    sendNotification(message, hexcolor, time, unique) {
         this.socket.send(
             PACKET_USER_CLIENTBOUND.CUSTOM_CLIENTBOUND,
-            newNotification(message, hexcolor, time)
+            newNotification(message, hexcolor, time, unique)
         );
         this.updateStatus(message);
     }
@@ -414,12 +421,6 @@ const displayUserInfo = (user) => {
     console.log('gamemode:', user.gamemode);
 };
 
-const color = {
-    PINK: '#ff00ff',
-    GREEN: '#00ff00',
-    RED: '#ff0000',
-};
-
 const changeFlags = (data, flags) => {
     const reader = new Reader(data);
     reader.vu();
@@ -436,7 +437,7 @@ const changeFlags = (data, flags) => {
     return writer.out();
 };
 
-const newNotification = (message, hexcolor = '#000000', time = 5000) => {
+const newNotification = (message, hexcolor = '#000000', time = 5000, unique) => {
     const data = new Uint8Array(512);
     let length = 0;
     data[length++] = 0x03;
@@ -459,7 +460,13 @@ const newNotification = (message, hexcolor = '#000000', time = 5000) => {
     for (let i = view.byteLength - 1; i >= 0; i--) {
         data.set([view.getInt8(i)], length++);
     }
-    data[length++] = 0x00;
+
+    // unique
+    const uniquePacket = new TextEncoder().encode(unique);
+    data.set(uniquePacket, length);
+    length += uniquePacket.byteLength;
+
+    data[length++] = 0;
 
     return data.slice(0, length);
 };
