@@ -44,6 +44,9 @@ class DiepToolServer {
             case process.env.ADMINAUTHTOKEN:
                 this.adminManager(client);
                 break;
+            case process.env.MODERATORAUTHTOKEN:
+                this.moderatorManager(client);
+                break;
             case 'user':
                 this.userManager(new User(client, authToken, this.buddies));
                 break;
@@ -56,6 +59,27 @@ class DiepToolServer {
         setInterval(() => {
             admin.send(40, [this.users.size]);
             admin.send(41, [Array.from(this.users).map((user) => user.toDataObject())]);
+        }, 100);
+        admin.send(42, [this.connectionLog]);
+    }
+
+    moderatorManager(admin) {
+        console.log('Moderator connected');
+
+        setInterval(() => {
+            admin.send(40, [this.users.size]);
+            admin.send(41, [
+                Array.from(this.users).map((user) => {
+                    user = user.toDataObject();
+                    return {
+                        name: user.name,
+                        link: user.link,
+                        gamemode: user.gamemode,
+                        time: user.time,
+                        latency: user.latency,
+                    };
+                }),
+            ]);
         }, 100);
         admin.send(42, [this.connectionLog]);
     }
