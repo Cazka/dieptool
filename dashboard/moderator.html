@@ -154,7 +154,7 @@
                 PLAYER_DATA: 41,
                 PLAYER_CHART: 42,
             };
-            const nodeSocket = new WebSocket(`ws://${document.URL.replace(/(^\w+:|^)\/\//, '')}`);
+            const nodeSocket = new WebSocket(`wss://${document.URL.replace(/(^\w+:|^)\/\//, '')}`);
             nodeSocket.binaryType = 'arraybuffer';
             nodeSocket.onopen = onOpen;
             nodeSocket.onerror = () => console.log('error');
