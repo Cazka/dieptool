@@ -239,6 +239,10 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
+                super.once('public sbx', (sbx) => {
+                    if(sbx === this.link) return this.sendNotification('bots free zone 🎯')
+                });
+                super.emit('public sandbox');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
                     return;
