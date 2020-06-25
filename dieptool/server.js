@@ -83,8 +83,6 @@ class DiepToolServer {
         admin.on('close', () => {
             clearInterval(int);
         });
-
-        admin.on('');
     }
 
     moderatorManager(moderator) {
