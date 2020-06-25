@@ -9,6 +9,7 @@ const { Writer, Reader } = require('./coder.js');
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
     ACCEPT: 1,
+    PUBLIC_SANDBOX: 2,
     HEARTBEAT: 8,
     CUSTOM_SERVERBOUND: 9,
     CUSTOM_CLIENTBOUND: 10,
@@ -24,6 +25,7 @@ const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
     AFK: 2,
+    PUBLIC_SANDBOX: 3,
 };
 const BOOLEAN = {
     FALSE: 0,
@@ -258,8 +260,19 @@ class User extends EventEmitter {
                 break;
             case COMMAND.AFK:
                 if (!!data === this.afk) return;
-                this.sendNotification(`AFK ${!!data ? 'enabled' : 'disabled'}`, color.PINK, 5000, 'afk');
+                this.sendNotification(
+                    `AFK ${!!data ? 'enabled' : 'disabled'}`,
+                    color.PINK,
+                    5000,
+                    'afk'
+                );
                 this.afk = !!data;
+                break;
+            case COMMAND.PUBLIC_SANDBOX:
+                super.once('public sbx', (sbx) => {
+                    this.socket.send(PACKET_USER_CLIENTBOUND.PUBLIC_SANDBOX, [sbx]);
+                });
+                super.emit('public sandbox');
                 break;
             default:
                 this.sendNotification(
