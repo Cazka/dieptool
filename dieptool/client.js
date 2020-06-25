@@ -25,6 +25,7 @@ const PACKET_USER_SERVERBOUND = {
 const PACKET_USER_CLIENTBOUND = {
     AUTHTOKEN: 0,
     ACCEPT: 1,
+    PUBLIC_SANDBOX: 2,
     CUSTOM_SERVERBOUND: 9,
     CUSTOM_CLIENTBOUND: 10,
 };
@@ -103,6 +104,9 @@ class Client extends EventEmitter {
                 writer.string(data[0]);
                 break;
             case PACKET_USER_CLIENTBOUND.ACCEPT:
+                break;
+            case PACKET_USER_CLIENTBOUND.PUBLIC_SANDBOX:
+                writer.string(data[0]);
                 break;
             case PACKET_USER_CLIENTBOUND.CUSTOM_CLIENTBOUND:
                 writer.array(data);
