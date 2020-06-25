@@ -50,6 +50,7 @@ class DiepToolServer {
                     sbxBot.move();
                 }, 1000 * 60);
                 this.sbx = sbxBot.link;
+                this.users.forEach((user) => user.emit('public_sandbox', this.sbx));
             });
             sbxBot.on('close', () => {
                 clearInterval(int);
@@ -116,10 +117,6 @@ class DiepToolServer {
             'User connected, waiting for User Information:',
             this.users.size
         );
-
-        user.on('public sandbox', () => {
-            user.emit('public sbx', this.sbx);
-        });
         user.on('close', (reason) => {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);

@@ -82,6 +82,8 @@ class User extends EventEmitter {
         // Gameplay
         this.upgradePath = {};
         this.tankPath = [];
+        this.public_sandbox;
+        super.on('public_sandbox', (sbx) => (this.public_sandbox = sbx));
 
         // AFK
         this.slow = false;
@@ -239,10 +241,8 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
-                super.once('public sbx', (sbx) => {
-                    if(sbx === this.link) return this.sendNotification('bots free zone 🎯')
-                });
-                super.emit('public sandbox');
+                if (this.public_sandbox === this.link)
+                    return this.sendNotification('bots free zone 🎯');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
                     return;
@@ -273,10 +273,7 @@ class User extends EventEmitter {
                 this.afk = !!data;
                 break;
             case COMMAND.PUBLIC_SANDBOX:
-                super.once('public sbx', (sbx) => {
-                    this.socket.send(PACKET_USER_CLIENTBOUND.PUBLIC_SANDBOX, [sbx]);
-                });
-                super.emit('public sandbox');
+                this.socket.send(PACKET_USER_CLIENTBOUND.PUBLIC_SANDBOX, [this.public_sandbox]);
                 break;
             default:
                 this.sendNotification(
