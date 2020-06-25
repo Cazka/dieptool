@@ -2,6 +2,7 @@
 
 const Client = require('./client.js');
 const User = require('./user.js');
+const DiepSocket = require('diepsocket');
 
 const DiepToolManager = (server) => {
     const WebSocket = require('ws');
@@ -12,8 +13,9 @@ const DiepToolManager = (server) => {
 class DiepToolServer {
     constructor(wss) {
         this.users = new Set();
-        this.buddies = new Set();
         this.ips = new Set();
+        this.sbx;
+        this.createSbx();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
@@ -31,12 +33,29 @@ class DiepToolServer {
         });
 
         this.connectionLog = [];
-        setInterval(
-            () => this.connectionLog.push({ x: Date.now(), y: this.users.size }),
-            1000 * 60 * 5
-        );
-        // reset connectionLog every 24 hours
-        setInterval(() => (this.connectionLog = []), 1000 * 60 * 60 * 24);
+        setInterval(() => {
+            this.connectionLog.push({ x: Date.now(), y: this.users.size });
+            // reset connectionLog at midnight
+            if (new Date().getHours() === 0) this.connectionLog = [];
+        }, 1000 * 60 * 5);
+    }
+
+    createSbx() {
+        DiepSocket.findServer('sandbox', 'amsterdam', (link) => {
+            let sbxBot = new DiepSocket(link);
+            let int;
+            sbxBot.on('accept', () => {
+                int = setInterval(() => {
+                    sbxBot.spawn('DT');
+                    sbxBot.move();
+                }, 1000 * 60);
+                this.sbx = sbxBot.link;
+            });
+            sbxBot.on('close', () => {
+                clearInterval(int);
+                this.createSbx();
+            });
+        });
     }
 
     onLoginHandler(client, authToken) {
@@ -48,7 +67,7 @@ class DiepToolServer {
                 this.moderatorManager(client);
                 break;
             case 'user':
-                this.userManager(new User(client, authToken, this.buddies));
+                this.userManager(new User(client, authToken));
                 break;
         }
     }
@@ -56,19 +75,25 @@ class DiepToolServer {
     adminManager(admin) {
         console.log('Admin connected');
 
-        setInterval(() => {
+        admin.send(42, [this.connectionLog]);
+        const int = setInterval(() => {
             admin.send(40, [this.users.size]);
             admin.send(41, [Array.from(this.users).map((user) => user.toDataObject())]);
         }, 100);
-        admin.send(42, [this.connectionLog]);
+        admin.on('close', () => {
+            clearInterval(int);
+        });
+
+        admin.on('');
     }
 
-    moderatorManager(admin) {
+    moderatorManager(moderator) {
         console.log('Moderator connected');
 
-        setInterval(() => {
-            admin.send(40, [this.users.size]);
-            admin.send(41, [
+        moderator.send(42, [this.connectionLog]);
+        const int = setInterval(() => {
+            moderator.send(40, [this.users.size]);
+            moderator.send(41, [
                 Array.from(this.users).map((user) => {
                     user = user.toDataObject();
                     return {
@@ -81,7 +106,9 @@ class DiepToolServer {
                 }),
             ]);
         }, 100);
-        admin.send(42, [this.connectionLog]);
+        moderator.on('close', () => {
+            clearInterval(int);
+        });
     }
 
     userManager(user) {
@@ -92,6 +119,9 @@ class DiepToolServer {
             this.users.size
         );
 
+        user.on('public sandbox', () => {
+            user.emit('public sbx', this.sbx);
+        });
         user.on('close', (reason) => {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);
