@@ -55,11 +55,12 @@ This packet is used to execute commands.
 
 Currently all commands:
 
-| ID   | Description |
-| ---- | ----------- |
-| `00` | Join Bots   |
-| `01` | Multibox    |
-| `02` | AFK         |
+| ID   | Description    |
+| ---- | -------------- |
+| `00` | Join Bots      |
+| `01` | Multibox       |
+| `02` | AFK            |
+| `03` | Public Sandbox |
 
 also:
 
@@ -100,6 +101,7 @@ also:
 | ---- | -------------------------- |
 | `00` | authToken                  |
 | `01` | accept                     |
+| `02` | public sandbox link        |
 | `08` | heartbeat                  |
 | `09` | custom diep.io serverbound |
 | `10` | custom diep.io clientbound |
@@ -119,6 +121,13 @@ to the client, which will be stored in localStorage.
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint8`    | packet id   |
+
+#### `02` public sandbox link
+
+| Offset | Size(s) | Value Type | Description |
+| ------ | ------- | ---------- | ----------- |
+| +0     | 1 byte  | `uint8`    | packet id   |
+| +1     | n bytes | `String`   | sbx link    |
 
 #### `08` heartbeat
 
