@@ -34,8 +34,8 @@ class DiepToolServer {
 
         this.connectionLog = [];
         setInterval(() => {
-            if (new Date().getHours() === 0 && new Date().getMinutes() <=5) this.connectionLog = [];
             this.connectionLog.push({ x: Date.now(), y: this.users.size });
+            if (new Date().getHours() === 0 && new Date().getMinutes() <=5) this.connectionLog = [];
             // reset connectionLog at midnight
         }, 1000 * 60 * 5);
     }
