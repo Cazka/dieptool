@@ -126,6 +126,7 @@ class DiepToolServer {
             user.socket.close();
             this.ips.add(user.socket.ip);
         })
+        user.emit('public_sandbox', this.sbx);
     }
 }
 
