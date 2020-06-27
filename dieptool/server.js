@@ -122,6 +122,10 @@ class DiepToolServer {
             console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);
         });
+        user.on('ban', () => {
+            user.socket.close();
+            this.ips.add(user.socket.ip);
+        })
     }
 }
 
