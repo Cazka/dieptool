@@ -104,5 +104,3 @@ class Reader {
         return this.buffer.slice(this.at);
     }
 }
-
-module.exports = { Reader, Writer };
