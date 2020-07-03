@@ -92,7 +92,7 @@ class DiepToolServer {
             this.users.forEach((user) => {
                 user.sendNotification(message, hexcolor, time, unique);
             });
-        })
+        });
     }
 
     moderatorManager(moderator) {
@@ -133,7 +133,7 @@ class DiepToolServer {
         user.on('ban', () => {
             user.socket.close();
             this.ips.add(user.socket.ip);
-        })
+        });
         user.emit('public_sandbox', this.sbx);
     }
 }
