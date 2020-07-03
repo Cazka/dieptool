@@ -150,6 +150,7 @@
             const PACKET_SERVERBOUND = {
                 LOGIN: 0,
                 HEARTBEAT: 8,
+                NOTIFICATION: 40
             };
             const PACKET_CLIENTBOUND = {
                 HEARTBEAT: 8,
@@ -177,6 +178,11 @@
                     case PACKET_SERVERBOUND.LOGIN:
                         writer.string(data[0]);
                         break;
+                    case PACKET_SERVERBOUND.NOTIFICATION:
+                        writer.string(data[0]);
+                        writer.string(data[1]);
+                        writer.vu(data[2]);
+                        writer.string('admin');
                 }
                 nodeSocket.send(writer.out());
             }
