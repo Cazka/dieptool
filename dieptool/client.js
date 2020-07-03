@@ -32,7 +32,9 @@ const PACKET_USER_CLIENTBOUND = {
 /*
  * A D M I N   P A C K E T S
  */
-const PACKET_ADMIN_SERVERBOUND = {};
+const PACKET_ADMIN_SERVERBOUND = {
+    NOTIFICATION: 40,
+};
 const PACKET_ADMIN_CLIENTBOUND = {
     PLAYER_COUNT: 40,
     PLAYER_DATA: 41,
@@ -89,6 +91,14 @@ class Client extends EventEmitter {
                 break;
             }
             // A D M I N
+            case PACKET_ADMIN_SERVERBOUND.NOTIFICATION: {
+                const message = reader.string();
+                const hexcolor = reader.string();
+                const time = reader.vu();
+                const unique = reader.string();
+                super.emit('notification', message, hexcolor, time, unique);
+                break;
+            }
             default:
                 console.log('not recognized packet: ', data);
                 break;

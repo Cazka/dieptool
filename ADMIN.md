@@ -6,12 +6,14 @@
 
 All Datatypes: `uint8`, `uint16`, `String`
 Strings end with `00`
+
 ### Serverbound Packets
 
-| ID   | Description |
-| ---- | ----------- |
-| `00` | login       |
-| `08` | heartbeat   |
+| ID   | Description  |
+| ---- | ------------ |
+| `00` | login        |
+| `08` | heartbeat    |
+| `40` | notification |
 
 #### `00` login
 
@@ -28,13 +30,23 @@ This packet is used to identify ourself by sending the authToken. The authToken 
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint8`    | packet id   |
 
+#### `40` notification
+
+| Offset | Size(s) | Value Type | Description  |
+| ------ | ------- | ---------- | ------------ |
+| +0     | 1 byte  | `uint8`    | packet id    |
+| +1     | n bytes | `String`   | notification |
+| +x     | n bytes | `String`   | hexcolor     |
+| +x     | n bytes | `var uint` | time         |
+| +x     | n bytes | `String`   | unique       |
+
 ### Clientbound Packets
 
 | ID   | Description  |
 | ---- | ------------ |
 | `08` | heartbeat    |
 | `40` | player count |
-| `41` | player data |
+| `41` | player data  |
 | `42` | player chart |
 
 #### `08` heartbeat

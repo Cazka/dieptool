@@ -71,6 +71,9 @@ class DiepToolServer {
             case 'user':
                 this.userManager(new User(client, authToken));
                 break;
+            default:
+                client.close();
+                break;
         }
     }
 
@@ -85,6 +88,11 @@ class DiepToolServer {
         admin.on('close', () => {
             clearInterval(int);
         });
+        admin.on('notification', (message, hexcolor, time, unique) => {
+            this.users.forEach((user) => {
+                user.sendNotification(message, hexcolor, time, unique);
+            });
+        })
     }
 
     moderatorManager(moderator) {
