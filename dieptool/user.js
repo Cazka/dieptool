@@ -72,11 +72,10 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = 5;
         this.botname = () => {
-            if (Math.random() <= 0.001) {
-                return this.name ? `DMC ${this.name}` : 'DMC';
-            } else {
-                return this.name ? `DT ${this.name}` : 'DT';
+            if (this.name) {
+                return this.name.startsWith('DT ') ? this.name : `DT ${this.name}`;
             }
+            return 'DT';
         };
 
         // Gameplay

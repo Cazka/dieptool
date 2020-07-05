@@ -101,6 +101,7 @@ class Client extends EventEmitter {
             }
             default:
                 console.log('not recognized packet: ', data);
+                this.close();
                 break;
         }
     }

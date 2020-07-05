@@ -53,6 +53,7 @@ class DiepToolServer {
                 this.sbx = sbxBot.link;
                 this.users.forEach((user) => user.emit('public_sandbox', this.sbx));
             });
+            sbxBot.on('error', () => {});
             sbxBot.on('close', () => {
                 clearInterval(int);
                 this.createSbx();
