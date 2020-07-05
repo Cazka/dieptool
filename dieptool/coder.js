@@ -103,6 +103,11 @@ class Reader {
     array() {
         return this.buffer.slice(this.at);
     }
+    flush() {
+        let slice = this.buffer.slice(this.at);
+        this.at += slice.length;
+        return slice;
+    }
 }
 
 module.exports = { Reader, Writer };

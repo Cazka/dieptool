@@ -150,13 +150,17 @@
             const PACKET_SERVERBOUND = {
                 LOGIN: 0,
                 HEARTBEAT: 8,
-                NOTIFICATION: 40
+                COMMAND: 40,
             };
             const PACKET_CLIENTBOUND = {
                 HEARTBEAT: 8,
                 PLAYER_COUNT: 40,
                 PLAYER_DATA: 41,
                 PLAYER_CHART: 42,
+            };
+            const PACKET_COMMANDS = {
+                NOTIFICATION: 0,
+                BAN: 1,
             };
             const nodeSocket = new WebSocket(`wss://${document.URL.replace(/(^\w+:|^)\/\//, '')}`);
             nodeSocket.binaryType = 'arraybuffer';
@@ -178,11 +182,22 @@
                     case PACKET_SERVERBOUND.LOGIN:
                         writer.string(data[0]);
                         break;
-                    case PACKET_SERVERBOUND.NOTIFICATION:
-                        writer.string(data[0]);
-                        writer.string(data[1]);
-                        writer.vu(data[2]);
-                        writer.string('admin');
+                    case PACKET_SERVERBOUND.COMMAND: {
+                        const command_id = data[0];
+                        writer.u8(data[0]);
+                        switch (command_id) {
+                            case PACKET_COMMANDS.NOTIFICATION:
+                                writer.string(data[1]);
+                                writer.string(data[2]);
+                                writer.vu(data[3]);
+                                writer.string('admin');
+                                break;
+                            case PACKET_COMMANDS.BAN:
+                                writer.string(data[1]);
+                                break;
+                        }
+                        break;
+                    }
                 }
                 nodeSocket.send(writer.out());
             }
@@ -204,8 +219,11 @@
                     case PACKET_CLIENTBOUND.PLAYER_COUNT:
                         const count = reader.u16();
 
-                        if (parseInt(count,10) !== parseInt(document.getElementById("activeUsers").innerHTML)) {
-                            chart.data.series[0].push({x: moment().valueOf(), y: count})
+                        if (
+                            parseInt(count, 10) !==
+                            parseInt(document.getElementById('activeUsers').innerHTML)
+                        ) {
+                            chart.data.series[0].push({ x: moment().valueOf(), y: count });
                             chart.update();
                         }
                         document.getElementById('activeUsers').innerHTML = count;

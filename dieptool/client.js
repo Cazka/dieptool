@@ -33,7 +33,11 @@ const PACKET_USER_CLIENTBOUND = {
  * A D M I N   P A C K E T S
  */
 const PACKET_ADMIN_SERVERBOUND = {
-    NOTIFICATION: 40,
+    COMMAND: 40,
+};
+const PACKET_ADMIN_COMMANDS = {
+    NOTIFICATION: 0,
+    BAN: 1,
 };
 const PACKET_ADMIN_CLIENTBOUND = {
     PLAYER_COUNT: 40,
@@ -91,12 +95,27 @@ class Client extends EventEmitter {
                 break;
             }
             // A D M I N
-            case PACKET_ADMIN_SERVERBOUND.NOTIFICATION: {
-                const message = reader.string();
-                const hexcolor = reader.string();
-                const time = reader.vu();
-                const unique = reader.string();
-                super.emit('notification', message, hexcolor, time, unique);
+            case PACKET_ADMIN_SERVERBOUND.COMMAND: {
+                const id = reader.u8();
+
+                switch (id) {
+                    case PACKET_ADMIN_COMMANDS.NOTIFICATION: {
+                        const message = reader.string();
+                        const hexcolor = reader.string();
+                        const time = reader.vu();
+                        const unique = reader.string();
+                        super.emit('command', id, {message, hexcolor, time, unique});
+                        break;
+                    }
+                    case PACKET_ADMIN_COMMANDS.BAN:{
+                        const ip = reader.string();
+                        super.emit('command', id, {ip});
+                        break;
+                    }
+                    default:
+                        console.warn('unrecognized admin command');
+                        break;
+                }
                 break;
             }
             default:

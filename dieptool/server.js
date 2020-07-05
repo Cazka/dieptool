@@ -1,5 +1,10 @@
 'use strict';
 
+const PACKET_ADMIN_COMMANDS = {
+    NOTIFICATION: 0,
+    BAN: 1,
+};
+
 const Client = require('./client.js');
 const User = require('./user.js');
 const DiepSocket = require('diepsocket');
@@ -14,6 +19,7 @@ class DiepToolServer {
     constructor(wss) {
         this.users = new Set();
         this.ips = new Set();
+        this.blacklist = new Set();
         this.sbx;
         this.createSbx();
 
@@ -21,7 +27,7 @@ class DiepToolServer {
             const ip = req.headers['x-forwarded-for']
                 ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
                 : req.connection.remoteAddress;
-            if (this.ips.has(ip)) {
+            if (this.ips.has(ip) || this.blacklist.has(ip)) {
                 ws.close();
                 return;
             }
@@ -89,10 +95,25 @@ class DiepToolServer {
         admin.on('close', () => {
             clearInterval(int);
         });
-        admin.on('notification', (message, hexcolor, time, unique) => {
-            this.users.forEach((user) => {
-                user.sendNotification(message, hexcolor, time, unique);
-            });
+        admin.on('command', (id, data) => {
+            switch (id) {
+                case PACKET_ADMIN_COMMANDS.NOTIFICATION:
+                    this.users.forEach((user) => {
+                        user.sendNotification(data.message, data.hexcolor, data.time, data.unique);
+                    });
+                    break;
+                case PACKET_ADMIN_COMMANDS.BAN: {
+                    const users = Array.from(this.users);
+                    for (let i = 0; i < users.size; i++) {
+                        if(users[i].socket.ip === data.ip){
+                            users[i].ban();
+                            break;
+                        }
+                    }
+                    this.blacklist.add(data.ip);
+                    break;
+                }
+            }
         });
     }
 
@@ -133,7 +154,7 @@ class DiepToolServer {
         });
         user.on('ban', () => {
             user.socket.close();
-            this.ips.add(user.socket.ip);
+            this.blacklist.add(user.socket.ip);
         });
         user.emit('public_sandbox', this.sbx);
     }

@@ -302,12 +302,11 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i] });
+        let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
         bot.once('accept', () => {
             this.bots.add(bot);
             let int = setInterval(() => {
-                // spawn
-                bot.send(2, this.botname(), 0);
+                bot.spawn(this.botname());
                 // upgrade path
                 for (let [key, value] of Object.entries(this.upgradePath)) {
                     bot.sendBinary(new Uint8Array([3, key, value]));
