@@ -108,9 +108,11 @@ class DiepToolServer {
                     break;
                 case PACKET_ADMIN_COMMANDS.BAN: {
                     const users = Array.from(this.users);
-                    for (let i = 0; i < users.size; i++) {
+                    console.log('BANNED', data.ip)
+                    for (let i = 0; i < users.length; i++) {
                         if(users[i].socket.ip === data.ip){
-                            users[i].ban();
+                            console.log('found...........')
+                            users[i].ban('you have been banned');
                             break;
                         }
                     }

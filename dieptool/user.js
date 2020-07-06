@@ -395,9 +395,8 @@ class User extends EventEmitter {
         }
     }
     ban(reason) {
-        this.sendNotification(reason, color.RED, 0);
+        this.sendNotification(reason, color.RED, 10000);
         super.emit('ban', this.socket.ip);
-        this.socket.close();
     }
     toDataObject() {
         return {
