@@ -36,6 +36,7 @@ const color = {
     PINK: '#ff00ff',
     GREEN: '#00ff00',
     RED: '#ff0000',
+    LIGHT_PINK: '#ffcf40',
 };
 
 class User extends EventEmitter {
@@ -314,6 +315,10 @@ class User extends EventEmitter {
                 // tank path
                 this.tankPath.forEach((upgrade) => bot.sendBinary(new Uint8Array([4, upgrade])));
             }, 1000);
+            bot.on('broadcast', (message) => {
+                if(message.startsWith(`You've killed`))
+                    this.sendNotification(message, color.LIGHT_PINK, 6000); 
+            });
             bot.on('close', () => {
                 clearInterval(int);
                 this.bots.delete(bot);
