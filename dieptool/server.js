@@ -49,6 +49,10 @@ class DiepToolServer {
 
     createSbx() {
         DiepSocket.findServer('sandbox', 'amsterdam', (link) => {
+            if(!link){
+                this.createSbx();
+                return;
+            }
             let sbxBot = new DiepSocket(link);
             let int;
             sbxBot.on('accept', () => {
