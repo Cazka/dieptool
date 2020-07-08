@@ -73,7 +73,7 @@ class User extends EventEmitter {
         this.botsMaximum = 5;
         this.botname = () => {
             if (this.name) {
-                return this.name.startsWith('DT ') ? this.name : `DT ${this.name}`;
+                return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
             }
             return 'DT';
         };
