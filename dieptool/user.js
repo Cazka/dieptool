@@ -128,16 +128,16 @@ class User extends EventEmitter {
                 this.name = data;
                 break;
             case UPDATE.WSURL:
-                this.wsURL = data;
                 this.party = undefined;
-                this.gamemode = undefined;
-                this.bots.forEach((bot) => bot.close());
-
                 try {
-                    this.link = DiepSocket.getLink(this.wsURL, this.party);
+                    const link = DiepSocket.getLink(this.wsURL, this.party);
+                    this.link = link;
                 } catch (error) {
                     this.socket.close();
                 }
+                this.wsURL = data;
+                this.gamemode = undefined;
+                this.bots.forEach((bot) => bot.close());
                 break;
             case UPDATE.PARTY:
                 if (this.party) return;
