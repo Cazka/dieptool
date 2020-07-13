@@ -25,9 +25,8 @@ class DiepToolServer {
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
-            ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
-            : req.connection.remoteAddress;
-
+                ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
+                : req.connection.remoteAddress;
             if (this.ips.has(ip) || this.blacklist.has(ip)) {
                 ws.close();
                 return;
@@ -50,7 +49,7 @@ class DiepToolServer {
 
     createSbx() {
         DiepSocket.findServer('sandbox', 'amsterdam', (link) => {
-            if (!link) {
+            if(!link){
                 this.createSbx();
                 return;
             }
@@ -109,7 +108,7 @@ class DiepToolServer {
                     break;
                 case PACKET_ADMIN_COMMANDS.BAN: {
                     const users = Array.from(this.users);
-                    console.log('BANNED', data.ip);
+                    console.log('BANNED', data.ip)
                     for (let i = 0; i < users.length; i++) {
                         if (users[i].socket.ip === data.ip) {
                             users[i].ban('you have been banned');
