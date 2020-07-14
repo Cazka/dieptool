@@ -130,7 +130,7 @@ class User extends EventEmitter {
             case UPDATE.WSURL:
                 this.party = undefined;
                 try {
-                    const link = DiepSocket.getLink(this.wsURL, this.party);
+                    const link = DiepSocket.getLink(data, this.party);
                     this.link = link;
                 } catch (error) {
                     this.socket.close();
