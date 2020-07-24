@@ -241,7 +241,7 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
-                if (this.public_sandbox === this.link)
+                /*if (this.public_sandbox === this.link)
                     return this.sendNotification('bots free zone 🎯');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
@@ -254,6 +254,8 @@ class User extends EventEmitter {
                 this.botsJoining = true;
                 this.joinBots(amount);
                 this.sendNotification(`Joining ${amount} bots`, color.PINK);
+                */
+               this.sendNotification('Currently disabled', color.PINK);
                 break;
             case COMMAND.MULTIBOX:
                 if (this.gamemode === 'sandbox')

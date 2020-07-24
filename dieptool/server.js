@@ -21,7 +21,7 @@ class DiepToolServer {
         this.ips = new Set();
         this.blacklist = new Set();
         this.sbx;
-        this.createSbx();
+        //this.createSbx();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
@@ -31,7 +31,7 @@ class DiepToolServer {
                 ws.close();
                 return;
             }
-            this.ips.add(ip);
+            //this.ips.add(ip);
             ws.on('close', () => this.ips.delete(ip));
             const client = new Client(ws, ip);
             client.once('login', (authToken) => this.onLoginHandler(client, authToken));
