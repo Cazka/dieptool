@@ -11,7 +11,6 @@ const server = require('http').createServer(app);
 
 const diepServer = require('./dieptool/server.js')(server); // run Diep Server
 
-//server.listen(parseInt(process.env.PORT,10) || 3000);
 server.listen(3000, () => {
     console.log('listening on port 3000');
 });
@@ -20,7 +19,7 @@ app.use(express.static('public'));
 app.use(
     '/login',
     rateLimit({
-        windowMs: 1 * 60 * 1000, // 1 hour
+        windowMs: 1 * 60 * 1000, // 1 minute
         max: 5,
     })
 );
@@ -41,8 +40,8 @@ app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
     if (req.session.loggedin){
-        if(req.session.username === 'admin') res.sendFile(__dirname + '/dashboard/admin.html');
-        if(req.session.username === 'moderator') res.sendFile(__dirname + '/dashboard/moderator.html');
+        if(req.session.username === 'admin') res.sendFile(__dirname + '/views/dashboard/admin.html');
+        if(req.session.username === 'moderator') res.sendFile(__dirname + '/views/dashboard/moderator.html');
     }
     else res.sendFile(__dirname + '/views/');
 });
