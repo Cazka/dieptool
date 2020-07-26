@@ -84,14 +84,14 @@ Currently all commands:
 
 | ID   | Description             |
 | ---- | ----------------------- |
-| `00` | authToken               |
+| `00` | authtoken               |
 | `01` | custom-diep-serverbound |
 | `02` | custom-diep-clientbound |
 | `03` | accept                  |
 | `04` | public-sbx-link         |
 | `05` | heartbeat               |
 
-#### `00` authToken
+#### `00` authtoken
 
 If the client uses the standart authToken `'user'`, we will sent a unique authToken
 to the client, which will be stored in localStorage.

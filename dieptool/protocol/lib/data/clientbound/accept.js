@@ -1,6 +1,6 @@
 module.exports = {
-    id: 0x05,
-    type: 'heartbeat',
+    id: 0x03,
+    type: 'accept',
     parser(parser) {
         return {};
     },
