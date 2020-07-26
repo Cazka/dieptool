@@ -70,6 +70,15 @@ class Reader {
         this.assertNotOOB();
         return out;
     }
+    buf() {
+        let out;
+        let length = this.vu();
+        out = this.buffer.slice(this.at, this.at + length);
+        this.at += length;
+        this.assertNotOOB();
+        return out;
+        
+    }
     flush() {
         let slice = this.buffer.slice(this.at);
         this.at += slice.length;
@@ -85,18 +94,17 @@ class Reader {
         }
     }
 
-    debugStringFullBuffer(){
+    debugStringFullBuffer() {
         this.at--;
-        const s = this.buffer.reduce((acc, x,i) => {
+        const s = this.buffer.reduce((acc, x, i) => {
             x = x.toString(16).padStart(2, 0).toUpperCase();
-            if(this.at === i) x = `>${x}`;
-            if(i % 16 === 0) acc = `${acc}\n${x}`;
-            else acc = `${acc} ${x}`
+            if (this.at === i) x = `>${x}`;
+            if (i % 16 === 0) acc = `${acc}\n${x}`;
+            else acc = `${acc} ${x}`;
             return acc;
         }, '');
         return s.trim();
     }
-
 }
 class Writer {
     constructor() {
@@ -154,9 +162,11 @@ class Writer {
         this.buffer[this.length++] = 0;
         return this;
     }
-    buffer(buf) {
+    buf(buf) {
+        const length = buf.byteLength;
+        this.vu(length);
         this.buffer.set(buf, this.length);
-        this.length += buf.byteLength;
+        this.length += length;
         return this;
     }
     out() {

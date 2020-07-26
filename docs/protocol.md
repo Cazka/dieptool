@@ -4,147 +4,132 @@
 
 ### Serverbound Packets
 
-| ID   | Description                |
-| ---- | -------------------------- |
-| `00` | authentication             |
-| `01` | update                     |
-| `02` | multibox                   |
-| `03` | afk                        |
-| `04` | join bots                  |
-| `05` | heartbeat                  |
-| `06` | diep.io serverbound packet |
-| `07` | diep.io clientbound packet |
+| ID   | Description      |
+| ---- | ---------------- |
+| `00` | initial          |
+| `01` | diep-serverbound |
+| `02` | diep-clientbound |
+| `03` | update           |
+| `04` | command          |
+| `05` | heartbeat        |
 
-#### `00` login
+#### `00` intitial
 
-This packet is used to identify ourself by sending the authToken. The authToken is stored in the webbrowsers localStorage. When the localStroge is missing the authToken, the standart `'user'` token will be sent.
+This packet is used whenever we start a connection. it has the client's version number and the users authtoken.
 
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-| +1     | n bytes | `String`   | authToken   |
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 1     | `string`   | version     |
+| 2     | `string`   | authToken   |
 
-#### `01` update
+#### `01` diep-serverbound
+
+| index | Value Type | Description        |
+| ----- | ---------- | ------------------ |
+| 0     | `vu`       | packet id          |
+| 1     | `buffer`   | serverbound packet |
+
+#### `02` diep-clientbound
+
+| index | Value Type | Description        |
+| ----- | ---------- | ------------------ |
+| 0     | `vu`       | packet id          |
+| 1     | `buffer`   | clientbound packet |
+
+#### `03` update
 
 This packet is used to update user information.
 A user information contains an update-ID followed by the information.
 
 Currently all user information:
 
-| ID   | Description   |
-| ---- | ------------- |
-| `00` | version       |
-| `01` | name          |
-| `02` | WebSocket URL |
-| `03` | party code    |
-| `04` | gamemode      |
+| ID   | Description |
+| ---- | ----------- |
+| `00` | party link  |
+| `01` | name        |
+| `02` | gamemode    |
 
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-| +1     | 1 byte  | `uint8`    | update id   |
-| +2     | n bytes | `String`   | data        |
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 1     | `vu`       | update id   |
+| 2     | `string`   | update data |
 
-#### `02` command
+#### `04` command
 
 This packet is used to execute commands.
 
 Currently all commands:
 
-| ID   | Description    |
-| ---- | -------------- |
-| `00` | Join Bots      |
-| `01` | Multibox       |
-| `02` | AFK            |
-| `03` | Public Sandbox |
+| ID   | Description | Data           |
+| ---- | ----------- | -------------- |
+| `00` | Join Bots   | amount of bots |
+| `01` | Multibox    | on/off         |
+| `02` | AFK         | on/off         |
 
-also:
+| index | Value Type | Description  |
+| ----- | ---------- | ------------ |
+| 0     | `vu`       | packet id    |
+| 1     | `vu`       | command id   |
+| 2     | `vu`       | command data |
 
-| ID   | Boolean |
-| ---- | ------- |
-| `00` | FALSE   |
-| `01` | TRUE    |
+#### `05` heartbeat
 
-| Offset | Size(s) | Value Type          | Description                         |
-| ------ | ------- | ------------------- | ----------------------------------- |
-| +0     | 1 byte  | `uint8`             | packet id                           |
-| +1     | 1 byte  | `uint8`             | command id                          |
-| +2     | n bytes | `uint8` \| `String` | data Datatype depends on command id |
-
-#### `08` heartbeat
-
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-
-#### `09` diep.io serverbound
-
-| Offset | Size(s) | Value Type   | Description        |
-| ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint8`      | packet id          |
-| +1     | n bytes | `Uint8Array` | serverbound packet |
-
-#### `10` diep.io clientbound
-
-| Offset | Size(s) | Value Type   | Description        |
-| ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint8`      | packet id          |
-| +1     | n bytes | `Uint8Array` | clientbound packet |
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
 
 ### Clientbound Packets
 
-| ID   | Description                |
-| ---- | -------------------------- |
-| `00` | authToken                  |
-| `01` | accept                     |
-| `02` | public sandbox link        |
-| `08` | heartbeat                  |
-| `09` | custom diep.io serverbound |
-| `10` | custom diep.io clientbound |
+| ID   | Description             |
+| ---- | ----------------------- |
+| `00` | authToken               |
+| `01` | custom-diep-serverbound |
+| `02` | custom-diep-clientbound |
+| `03` | accept                  |
+| `04` | public-sbx-link         |
+| `05` | heartbeat               |
 
 #### `00` authToken
 
 If the client uses the standart authToken `'user'`, we will sent a unique authToken
 to the client, which will be stored in localStorage.
 
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 1     | `string`   | authToken   |
+
+#### `01` custom-diep-serverbound
+
+| index | Value Type | Description        |
+| ----- | ---------- | ------------------ |
+| 0     | `vu`       | packet id          |
+| 1     | `buffer`   | serverbound packet |
+
+#### `02` custom-diep-clientbound
+
+| index | Value Type | Description        |
+| ----- | ---------- | ------------------ |
+| 0     | `vu`       | packet id          |
+| 1     | `buffer`   | clientbound packet |
+
+#### `03` accept
+
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+
+#### `04` public sandbox link
+
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 1     | `string`   | sbx link    |
+
+#### `05` heartbeat
+
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint8`    | packet id   |
-| +1     | n bytes | `String`   | authToken   |
-
-#### `01` accept
-
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-
-#### `02` public sandbox link
-
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-| +1     | n bytes | `String`   | sbx link    |
-
-#### `08` heartbeat
-
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
-
-#### `09` custom diep.io serverbound
-
-to display custom notifications and more...
-
-| Offset | Size(s) | Value Type   | Description        |
-| ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint8`      | packet id          |
-| +1     | n bytes | `Uint8Array` | serverbound packet |
-
-#### `10` custom diep.io serverbound
-
-to send movement packets and more...
-
-| Offset | Size(s) | Value Type   | Description        |
-| ------ | ------- | ------------ | ------------------ |
-| +0     | 1 byte  | `uint8`      | packet id          |
-| +1     | n bytes | `Uint8Array` | clientbound packet |
