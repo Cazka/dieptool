@@ -12,6 +12,7 @@
 | `03` | update           |
 | `04` | command          |
 | `05` | heartbeat        |
+| `06` | pow-result       |
 
 #### `00` intitial
 
@@ -80,6 +81,14 @@ Currently all commands:
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
 
+#### `06` pow-result
+
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 0     | `vu`       | pow id      |
+| 0     | `string`   | result      |
+
 ### Clientbound Packets
 
 | ID   | Description             |
@@ -90,6 +99,7 @@ Currently all commands:
 | `03` | accept                  |
 | `04` | public-sbx-link         |
 | `05` | heartbeat               |
+| `06` | pow-request             |
 
 #### `00` authtoken
 
@@ -133,3 +143,11 @@ to the client, which will be stored in localStorage.
 | Offset | Size(s) | Value Type | Description |
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint8`    | packet id   |
+
+#### `06` pow-request
+
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 0     | `vu`       | pow id      |
+| 0     | `string`   | prefix      |
