@@ -140,14 +140,15 @@ to the client, which will be stored in localStorage.
 
 #### `05` heartbeat
 
-| Offset | Size(s) | Value Type | Description |
-| ------ | ------- | ---------- | ----------- |
-| +0     | 1 byte  | `uint8`    | packet id   |
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
 
 #### `06` pow_request
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
-| 0     | `vu`       | pow id      |
-| 0     | `string`   | prefix      |
+| 1     | `vu`       | pow id      |
+| 2     | `vu`       | difficulty  |
+| 3     | `string`   | prefix      |
