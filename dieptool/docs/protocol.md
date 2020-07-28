@@ -7,8 +7,8 @@
 | ID   | Description      |
 | ---- | ---------------- |
 | `00` | initial          |
-| `01` | diep-serverbound |
-| `02` | diep-clientbound |
+| `01` | diep_serverbound |
+| `02` | diep_clientbound |
 | `03` | update           |
 | `04` | command          |
 | `05` | heartbeat        |
@@ -24,14 +24,14 @@ This packet is used whenever we start a connection. it has the client's version 
 | 1     | `string`   | version     |
 | 2     | `string`   | authToken   |
 
-#### `01` diep-serverbound
+#### `01` diep_serverbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
 | 1     | `buffer`   | serverbound packet |
 
-#### `02` diep-clientbound
+#### `02` diep_clientbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
@@ -81,7 +81,7 @@ Currently all commands:
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
 
-#### `06` pow-result
+#### `06` pow_result
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
@@ -94,12 +94,12 @@ Currently all commands:
 | ID   | Description             |
 | ---- | ----------------------- |
 | `00` | authtoken               |
-| `01` | custom-diep-serverbound |
-| `02` | custom-diep-clientbound |
+| `01` | custom_diep_serverbound |
+| `02` | custom_diep_clientbound |
 | `03` | accept                  |
-| `04` | public-sbx-link         |
+| `04` | public_sbx_link         |
 | `05` | heartbeat               |
-| `06` | pow-request             |
+| `06` | pow_request             |
 
 #### `00` authtoken
 
@@ -111,14 +111,14 @@ to the client, which will be stored in localStorage.
 | 0     | `vu`       | packet id   |
 | 1     | `string`   | authToken   |
 
-#### `01` custom-diep-serverbound
+#### `01` custom_diep_serverbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
 | 1     | `buffer`   | serverbound packet |
 
-#### `02` custom-diep-clientbound
+#### `02` custom_diep_clientbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
@@ -144,7 +144,7 @@ to the client, which will be stored in localStorage.
 | ------ | ------- | ---------- | ----------- |
 | +0     | 1 byte  | `uint8`    | packet id   |
 
-#### `06` pow-request
+#### `06` pow_request
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
