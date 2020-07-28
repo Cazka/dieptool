@@ -2,34 +2,20 @@
 
 const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
+const DiepParser = DiepSocket.Parser;
+const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
-const ipv6pool = fs.readFileSync('./dieptool/ipv6').toString('utf-8').split('\n');
-const { Writer, Reader } = require('./coder.js');
+const ipv6pool = fs.readFileSync('./ipv6').toString('utf-8').split('\n');
 
-const PACKET_USER_CLIENTBOUND = {
-    AUTHTOKEN: 0,
-    ACCEPT: 1,
-    PUBLIC_SANDBOX: 2,
-    HEARTBEAT: 8,
-    CUSTOM_SERVERBOUND: 9,
-    CUSTOM_CLIENTBOUND: 10,
-};
 const UPDATE = {
-    VERSION: 0,
+    SERVER_PARTY: 0,
     NAME: 1,
-    WSURL: 2,
-    PARTY: 3,
-    GAMEMODE: 4,
+    GAMEMODE: 2,
 };
 const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
     AFK: 2,
-    PUBLIC_SANDBOX: 3,
-};
-const BOOLEAN = {
-    FALSE: 0,
-    TRUE: 1,
 };
 
 const color = {
@@ -49,11 +35,7 @@ class User extends EventEmitter {
         // User information
         this.authToken = authToken;
         this.link;
-
-        this.version;
         this.name;
-        this.wsURL;
-        this.party;
         this.gamemode;
 
         // Status
@@ -73,17 +55,15 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = 5;
         this.botname = () => {
-            if (this.name) {
-                return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
-            }
-            return 'DT';
+            if (!this.name) return 'DT';
+            return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
 
         // Gameplay
         this.upgradePath = {};
         this.tankPath = [];
         this.public_sandbox;
-        super.on('public_sandbox', (sbx) => (this.public_sandbox = sbx));
+        super.on('public-sbx-link', (link) => (this.public_sandbox = link));
 
         // AFK
         this.slow = false;
@@ -93,60 +73,46 @@ class User extends EventEmitter {
         this.mouseYFixed;
 
         // Initialize
-        this.socket.send(PACKET_USER_CLIENTBOUND.ACCEPT);
+        this.socket.send('accept');
 
         this.socket.on('close', (reason) => {
             super.emit('close', reason);
         });
 
-        this.socket.on('latency', (latency) => (this.latency = latency));
-        this.socket.on('update', (id, data) => this.onUpdateHandler(id, data));
-        this.socket.on('command', (id, data) => this.onCommandHandler(id, data));
+        this.socket.on('diep-serverbound', (content) => this.ondiep_serverbound(content));
+        this.socket.on('diep-clientbound', (content) => this.ondiep_clientbound(content));
 
-        this.socket.on('serverbound', (data) => this.onServerBoundHandler(data));
-        this.socket.on('clientbound', (data) => this.onClientBoundHandler(data));
+        this.socket.on('latency', (latency) => (this.latency = latency));
+        this.socket.on('update', (content) => this.onupdate(content));
+        this.socket.on('command', (content) => this.oncommand(content));
     }
     /*
      *    E V E N T   H A N D L E R S
      */
-    onUpdateHandler(id, data) {
-        console.log(`${this.socket.ip} received update id: ${id} -> ${data}`);
+    onupdate({ id, value }) {
+        console.log(`${this.socket.ip} received update id: ${id} -> ${value}`);
 
         switch (id) {
-            case UPDATE.VERSION:
-                this.version = data;
-                if (this.version !== process.env.SERVERVERSION) {
-                    this.sendNotification(
-                        'Please update Diep.io Tool to the newest Version',
-                        color.RED,
-                        0
+            case UPDATE.SERVER_PARTY:
+                const [server, party] = value?.split(':');
+                try {
+                    this.link = DiepSocket.getLink(server, party);
+                } catch (error) {
+                    console.log(
+                        `${this.socket.ip} couldn't update link: ${server},${party}\n${error}`
                     );
                     this.socket.close();
+                    return;
                 }
-                break;
-            case UPDATE.NAME:
-                this.name = data;
-                break;
-            case UPDATE.WSURL:
-                this.party = undefined;
-                try {
-                    const link = DiepSocket.getLink(data, this.party);
-                    this.link = link;
-                } catch (error) {
-                    this.socket.close();
-                }
-                this.wsURL = data;
                 this.gamemode = undefined;
                 this.bots.forEach((bot) => bot.close());
                 break;
-            case UPDATE.PARTY:
-                if (this.party) return;
-                this.party = data;
-                if (this.wsURL) this.link = DiepSocket.getLink(this.wsURL, this.party);
+            case UPDATE.NAME:
+                this.name = value;
                 break;
             case UPDATE.GAMEMODE:
                 if (this.gamemode) return;
-                this.gamemode = data;
+                this.gamemode = value;
                 if (
                     ![
                         'dom',
@@ -168,16 +134,16 @@ class User extends EventEmitter {
                 break;
         }
     }
-    onServerBoundHandler(data) {
-        switch (data[0]) {
+    ondiep_serverbound({ buffer }) {
+        switch (buffer[0]) {
             case 0x01:
-                this.updatePosition(data);
+                this.updatePosition(buffer);
                 if (this.multibox && this.gamemode != 'sandbox') {
                     this.bots.forEach((bot) => bot.sendBinary(data));
                 }
                 if (this.afk) {
                     data = this.stayAFK(data);
-                    this.socket.send(PACKET_USER_CLIENTBOUND.CUSTOM_SERVERBOUND, data);
+                    this.socket.send('custom-diep-serverbound', data);
                 }
                 break;
             case 0x02:
@@ -230,7 +196,7 @@ class User extends EventEmitter {
             }
         }*/
     }
-    onCommandHandler(id, data) {
+    oncommand(id, data) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED);
             return;
@@ -241,7 +207,7 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
-                /*if (this.public_sandbox === this.link)
+                if (this.public_sandbox === this.link)
                     return this.sendNotification('bots free zone 🎯');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
@@ -254,8 +220,6 @@ class User extends EventEmitter {
                 this.botsJoining = true;
                 this.joinBots(amount);
                 this.sendNotification(`Joining ${amount} bots`, color.PINK);
-                */
-               this.sendNotification('Currently disabled', color.PINK);
                 break;
             case COMMAND.MULTIBOX:
                 if (this.gamemode === 'sandbox')
@@ -273,9 +237,6 @@ class User extends EventEmitter {
                     'afk'
                 );
                 this.afk = !!data;
-                break;
-            case COMMAND.PUBLIC_SANDBOX:
-                this.socket.send(PACKET_USER_CLIENTBOUND.PUBLIC_SANDBOX, [this.public_sandbox]);
                 break;
             default:
                 this.sendNotification(
@@ -317,14 +278,17 @@ class User extends EventEmitter {
                 // tank path
                 this.tankPath.forEach((upgrade) => bot.sendBinary(new Uint8Array([4, upgrade])));
             }, 1000);
-            bot.on('broadcast', (message) => {
-                if(message.startsWith(`You've killed`))
-                    this.sendNotification(message, color.LIGHT_PINK, 6000); 
+            bot.on('message', (message) => {
+                if (message.startsWith(`You've killed`))
+                    this.sendNotification(message, color.LIGHT_PINK, 6000);
             });
             bot.on('close', () => {
                 clearInterval(int);
                 this.bots.delete(bot);
             });
+            bot.on('pow-request', () => {
+                this.socket.send('pow-request');
+            })
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());

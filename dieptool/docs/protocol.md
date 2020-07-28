@@ -45,11 +45,11 @@ A user information contains an update-ID followed by the information.
 
 Currently all user information:
 
-| ID   | Description |
-| ---- | ----------- |
-| `00` | party link  |
-| `01` | name        |
-| `02` | gamemode    |
+| ID   | Description  |
+| ---- | ------------ |
+| `00` | server:party |
+| `01` | name         |
+| `02` | gamemode     |
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |

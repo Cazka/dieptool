@@ -1,6 +1,6 @@
 module.exports = {
     id: 0x01,
-    type: 'diep-clientbound',
+    type: 'diep_serverbound',
     parser(parser) {
         const buffer = parser.buf();
         return {

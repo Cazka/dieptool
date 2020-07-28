@@ -1,9 +1,11 @@
 module.exports = {
     id: 0x01,
-    type: 'custom-diep-serverbound',
+    type: 'diep_clientbound',
     parser(parser) {
         const buffer = parser.buf();
-        return { buffer };
+        return {
+            buffer,
+        };
     },
     builder(builder) {
         const { buffer } = builder._packet.content;

@@ -1,6 +1,6 @@
 module.exports = {
     id: 0x06,
-    type: 'pow-request',
+    type: 'pow_request',
     parser(parser) {
         const id = parser.vu();
         const prefix = parser.string();

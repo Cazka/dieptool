@@ -1,6 +1,6 @@
 module.exports = {
     id: 0x00,
-    type: 'public-sbx',
+    type: 'public_sbx',
     parser(parser) {
         const link = parser.string();
         return { link };

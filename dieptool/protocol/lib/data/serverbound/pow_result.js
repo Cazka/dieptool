@@ -1,6 +1,6 @@
 module.exports = {
     id: 0x06,
-    type: 'pow-result',
+    type: 'pow_result',
     parser(parser) {
         const id = parser.vu();
         const result = parser.string();
