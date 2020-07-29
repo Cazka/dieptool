@@ -16,7 +16,7 @@ module.exports = {
         builder.vu(this.id);
         builder.vu(id);
         builder.vu(difficulty);
-        builder.vu(prefix);
+        builder.string(prefix);
         return builder.out();
     },
 };
