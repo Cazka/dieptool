@@ -52,6 +52,7 @@ class User extends EventEmitter {
 
         // Bots
         this.bots = new Set();
+        this.botCounter = 0;
         this.botsjoining = false;
         this.botsMaximum = 5;
         this.botname = () => {
@@ -85,6 +86,7 @@ class User extends EventEmitter {
         this.socket.on('latency', (latency) => (this.latency = latency));
         this.socket.on('update', (content) => this.onupdate(content));
         this.socket.on('command', (content) => this.oncommand(content));
+        this.socket.on('pow_result', (content) => this.onpow_result(content));
     }
     /*
      *    E V E N T   H A N D L E R S
@@ -267,6 +269,7 @@ class User extends EventEmitter {
         }
         // initialize bot
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
+        bot.id = this.botCounter++;
         bot.once('accept', () => {
             this.bots.add(bot);
             let int = setInterval(() => {
@@ -286,9 +289,6 @@ class User extends EventEmitter {
                 clearInterval(int);
                 this.bots.delete(bot);
             });
-            bot.on('pow-request', () => {
-                this.socket.send('pow-request');
-            })
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
@@ -297,10 +297,17 @@ class User extends EventEmitter {
             bot.removeAllListeners('error');
             this.joinBots(--amount, i);
         });
+        bot.on('pow_request', (content) => {
+            this.socket.send('pow_request', { id: bot.id, ...content });
+        });
         bot.once('error', () => {
             bot.removeAllListeners('accept');
             this.joinBots(amount, ++i);
         });
+    }
+    onpow_result({ id, result }) {
+        const bot = Array.from(this.bots).find((bot) => bot.id === id);
+        if (bot) bot.send('pow_result', { result });
     }
     /*
      *    A F K
@@ -345,20 +352,18 @@ class User extends EventEmitter {
      *    H E L P E R   F U N C T I O N S
      */
     sendNotification(message, hexcolor, time, unique) {
-        this.socket.send(
-            PACKET_USER_CLIENTBOUND.CUSTOM_CLIENTBOUND,
-            newNotification(message, hexcolor, time, unique)
-        );
+        const color = hexcolor.startsWith('#')
+            ? parseInt(hexcolor.slice(1), 16)
+            : parseInt(hexcolor, 16);
+        const packet = new DiepBuilder('message', { message, color, time, unique }).clientbound();
+        this.socket.send('custom_diep_clientbound', packet);
         this.updateStatus(message);
     }
     updatePosition(data) {
-        const reader = new Reader(data);
-        // skip packet id and flags
-        reader.vu();
-        reader.vu();
+        const packet = new DiepParser(data).serverbound().content;
 
-        this.mouseX = reader.vf();
-        this.mouseY = reader.vf();
+        this.mouseX = packet.mouseX;
+        this.mouseY = packet.mouseY;
 
         if (!this.afk) {
             this.mouseXFixed = this.mouseX;
@@ -404,53 +409,15 @@ const displayUserInfo = (user) => {
 };
 
 const changeFlags = (data, flags) => {
-    const reader = new Reader(data);
-    reader.vu();
-    flags |= reader.vu();
+    const parsed = new DiepParser(data).serverbound().content;
 
-    const writer = new Writer()
-        .vu(0x01) //packet id
-        .vu(flags) //flags
-        .vf(reader.vf()) //mousex
-        .vf(reader.vf()) //mousey
-        .vf(reader.vf()) //movementx
-        .vf(reader.vf()); //movementy
+    flags |= parsed.flags;
 
-    return writer.out();
-};
-
-const newNotification = (message, hexcolor = '#000000', time = 5000, unique) => {
-    const data = new Uint8Array(512);
-    let length = 0;
-    data[length++] = 0x03;
-
-    // message
-    const messagePacket = new TextEncoder().encode(message);
-    data.set(messagePacket, length);
-    length += messagePacket.byteLength;
-    data[length++] = 0x00;
-
-    // color
-    for (let i = hexcolor.length - 2; i >= 0; i -= 2) {
-        data.set([parseInt(hexcolor.charAt(i) + hexcolor.charAt(i + 1), 16)], length++);
-    }
-    data[length++] = 0x00;
-
-    // time
-    const view = new DataView(new ArrayBuffer(4));
-    view.setFloat32(0, time);
-    for (let i = view.byteLength - 1; i >= 0; i--) {
-        data.set([view.getInt8(i)], length++);
-    }
-
-    // unique
-    const uniquePacket = new TextEncoder().encode(unique);
-    data.set(uniquePacket, length);
-    length += uniquePacket.byteLength;
-
-    data[length++] = 0;
-
-    return data.slice(0, length);
+    const packet = new DiepBuilder({type: 'input', content:{
+        parsed,
+        flags
+    }}).serverbound();
+    return packet;
 };
 
 module.exports = User;
