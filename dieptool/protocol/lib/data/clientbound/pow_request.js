@@ -10,9 +10,10 @@ module.exports = {
         };
     },
     build(builder) {
-        const { id, prefix } = builder._packet.content;
+        const { id, difficulty, prefix } = builder._packet.content;
         builder.vu(this.id);
         builder.vu(id);
+        builder.vu(difficulty);
         builder.vu(prefix);
         return builder.out();
     },
