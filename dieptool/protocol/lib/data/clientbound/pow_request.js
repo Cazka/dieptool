@@ -3,9 +3,11 @@ module.exports = {
     type: 'pow_request',
     parse(parser) {
         const id = parser.vu();
+        const difficulty = parser.vu();
         const prefix = parser.string();
         return {
             id,
+            difficulty,
             prefix,
         };
     },
