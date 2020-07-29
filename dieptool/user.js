@@ -88,8 +88,8 @@ class User extends EventEmitter {
         
         this.socket.send('accept');
 
-        this.socket.on('diep-serverbound', (content) => this.ondiep_serverbound(content));
-        this.socket.on('diep-clientbound', (content) => this.ondiep_clientbound(content));
+        this.socket.on('diep_serverbound', (content) => this.ondiep_serverbound(content));
+        this.socket.on('diep_clientbound', (content) => this.ondiep_clientbound(content));
 
         this.socket.on('latency', (latency) => (this.latency = latency));
         this.socket.on('update', (content) => this.onupdate(content));
@@ -149,11 +149,11 @@ class User extends EventEmitter {
             case 0x01:
                 this.updatePosition(buffer);
                 if (this.multibox && this.gamemode != 'sandbox') {
-                    this.bots.forEach((bot) => bot.sendBinary(data));
+                    this.bots.forEach((bot) => bot.sendBinary(buffer));
                 }
                 if (this.afk) {
-                    data = this.stayAFK(data);
-                    this.socket.send('custom-diep-serverbound', data);
+                    buffer = this.stayAFK(buffer);
+                    this.socket.send('custom_diep_serverbound', buffer);
                 }
                 break;
             case 0x02:
@@ -168,18 +168,18 @@ class User extends EventEmitter {
                 this.tankPath = [];
                 break;
             case 0x03:
-                const category = data[1];
-                const points = data[2];
+                const category = buffer[1];
+                const points = buffer[2];
                 if (!this.upgradePath[category]) this.upgradePath[category] = 0;
                 if (points === 1) this.upgradePath[category] += 2;
                 else this.upgradePath[category] = points;
                 break;
             case 0x04:
-                this.tankPath.push(data[1]);
+                this.tankPath.push(buffer[1]);
                 break;
         }
     }
-    onClientBoundHandler(data) {
+    ondiep_clientbound(data) {
         /*switch (data[0]) {
             case 0x02: {
                 this.name = new TextDecoder().decode(data.slice(1, data.length - 1));
@@ -206,7 +206,7 @@ class User extends EventEmitter {
             }
         }*/
     }
-    oncommand({id, data}) {
+    oncommand({id, value}) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED);
             return;
@@ -226,7 +226,7 @@ class User extends EventEmitter {
                 if (this.botsJoining) return;
                 if (!this.link) return;
 
-                const amount = data;
+                const amount = value;
                 this.botsJoining = true;
                 this.joinBots(amount);
                 this.sendNotification(`Joining ${amount} bots`, color.PINK);
@@ -234,19 +234,19 @@ class User extends EventEmitter {
             case COMMAND.MULTIBOX:
                 if (this.gamemode === 'sandbox')
                     return this.sendNotification('disabled in sandbox 🎈');
-                if (!!data === this.multibox) return;
-                this.sendNotification(`Multiboxing ${!!data ? 'enabled' : 'disabled'}`, color.PINK);
-                this.multibox = !!data;
+                if (!!value === this.multibox) return;
+                this.sendNotification(`Multiboxing ${!!value ? 'enabled' : 'disabled'}`, color.PINK);
+                this.multibox = !!value;
                 break;
             case COMMAND.AFK:
-                if (!!data === this.afk) return;
+                if (!!value === this.afk) return;
                 this.sendNotification(
-                    `AFK ${!!data ? 'enabled' : 'disabled'}`,
+                    `AFK ${!!value ? 'enabled' : 'disabled'}`,
                     color.PINK,
                     5000,
                     'afk'
                 );
-                this.afk = !!data;
+                this.afk = !!value;
                 break;
             default:
                 this.sendNotification(
@@ -277,9 +277,9 @@ class User extends EventEmitter {
         }
         // initialize bot
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
+        this.bots.add(bot);
         bot.id = this.botCounter++;
         bot.once('accept', () => {
-            this.bots.add(bot);
             let int = setInterval(() => {
                 bot.spawn(this.botname());
                 // upgrade path
@@ -289,7 +289,7 @@ class User extends EventEmitter {
                 // tank path
                 this.tankPath.forEach((upgrade) => bot.sendBinary(new Uint8Array([4, upgrade])));
             }, 1000);
-            bot.on('message', (message) => {
+            bot.on('message', ({message}) => {
                 if (message.startsWith(`You've killed`))
                     this.sendNotification(message, color.LIGHT_PINK, 6000);
             });
@@ -305,12 +305,13 @@ class User extends EventEmitter {
             bot.removeAllListeners('error');
             this.joinBots(--amount, i);
         });
-        bot.on('pow_request', (content) => {
-            this.socket.send('pow_request', { id: bot.id, ...content });
+        bot.on('pow_request', ({difficulty, prefix}) => {
+            this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
         });
         bot.once('error', () => {
             bot.removeAllListeners('accept');
             this.joinBots(amount, ++i);
+            this.bots.delete(bot);
         });
     }
     onpow_result({ id, result }) {
@@ -359,7 +360,7 @@ class User extends EventEmitter {
     /*
      *    H E L P E R   F U N C T I O N S
      */
-    sendNotification(message, hexcolor, time, unique) {
+    sendNotification(message, hexcolor = '0', time = 5000, unique = '') {
         const color = hexcolor.startsWith('#')
             ? parseInt(hexcolor.slice(1), 16)
             : parseInt(hexcolor, 16);

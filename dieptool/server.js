@@ -31,9 +31,6 @@ class DiepToolServer {
                 ws.close();
                 return;
             }
-            if(ip !== '2a02:908:1987:a7c0:95f1:c2e9:1722:129d'){
-                return;
-            }
             //this.ips.add(ip);
             ws.on('close', () => this.ips.delete(ip));
             const client = new Client(ws, ip);
