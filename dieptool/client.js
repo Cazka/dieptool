@@ -21,7 +21,6 @@ class Client extends EventEmitter {
             packet = new Parser(data).serverbound();
         } catch (error) {
             this.close();
-            console.log(error);
             return;
         }
 
