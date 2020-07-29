@@ -26,13 +26,14 @@ const color = {
 };
 
 class User extends EventEmitter {
-    constructor(socket, authToken) {
+    constructor(socket, {version, authToken}) {
         super();
         // Socket information
         this.socket = socket;
         this.latency = 0;
 
         // User information
+        this.version = version;
         this.authToken = authToken;
         this.link;
         this.name;
@@ -74,11 +75,18 @@ class User extends EventEmitter {
         this.mouseYFixed;
 
         // Initialize
-        this.socket.send('accept');
-
         this.socket.on('close', (reason) => {
             super.emit('close', reason);
         });
+
+        if(version !== process.env.CLIENT_VERSION){
+            this.sendNotification('Please update DiepTool!', color.RED, 60000, 'outdated');
+            this.socket.close();
+            return;
+        }
+        
+        
+        this.socket.send('accept');
 
         this.socket.on('diep-serverbound', (content) => this.ondiep_serverbound(content));
         this.socket.on('diep-clientbound', (content) => this.ondiep_clientbound(content));
@@ -198,7 +206,7 @@ class User extends EventEmitter {
             }
         }*/
     }
-    oncommand(id, data) {
+    oncommand({id, data}) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED);
             return;
@@ -355,8 +363,9 @@ class User extends EventEmitter {
         const color = hexcolor.startsWith('#')
             ? parseInt(hexcolor.slice(1), 16)
             : parseInt(hexcolor, 16);
-        const packet = new DiepBuilder('message', { message, color, time, unique }).clientbound();
-        this.socket.send('custom_diep_clientbound', packet);
+        const packet = new DiepBuilder({type:'message', content: {message, color, time, unique }}).clientbound();
+
+        this.socket.send('custom_diep_clientbound', {buffer: packet});
         this.updateStatus(message);
     }
     updatePosition(data) {

@@ -21,7 +21,7 @@ class DiepToolServer {
         this.ips = new Set();
         this.blacklist = new Set();
         this.sbx;
-        //this.createSbx();
+        this.createSbx();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
@@ -31,10 +31,13 @@ class DiepToolServer {
                 ws.close();
                 return;
             }
+            if(ip !== '2a02:908:1987:a7c0:95f1:c2e9:1722:129d'){
+                return;
+            }
             //this.ips.add(ip);
             ws.on('close', () => this.ips.delete(ip));
             const client = new Client(ws, ip);
-            client.once('login', (authToken) => this.onLoginHandler(client, authToken));
+            client.once('initial', (content) => this.onLoginHandler(client, content));
             client.on('error', (err) => {});
         });
 
@@ -71,8 +74,8 @@ class DiepToolServer {
         });
     }
 
-    onLoginHandler(client, authToken) {
-        switch (authToken) {
+    onLoginHandler(client, content) {
+        switch (content.authToken) {
             case process.env.ADMINAUTHTOKEN:
                 this.adminManager(client);
                 break;
@@ -80,7 +83,7 @@ class DiepToolServer {
                 this.moderatorManager(client);
                 break;
             case 'user':
-                this.userManager(new User(client, authToken));
+                this.userManager(new User(client, content));
                 break;
             default:
                 client.close();
@@ -154,8 +157,8 @@ class DiepToolServer {
             this.users.size
         );
         user.on('close', (reason) => {
-            console.log(user.socket.ip, 'User disconnected reason: ', reason);
             this.users.delete(user);
+            console.log(user.socket.ip, 'User disconnected');
         });
         user.on('ban', () => {
             user.socket.close();

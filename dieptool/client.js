@@ -20,10 +20,11 @@ class Client extends EventEmitter {
         try {
             packet = new Parser(data).serverbound();
         } catch (error) {
+            console.log(error);
             this.close();
             return;
         }
-
+        
         if (packet.type === 'heartbeat') {
             const now = Date.now();
             super.emit('latency', now - this.lastPing);
