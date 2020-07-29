@@ -89,7 +89,6 @@ class Reader {
     }
     assertNotOOB() {
         if (this.at > this.buffer.byteLength) {
-            console.log(this.debugStringFullBuffer());
             throw new Error(`Error at ${this.at}: Out of Bounce.\n${this.debugStringFullBuffer()}`);
         }
     }

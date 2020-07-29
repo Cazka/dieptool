@@ -4,7 +4,6 @@ const assert = require('assert').strict;
 
 const { Reader } = require('./coder');
 const { CLIENTBOUND, SERVERBOUND } = require('./data/data');
-const { cachedDataVersionTag } = require('v8');
 
 /**
  * Class: This is Parser, it is used to parse packets.
