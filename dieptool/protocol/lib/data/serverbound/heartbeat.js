@@ -1,10 +1,10 @@
 module.exports = {
     id: 0x05,
     type: 'heartbeat',
-    parser(parser) {
+    parse(parser) {
         return {};
     },
-    builder(builder) {
+    build(builder) {
         builder.vu(this.id);
         return builder.out();
     },

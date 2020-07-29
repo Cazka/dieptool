@@ -1,13 +1,13 @@
 module.exports = {
-    id: 0x01,
+    id: 0x02,
     type: 'diep_clientbound',
-    parser(parser) {
+    parse(parser) {
         const buffer = parser.buf();
         return {
             buffer,
         };
     },
-    builder(builder) {
+    build(builder) {
         const { buffer } = builder._packet.content;
         builder.vu(this.id);
         builder.buf(buffer);

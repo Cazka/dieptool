@@ -1,7 +1,7 @@
 module.exports = {
     id: 0x03,
     type: 'update',
-    parser(parser) {
+    parse(parser) {
         const id = parser.vu();
         const value = parser.string();
         return {
@@ -9,7 +9,7 @@ module.exports = {
             value,
         };
     },
-    builder(builder) {
+    build(builder) {
         const { id, value } = builder._packet.content;
         builder.vu(this.id);
         builder.vu(id);

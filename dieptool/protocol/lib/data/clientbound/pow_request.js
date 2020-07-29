@@ -1,7 +1,7 @@
 module.exports = {
     id: 0x06,
     type: 'pow_request',
-    parser(parser) {
+    parse(parser) {
         const id = parser.vu();
         const prefix = parser.string();
         return {
@@ -9,7 +9,7 @@ module.exports = {
             prefix,
         };
     },
-    builder(builder) {
+    build(builder) {
         const { id, prefix } = builder._packet.content;
         builder.vu(this.id);
         builder.vu(id);

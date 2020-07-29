@@ -1,10 +1,10 @@
 module.exports = {
     id: 0x03,
     type: 'accept',
-    parser(parser) {
+    parse(parser) {
         return {};
     },
-    builder(builder) {
+    build(builder) {
         builder.vu(this.id);
         return builder.out();
     },

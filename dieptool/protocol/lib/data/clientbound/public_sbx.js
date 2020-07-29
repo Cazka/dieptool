@@ -1,11 +1,11 @@
 module.exports = {
-    id: 0x00,
+    id: 0x04,
     type: 'public_sbx',
-    parser(parser) {
+    parse(parser) {
         const link = parser.string();
         return { link };
     },
-    builder(builder) {
+    build(builder) {
         const { link } = builder._packet.content;
         builder.vu(this.id);
         builder.string(link);

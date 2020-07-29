@@ -1,7 +1,7 @@
 module.exports = {
     id: 0x00,
     type: 'initial',
-    parser(parser) {
+    parse(parser) {
         const version = parser.string();
         const authToken = parser.string();
         return {
@@ -9,7 +9,7 @@ module.exports = {
             authToken,
         };
     },
-    builder(builder) {
+    build(builder) {
         const { version, authToken } = builder._packet.content;
         builder.vu(this.id);
         builder.string(version);

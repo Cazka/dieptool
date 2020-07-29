@@ -5,7 +5,7 @@ const DiepSocket = require('diepsocket');
 const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
-const ipv6pool = fs.readFileSync('./ipv6').toString('utf-8').split('\n');
+const ipv6pool = fs.readFileSync(__dirname +'/ipv6').toString('utf-8').split('\n');
 
 const UPDATE = {
     SERVER_PARTY: 0,

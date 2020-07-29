@@ -1,7 +1,7 @@
 module.exports = {
     id: 0x06,
     type: 'pow_result',
-    parser(parser) {
+    parse(parser) {
         const id = parser.vu();
         const result = parser.string();
         return {
@@ -9,7 +9,7 @@ module.exports = {
             result,
         };
     },
-    builder(builder) {
+    build(builder) {
         const { id, result } = builder._packet.content;
         builder.vu(this.id);
         builder.vu(id);
