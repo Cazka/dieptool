@@ -370,7 +370,13 @@ class User extends EventEmitter {
         this.updateStatus(message);
     }
     updatePosition(data) {
-        const packet = new DiepParser(data).serverbound().content;
+        let packet;
+        try {
+            packet = new DiepParser(data).serverbound().content;
+        } catch (error) {
+            this.socket.close();
+            return;
+        }
 
         this.mouseX = packet.mouseX;
         this.mouseY = packet.mouseY;
@@ -419,7 +425,12 @@ const displayUserInfo = (user) => {
 };
 
 const changeFlags = (data, flags) => {
-    const parsed = new DiepParser(data).serverbound().content;
+    let parsed;
+    try {
+        parsed = new DiepParser(data).serverbound().content;
+    } catch (error) {
+        return data;
+    }
 
     flags |= parsed.flags;
 
