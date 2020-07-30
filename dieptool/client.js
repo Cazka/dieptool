@@ -10,17 +10,17 @@ class Client extends EventEmitter {
         this.ip = ip;
         this.lastPing = Date.now();
 
-        this.socket.on('message', (data) => this.onMessage(data));
+        this.socket.on('message', (data) => this.onmessage(data));
         this.socket.on('close', () => super.emit('close'));
         this.socket.on('error', (err) => super.emit('error', err));
     }
 
-    onMessage(data) {
+    onmessage(data) {
         let packet;
         try {
             packet = new Parser(data).serverbound();
         } catch (error) {
-            console.log(error);
+            console.log(`${this.ip} sent unparsable message:\n${error}`);
             this.close();
             return;
         }
