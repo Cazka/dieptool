@@ -20,7 +20,6 @@ class DiepToolServer {
         this.users = new Set();
         this.ips = new Set();
         this.blacklist = new Set();
-        this.sbx;
         this.createSbx();
 
         wss.on('connection', (ws, req) => {
@@ -31,7 +30,7 @@ class DiepToolServer {
                 ws.close();
                 return;
             }
-            //this.ips.add(ip);
+            this.ips.add(ip);
             ws.on('close', () => this.ips.delete(ip));
             const client = new Client(ws, ip);
             client.once('initial', (content) => this.onLoginHandler(client, content));
@@ -48,23 +47,24 @@ class DiepToolServer {
     }
 
     createSbx() {
-        DiepSocket.findServer('sandbox', 'amsterdam', (link) => {
-            if(!link){
+        DiepSocket.findServer('sandbox', '', (link) => {
+            if (!link) {
                 this.createSbx();
                 return;
             }
-            let sbxBot = new DiepSocket(link);
+            const bot = new DiepSocket(link);
             let int;
-            sbxBot.on('accept', () => {
+            bot.on('accept', () => {
+                this.public_sbx = bot.link;
                 int = setInterval(() => {
-                    sbxBot.spawn('DT');
-                    sbxBot.move();
+                    bot.spawn('DT');
+                    bot.move();
                 }, 1000 * 60);
-                this.sbx = sbxBot.link;
-                this.users.forEach((user) => user.emit('public_sandbox', this.sbx));
+                this.users.forEach((user) => user.emit('public_sbx', this.public_sbx));
+                setTimeout(() => bot.close(), 60 * 60 * 1000);
             });
-            sbxBot.on('error', () => {});
-            sbxBot.on('close', () => {
+            bot.on('error', () => {});
+            bot.on('close', () => {
                 clearInterval(int);
                 this.createSbx();
             });
@@ -80,7 +80,7 @@ class DiepToolServer {
                 this.moderatorManager(client);
                 break;
             case 'user':
-                this.userManager(new User(client, content));
+                this.userManager(new User(client, content.version, content.authToken));
                 break;
             default:
                 client.close();
@@ -108,7 +108,7 @@ class DiepToolServer {
                     break;
                 case PACKET_ADMIN_COMMANDS.BAN: {
                     const users = Array.from(this.users);
-                    console.log('BANNED', data.ip)
+                    console.log('BANNED', data.ip);
                     for (let i = 0; i < users.length; i++) {
                         if (users[i].socket.ip === data.ip) {
                             users[i].ban('you have been banned');
@@ -155,13 +155,13 @@ class DiepToolServer {
         );
         user.on('close', (reason) => {
             this.users.delete(user);
-            console.log(user.socket.ip, 'User disconnected');
+            console.log(user.socket.ip, 'User disconnected reason:', reason);
         });
         user.on('ban', () => {
             user.socket.close();
             this.blacklist.add(user.socket.ip);
         });
-        user.emit('public_sandbox', this.sbx);
+        user.emit('public_sbx', this.public_sbx);
     }
 }
 
