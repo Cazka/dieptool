@@ -14,5 +14,6 @@ module.exports = {
         builder.vu(this.id);
         builder.vu(id);
         builder.vu(value);
+        return builder.out();
     },
 };
