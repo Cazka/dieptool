@@ -11,7 +11,7 @@ class Client extends EventEmitter {
         this.lastPing = Date.now();
 
         this.socket.on('message', (data) => this.onmessage(data));
-        this.socket.on('close', () => super.emit('close'));
+        this.socket.on('close', (reason) => super.emit('close', reason));
         this.socket.on('error', (err) => super.emit('error', err));
     }
 
