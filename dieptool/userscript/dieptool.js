@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      3.0.9
+// @version      4.0.0
 // @author       Cazka#9552
 // @namespace    *://diep.io/
 // @match        *://diep.io/
@@ -13,55 +13,35 @@
 /*
  * E N U M S   A N D   C O N S T A N T S
  */
-const PACKET_SERVERBOUND = {
-    LOGIN: 0,
-    UPDATE: 1,
-    COMMAND: 2,
-    HEARTBEAT: 8,
-    SERVERBOUND: 9,
-    CLIENTBOUND: 10,
-};
-const PACKET_CLIENTBOUND = {
-    AUTHTOKEN: 0,
-    ACCEPT: 1,
-    HEARTBEAT: 8,
-    CUSTOM_SERVERBOUND: 9,
-    CUSTOM_CLIENTBOUND: 10,
-};
 const UPDATE = {
-    VERSION: 0,
+    SERVER_PARTY: 0,
     NAME: 1,
-    WSURL: 2,
-    PARTY: 3,
-    GAMEMODE: 4,
+    GAMEMODE: 2,
 };
 const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
     AFK: 2,
 };
-const BOOLEAN = {
-    FALSE: 0,
-    TRUE: 1,
-};
+
 const JOIN_BOTS_AMOUNT = 5;
-const NODESOCKET_URL = 'wss://8cc8acf75480.eu.ngrok.io';
+
+const BACKUP_URL = 'wss://122ff169fb75.eu.ngrok.io/';
+const REAL_URL = 'wss://dieptool-bycazka.me/';
+let NODESOCKET_URL = REAL_URL;
 
 /*
  *    G L O B A L   V A R I A B L E S
  */
 const globalUserInfo = {
-    [UPDATE.VERSION]: GM_info.script.version,
     [UPDATE.NAME]: UTF8ToString(window.localStorage.name),
-    [UPDATE.WSURL]: null,
-    [UPDATE.PARTY]: null,
+    [UPDATE.SERVER_PARTY]: '',
     [UPDATE.GAMEMODE]: window.localStorage.gamemode,
 };
-let globalAuthToken = window.localStorage.DTTOKEN || 'user';
 let globalWebSocket;
 let globalReadyToInitialize = false;
 let globalSendBlocked = false;
-
+if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
  */
@@ -118,6 +98,7 @@ let guiBtnLatency;
 let guiBtnJoinBots;
 let guiBtnMultibox;
 let guiBtnAfk;
+let guiBtnSbx;
 let guiBtnUpdate;
 
 let multiboxing = false;
@@ -140,11 +121,12 @@ guiBtnLatency = addButton('Not connected', null, onBtnLatency, guiHeader);
 guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
 guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
 guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
+guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
 guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
 
 // Enable keyboard shortcuts
 document.addEventListener('keydown', (event) => {
-    if (!document.getElementById('textInput').disabled) return;
+    if (document.getElementById('textInputContainer').style['display'] === 'block') return;
     guiButtons.forEach((button) => {
         if (button.keyCode === event.code) button.onclick();
     });
@@ -169,7 +151,13 @@ function addButton(text, keyCode, onclick, parent) {
 let failedConnections = 0;
 let nodeSocket = openSocket();
 function openSocket() {
+    if (failedConnections > 10 && NODESOCKET_URL !== BACKUP_URL) {
+        console.log('using backup url');
+        NODESOCKET_URL = BACKUP_URL;
+        failedConnections = 0;
+    }
     if (failedConnections > 10) {
+        failedConnections = 0;
         guiBtnLatency.innerHTML = 'please try again later!';
         return;
     }
@@ -190,31 +178,37 @@ function updateLatency(latency) {
     guiBtnLatency.innerHTML = `${latency} ms DiepTool`;
 }
 function onBtnLatency() {
+    if (isClosed()) nodeSocket = openSocket();
     if (guiBody.style.display === 'block') disableGUI();
     else enableGUI();
 }
 function onBtnJoinBots() {
-    nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.JOIN_BOTS, JOIN_BOTS_AMOUNT]);
+    nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, data: JOIN_BOTS_AMOUNT });
 }
 function onBtnMultibox() {
     multiboxing = !multiboxing;
     if (multiboxing) {
         guiBtnMultibox.innerHTML = 'Disable Multiboxing';
-        nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.MULTIBOX, BOOLEAN.TRUE]);
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, data: 1 });
     } else {
         guiBtnMultibox.innerHTML = 'Enable Multiboxing';
-        nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.MULTIBOX, BOOLEAN.FALSE]);
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, data: 0 });
     }
 }
 function onBtnAfk() {
     afk = !afk;
     if (afk) {
+        globalSendBlocked = true;
         guiBtnAfk.innerHTML = 'Disable AFK';
-        nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.AFK, BOOLEAN.TRUE]);
+        nodeSocket_send('command', { id: COMMAND.AFK, data: 1 });
     } else {
+        globalSendBlocked = false;
         guiBtnAfk.innerHTML = 'Enable AFK';
-        nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.AFK, BOOLEAN.FALSE]);
+        nodeSocket_send('command', { id: COMMAND.AFK, data: 0 });
     }
+}
+function onBtnSbx() {
+    nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.PUBLIC_SANDBOX]);
 }
 function onBtnUpdate() {
     if (updateOpenTab) {
@@ -237,30 +231,29 @@ function onBtnUpdate() {
 const wsInstances = new Set();
 window.WebSocket.prototype._send = window.WebSocket.prototype.send;
 window.WebSocket.prototype.send = function (data) {
-    this._send(data);
     if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-        nodeSocket_emit(PACKET_SERVERBOUND.SERVERBOUND, data);
+        if (!(globalSendBlocked && data[0] === 1 && !isClosed())) this._send(data);
+        nodeSocket_send('diep_serverbound', { data });
 
         if (!wsInstances.has(this)) {
             wsInstances.add(this);
             globalWebSocket = this;
-            update(UPDATE.WSURL, this.url);
+            update(UPDATE.SERVER_PARTY, { url: this.url });
 
             this._onmessage = this.onmessage;
             this.onmessage = function (event) {
                 this._onmessage(event);
                 const data = new Uint8Array(event.data);
-                nodeSocket_emit(PACKET_SERVERBOUND.CLIENTBOUND, data);
+                nodeSocket_send('diep_clientbound', { data });
 
                 if (data[0] === 4) update(UPDATE.GAMEMODE, data);
-                else if (data[0] === 6) update(UPDATE.PARTY, data);
+                else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
                 else if (data[0] === 10) globalReadyToInitialize = true;
             };
         }
         if (data[0] === 2) update(UPDATE.NAME, data);
-    }
+    } else this._send(data);
 };
-
 /*
  *    H E L P E R   F U N C T I O N S
  */
@@ -270,20 +263,25 @@ function update(type, data) {
             let name = new TextDecoder().decode(data.slice(1, data.length - 1));
             return name;
         },
-        [UPDATE.WSURL](url) {
-            return url;
-        },
-        [UPDATE.PARTY](data) {
-            let party = '';
-            for (let i = 1; i < data.byteLength; i++) {
-                let byte = data[i].toString(16).split('');
-                if (byte.length === 1) {
-                    party += byte[0] + '0';
-                } else {
-                    party += byte[1] + byte[0];
-                }
+        [UPDATE.SERVER_PARTY]({ url, party }) {
+            let [userURL, userParty] = globalUserInfo[UPDATE.SERVER_PARTY].split(':');
+            if (url) {
+                userURL = url.match(/(?<=wss:\/\/).[0-9a-z]{3}(?=.s.m28n.net\/)/)[0];
+                userParty = '';
             }
-            return party;
+            if (party) {
+                let p = '';
+                for (let i = 1; i < party.byteLength; i++) {
+                    let byte = party[i].toString(16).split('');
+                    if (byte.length === 1) {
+                        p += byte[0] + '0';
+                    } else {
+                        p += byte[1] + byte[0];
+                    }
+                }
+                userParty = p;
+            }
+            return `${userURL}:${userParty}`;
         },
         [UPDATE.GAMEMODE](data) {
             let gamemode = new TextDecoder().decode(data.slice(1, data.length)).split('\u0000')[0];
@@ -291,33 +289,63 @@ function update(type, data) {
         },
     };
     globalUserInfo[type] = updates[type](data);
-    nodeSocket_emit(PACKET_SERVERBOUND.UPDATE, [type, globalUserInfo[type]]);
+    nodeSocket_send('update', { id: type, data: globalUserInfo[type] });
 }
-function nodeSocket_emit(id, data = []) {
+function nodeSocket_send(type, content) {
     if (isClosed()) return;
+    const writer = new Writer();
 
-    const writer = new Writer().u8(id);
-    switch (id) {
-        case PACKET_SERVERBOUND.LOGIN:
-            writer.string(data[0]);
+    switch (type) {
+        case 'initial': {
+            const { version, authToken } = content;
+            writer.vu(0);
+            writer.string(version);
+            writer.string(authToken);
             break;
-        case PACKET_SERVERBOUND.UPDATE:
-            writer.u8(data[0]);
-            writer.string(data[1]);
+        }
+        case 'diep_serverbound': {
+            const { data } = content;
+            writer.vu(1);
+            writer.buf(data);
             break;
-        case PACKET_SERVERBOUND.COMMAND:
-            writer.u8(data[0]);
-            writer.u8(data[1]);
+        }
+        case 'diep_clientbound': {
+            const { data } = content;
+            writer.vu(2);
+            writer.buf(data);
             break;
-        case PACKET_SERVERBOUND.SERVERBOUND:
-            writer.array(data);
+        }
+        case 'update': {
+            const { id, data } = content;
+            writer.vu(3);
+            writer.vu(id);
+            writer.string(data);
             break;
-        case PACKET_SERVERBOUND.CLIENTBOUND:
-            writer.array(data);
+        }
+        case 'command': {
+            const { id, data } = content;
+            writer.vu(4);
+            writer.vu(id);
+            writer.vu(data);
             break;
+        }
+        case 'heartbeat': {
+            writer.vu(5);
+            break;
+        }
+        case 'pow_result': {
+            const { id, result } = content;
+            writer.vu(6);
+            writer.vu(id);
+            writer.string(result);
+            break;
+        }
+        default:
+            console.error('unrecognized packet type:', type);
     }
     nodeSocket.send(writer.out());
 }
+
 function isClosed() {
     if (nodeSocket) return nodeSocket.readyState !== WebSocket.OPEN;
     return true;
@@ -328,7 +356,7 @@ function enableGUI() {
 function disableGUI() {
     guiBody.style.display = 'none';
 }
-function UTF8ToString(utf8) {
+function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
             .split('')
@@ -338,12 +366,24 @@ function UTF8ToString(utf8) {
 }
 
 /*
+ *    F R E E Z E   M O U S E
+ */
+const canvas = document.getElementById('canvas');
+canvas._onmousemove = canvas.onmousemove;
+canvas.onmousemove = function (e) {
+    if (!globalSendBlocked) this._onmousemove(e);
+};
+
+/*
  *    N O D E S O C K E T   E V E N T H A N D L E R
  */
 function onOpenHandler() {
     console.log('connected to node.js Server');
-    nodeSocket_emit(PACKET_SERVERBOUND.LOGIN, [globalAuthToken]);
-    nodeSocket_emit(PACKET_SERVERBOUND.HEARTBEAT);
+    nodeSocket_send('heartbeat');
+    nodeSocket_send('initial', {
+        version: GM_info.script.version,
+        authToken: window.localStorage.DTTOKEN,
+    });
     nodeSocket.lastPing = Date.now();
     failedConnections = 0;
 }
@@ -353,32 +393,60 @@ function onAcceptHandler() {
             clearInterval(int);
 
             for (let [key, value] of Object.entries(globalUserInfo)) {
-                nodeSocket_emit(PACKET_SERVERBOUND.UPDATE, [key, value]);
+                nodeSocket_send('update', { id: key, data: value });
             }
         }
     });
 }
 function onMessageHandler(event) {
     const reader = new Reader(event.data);
-    switch (reader.u8()) {
-        case PACKET_CLIENTBOUND.AUTHTOKEN:
-            window.localStorage.DTTOKEN = reader.string();
-            globalAuthToken = window.localStorage.DTTOKEN;
+    switch (reader.vu()) {
+        case 0: {
+            const authToken = reader.string();
+
+            window.localStorage.DTTOKEN = authToken;
             break;
-        case PACKET_CLIENTBOUND.ACCEPT:
+        }
+        case 1: {
+            const buffer = reader.buf();
+            globalWebSocket._send(buffer);
+            break;
+        }
+        case 2: {
+            const buffer = reader.buf();
+
+            globalWebSocket._onmessage({ data: buffer });
+            break;
+        }
+        case 3: {
             onAcceptHandler();
             break;
-        case PACKET_CLIENTBOUND.HEARTBEAT:
+        }
+        case 4: {
+            const link = reader.string();
+
+            window.location.href = link;
+            if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
+                globalWebSocket.close();
+            else window.location.reload();
+            setTimeout(() => (window.location.hash = ''), 1000);
+            break;
+        }
+        case 5: {
             updateLatency(Date.now() - nodeSocket.lastPing);
-            nodeSocket_emit(PACKET_SERVERBOUND.HEARTBEAT);
+            nodeSocket_send('heartbeat');
             nodeSocket.lastPing = Date.now();
             break;
-        case PACKET_CLIENTBOUND.CUSTOM_SERVERBOUND:
-            globalWebSocket._send(reader.array());
+        }
+        case 6: {
+            const id = reader.vu();
+            const difficulty = reader.vu();
+            const prefix = reader.string();
+            unsafeWindow.m28.pow.solve(prefix, difficulty, (result) => {
+                nodeSocket_send('pow_result', { id, result });
+            });
             break;
-        case PACKET_CLIENTBOUND.CUSTOM_CLIENTBOUND:
-            globalWebSocket._onmessage({ data: reader.array() });
-            break;
+        }
     }
 }
 function onDisconnectHandler(event) {
@@ -390,10 +458,116 @@ function onDisconnectHandler(event) {
 /*
  * H E L P E R   C L A S S
  */
+/*
+ * This is from @cx88 with little modifications made by me.
+ * https://github.com/cx88/diepssect/blob/master/diep-bot/coder.js
+ */
+('use strict');
+
 const convo = new ArrayBuffer(4);
 const u8 = new Uint8Array(convo);
 const u16 = new Uint16Array(convo);
+const u32 = new Uint32Array(convo);
+const float = new Float32Array(convo);
 
+let endianSwap = (val) =>
+    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+
+class Reader {
+    constructor(content) {
+        this.at = 0;
+        this.buffer = new Uint8Array(content);
+    }
+    u8() {
+        const out = this.buffer[this.at++];
+        this.assertNotOOB();
+        return out;
+    }
+    u16() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 2)));
+        this.assertNotOOB();
+        return u16[0];
+    }
+    u32() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 4)));
+        this.assertNotOOB();
+        return u32[0];
+    }
+    float() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 4)));
+        this.assertNotOOB();
+        return float[0];
+    }
+    vu() {
+        let out = 0;
+        let at = 0;
+        while (this.buffer[this.at] & 0x80) {
+            out |= (this.buffer[this.at++] & 0x7f) << at;
+            at += 7;
+        }
+        out |= this.buffer[this.at++] << at;
+        this.assertNotOOB();
+        return out;
+    }
+    vi() {
+        let out = this.vu();
+        let sign = out & 1;
+        out >>= 1;
+        if (sign) out = ~out;
+        this.assertNotOOB();
+        return out;
+    }
+    vf() {
+        u32[0] = endianSwap(this.vi());
+        this.assertNotOOB();
+        return float[0];
+    }
+    string() {
+        let out;
+        let at = this.at;
+        while (this.buffer[this.at]) this.at++;
+        out = new TextDecoder().decode(this.buffer.subarray(at, this.at++));
+        this.assertNotOOB();
+        return out;
+    }
+    buf() {
+        let out;
+        let length = this.vu();
+        out = this.buffer.slice(this.at, this.at + length);
+        this.at += length;
+        this.assertNotOOB();
+        return out;
+    }
+    flush() {
+        let slice = this.buffer.slice(this.at);
+        this.at += slice.length;
+        return slice;
+    }
+    isEOF() {
+        return this.at === this.buffer.byteLength;
+    }
+    assertNotOOB() {
+        if (this.at > this.buffer.byteLength) {
+            throw new Error(
+                `${this.debugStringFullBuffer()}\nError at ${
+                    this.at
+                }: Out of Bounce.\n${this.debugStringFullBuffer()}`
+            );
+        }
+    }
+
+    debugStringFullBuffer() {
+        this.at--;
+        const s = this.buffer.reduce((acc, x, i) => {
+            x = x.toString(16).padStart(2, 0).toUpperCase();
+            if (this.at === i) x = `>${x}`;
+            if (i % 16 === 0) acc = `${acc}\n${x}`;
+            else acc = `${acc} ${x}`;
+            return acc;
+        }, '');
+        return s.trim();
+    }
+}
 class Writer {
     constructor() {
         this.length = 0;
@@ -410,6 +584,39 @@ class Writer {
         this.length += 2;
         return this;
     }
+    u32(num) {
+        u32[0] = num;
+        this.buffer.set(u8, this.length);
+        this.length += 4;
+        return this;
+    }
+    float(num) {
+        float[0] = num;
+        this.buffer.set(u8, this.length);
+        this.length += 4;
+        return this;
+    }
+    vu(num) {
+        do {
+            let part = num;
+            num >>>= 7;
+            if (num) part |= 0x80;
+            this.buffer[this.length++] = part;
+        } while (num);
+        return this;
+    }
+    vi(num) {
+        let sign = (num & 0x80000000) >>> 31;
+        if (sign) num = ~num;
+        let part = (num << 1) | sign;
+        this.vu(part);
+        return this;
+    }
+    vf(num) {
+        float[0] = num;
+        this.vi(endianSwap(u32[0]));
+        return this;
+    }
     string(str) {
         let bytes = new TextEncoder().encode(str);
         this.buffer.set(bytes, this.length);
@@ -417,33 +624,19 @@ class Writer {
         this.buffer[this.length++] = 0;
         return this;
     }
-    array(arr) {
-        this.buffer.set(arr, this.length);
-        this.length += arr.byteLength;
+    buf(buf) {
+        const length = buf.byteLength;
+        this.vu(length);
+        this.buffer.set(buf, this.length);
+        this.length += length;
         return this;
     }
     out() {
         return this.buffer.slice(0, this.length);
     }
-}
-class Reader {
-    constructor(content) {
-        this.at = 0;
-        this.buffer = new Uint8Array(content);
-    }
-    u8() {
-        return this.buffer[this.at++];
-    }
-    u16() {
-        u8.set(this.buffer.subarray(this.at, (this.at += 2)));
-        return u16[0];
-    }
-    string() {
-        let at = this.at;
-        while (this.buffer[this.at]) this.at++;
-        return new TextDecoder().decode(this.buffer.subarray(at, this.at++));
-    }
-    array() {
-        return this.buffer.slice(this.at);
+    dump() {
+        return Array.from(this.buffer.subarray(0, this.length))
+            .map((r) => r.toString(16).padStart(2, 0))
+            .join(' ');
     }
 }
