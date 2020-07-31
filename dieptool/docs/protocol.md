@@ -55,7 +55,7 @@ Currently all user information:
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
 | 1     | `vu`       | update id   |
-| 2     | `string`   | update data |
+| 2     | `string`   | update value |
 
 #### `04` command
 
@@ -73,7 +73,7 @@ Currently all commands:
 | ----- | ---------- | ------------ |
 | 0     | `vu`       | packet id    |
 | 1     | `vu`       | command id   |
-| 2     | `vu`       | command data |
+| 2     | `vu`       | command value |
 
 #### `05` heartbeat
 
