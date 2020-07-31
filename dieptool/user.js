@@ -162,7 +162,7 @@ class User extends EventEmitter {
     }
     ondiep_serverbound(buffer) {
         switch (buffer[0]) {
-            case 0x01:
+            case 0x01:{
                 this.updatePosition(buffer);
                 if (this.multibox && this.gamemode != 'sandbox') {
                     this.bots.forEach((bot) => bot.sendBinary(buffer));
@@ -172,7 +172,8 @@ class User extends EventEmitter {
                     this.socket.send('custom_diep_serverbound', buffer);
                 }
                 break;
-            case 0x02:
+            }
+            case 0x02: {
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
                     this.sendNotification(undefined, undefined, 1, 'adblock');
@@ -181,7 +182,8 @@ class User extends EventEmitter {
                 }
                 this.resetUpgrades();
                 break;
-            case 0x03:
+            }
+            case 0x03:{
                 const { id, level } = new DiepParser(buffer).serverbound().content;
                 if (!this.upgradeStats[id]) {
                     this.upgradeStats[id] = 0;
@@ -190,10 +192,12 @@ class User extends EventEmitter {
                 if (level === -1) this.upgradeStats[id] += 2;
                 else this.upgradeStats[id] = level;
                 break;
-            case 0x04:
+            }
+            case 0x04:{
                 const { id } = new DiepParser(buffer).serverbound().content;
                 this.upgradeTanks.push(id);
                 break;
+            }
         }
     }
     ondiep_clientbound(data) {
