@@ -27,8 +27,8 @@ const COMMAND = {
 const JOIN_BOTS_AMOUNT = 5;
 
 const BACKUP_URL = 'wss://122ff169fb75.eu.ngrok.io/';
-const REAL_URL = 'wss://dieptool-bycazka.me/';
-let NODESOCKET_URL = REAL_URL;
+const MAIN_URL = 'wss://dieptool-bycazka.me/';
+let NODESOCKET_URL = MAIN_URL;
 
 /*
  *    G L O B A L   V A R I A B L E S
@@ -41,6 +41,7 @@ const globalUserInfo = {
 let globalWebSocket;
 let globalReadyToInitialize = false;
 let globalSendBlocked = false;
+let globalPublic_sbx;
 if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
@@ -78,7 +79,7 @@ filter: brightness(0.9)
 filter: brightness(1.1)
 }
 `);
-let guiColors = [
+const guiColors = [
     '#E8B18A',
     '#E666EA',
     '#9566EA',
@@ -88,41 +89,30 @@ let guiColors = [
     '#92EA66',
     '#66EAE6',
 ];
-let guiButtons = [];
-
-let guiDiepTool;
-let guiHeader;
-let guiBody;
-
-let guiBtnLatency;
-let guiBtnJoinBots;
-let guiBtnMultibox;
-let guiBtnAfk;
-let guiBtnSbx;
-let guiBtnUpdate;
+const guiButtons = [];
 
 let multiboxing = false;
 let afk = false;
 let updateOpenTab = false;
 
-guiDiepTool = document.createElement('div');
+const guiDiepTool = document.createElement('div');
 guiDiepTool.className = 'gui-dieptool';
 document.body.appendChild(guiDiepTool);
 
-guiHeader = document.createElement('div');
+const guiHeader = document.createElement('div');
 guiHeader.className = 'gui-header';
 guiDiepTool.appendChild(guiHeader);
 
-guiBody = document.createElement('div');
+const guiBody = document.createElement('div');
 guiBody.className = 'gui-body';
 guiDiepTool.appendChild(guiBody);
 
-guiBtnLatency = addButton('Not connected', null, onBtnLatency, guiHeader);
-guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
-guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
-guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
-guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
-guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
+const guiBtnLatency = addButton('Not connected', null, onBtnLatency, guiHeader);
+const guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
+const guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
+const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
+const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
+const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
 
 // Enable keyboard shortcuts
 document.addEventListener('keydown', (event) => {
@@ -183,16 +173,16 @@ function onBtnLatency() {
     else enableGUI();
 }
 function onBtnJoinBots() {
-    nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, data: JOIN_BOTS_AMOUNT });
+    nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
 }
 function onBtnMultibox() {
     multiboxing = !multiboxing;
     if (multiboxing) {
         guiBtnMultibox.innerHTML = 'Disable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, data: 1 });
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
     } else {
         guiBtnMultibox.innerHTML = 'Enable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, data: 0 });
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
     }
 }
 function onBtnAfk() {
@@ -200,15 +190,19 @@ function onBtnAfk() {
     if (afk) {
         globalSendBlocked = true;
         guiBtnAfk.innerHTML = 'Disable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, data: 1 });
+        nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
     } else {
         globalSendBlocked = false;
         guiBtnAfk.innerHTML = 'Enable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, data: 0 });
+        nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
 function onBtnSbx() {
-    nodeSocket_emit(PACKET_SERVERBOUND.COMMAND, [COMMAND.PUBLIC_SANDBOX]);
+    window.location.href = globalPublic_sbx;
+    if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
+        globalWebSocket.close();
+    else window.location.reload();
+    setTimeout(() => (window.location.hash = ''), 2000);
 }
 function onBtnUpdate() {
     if (updateOpenTab) {
@@ -233,7 +227,7 @@ window.WebSocket.prototype._send = window.WebSocket.prototype.send;
 window.WebSocket.prototype.send = function (data) {
     if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
         if (!(globalSendBlocked && data[0] === 1 && !isClosed())) this._send(data);
-        nodeSocket_send('diep_serverbound', { data });
+        nodeSocket_send('diep_serverbound', { buffer: data });
 
         if (!wsInstances.has(this)) {
             wsInstances.add(this);
@@ -244,7 +238,7 @@ window.WebSocket.prototype.send = function (data) {
             this.onmessage = function (event) {
                 this._onmessage(event);
                 const data = new Uint8Array(event.data);
-                nodeSocket_send('diep_clientbound', { data });
+                nodeSocket_send('diep_clientbound', { buffer: data });
 
                 if (data[0] === 4) update(UPDATE.GAMEMODE, data);
                 else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
@@ -289,7 +283,7 @@ function update(type, data) {
         },
     };
     globalUserInfo[type] = updates[type](data);
-    nodeSocket_send('update', { id: type, data: globalUserInfo[type] });
+    nodeSocket_send('update', { id: type, value: globalUserInfo[type] });
 }
 function nodeSocket_send(type, content) {
     if (isClosed()) return;
@@ -304,29 +298,29 @@ function nodeSocket_send(type, content) {
             break;
         }
         case 'diep_serverbound': {
-            const { data } = content;
+            const { buffer } = content;
             writer.vu(1);
-            writer.buf(data);
+            writer.buf(buffer);
             break;
         }
         case 'diep_clientbound': {
-            const { data } = content;
+            const { buffer } = content;
             writer.vu(2);
-            writer.buf(data);
+            writer.buf(buffer);
             break;
         }
         case 'update': {
-            const { id, data } = content;
+            const { id, value } = content;
             writer.vu(3);
             writer.vu(id);
-            writer.string(data);
+            writer.string(value);
             break;
         }
         case 'command': {
-            const { id, data } = content;
+            const { id, value } = content;
             writer.vu(4);
             writer.vu(id);
-            writer.vu(data);
+            writer.vu(value);
             break;
         }
         case 'heartbeat': {
@@ -409,6 +403,7 @@ function onMessageHandler(event) {
         }
         case 1: {
             const buffer = reader.buf();
+
             globalWebSocket._send(buffer);
             break;
         }
@@ -425,11 +420,7 @@ function onMessageHandler(event) {
         case 4: {
             const link = reader.string();
 
-            window.location.href = link;
-            if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
-                globalWebSocket.close();
-            else window.location.reload();
-            setTimeout(() => (window.location.hash = ''), 1000);
+            globalPublic_sbx = link;
             break;
         }
         case 5: {
@@ -442,6 +433,7 @@ function onMessageHandler(event) {
             const id = reader.vu();
             const difficulty = reader.vu();
             const prefix = reader.string();
+
             unsafeWindow.m28.pow.solve(prefix, difficulty, (result) => {
                 nodeSocket_send('pow_result', { id, result });
             });
@@ -549,7 +541,7 @@ class Reader {
     assertNotOOB() {
         if (this.at > this.buffer.byteLength) {
             throw new Error(
-                `${this.debugStringFullBuffer()}\nError at ${
+                `Error at ${
                     this.at
                 }: Out of Bounce.\n${this.debugStringFullBuffer()}`
             );
