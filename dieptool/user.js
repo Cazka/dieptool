@@ -169,7 +169,7 @@ class User extends EventEmitter {
                 }
                 if (this.afk) {
                     buffer = this.stayAFK(buffer);
-                    this.socket.send('custom_diep_serverbound', buffer);
+                    this.socket.send('custom_diep_serverbound',{buffer});
                 }
                 break;
             }
@@ -461,8 +461,9 @@ const changeFlags = (data, flags) => {
     const packet = new DiepBuilder({
         type: 'input',
         content: {
-            parsed,
             flags,
+            mouseX: parsed.mouseX,
+            mouseY: parsed.mouseY
         },
     }).serverbound();
     return packet;
