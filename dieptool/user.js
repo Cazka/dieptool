@@ -5,13 +5,17 @@ const DiepSocket = require('diepsocket');
 const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
-const ipv6pool = fs.readFileSync(__dirname +'/ipv6').toString('utf-8').split('\n');
+const ipv6pool = fs
+    .readFileSync(__dirname + '/ipv6')
+    .toString('utf-8')
+    .split('\n');
 
 const UPDATE = {
     SERVER_PARTY: 0,
     NAME: 1,
     GAMEMODE: 2,
 };
+
 const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
@@ -26,14 +30,13 @@ const color = {
 };
 
 class User extends EventEmitter {
-    constructor(socket, {version, authToken}) {
+    constructor(socket, version, authToken) {
         super();
         // Socket information
         this.socket = socket;
         this.latency = 0;
 
         // User information
-        this.version = version;
         this.authToken = authToken;
         this.link;
         this.name;
@@ -62,10 +65,19 @@ class User extends EventEmitter {
         };
 
         // Gameplay
-        this.upgradePath = {};
-        this.tankPath = [];
-        this.public_sandbox;
-        super.on('public-sbx-link', (link) => (this.public_sandbox = link));
+        this.upgradeStats = {};
+        this.upgradeStatsOrder = [];
+        this.upgradeTanks = [];
+        this.resetUpgrades = () => {
+            this.upgradeStats = {};
+            this.upgradeStatsOrder = [];
+            this.upgradeTanks = [];
+        };
+        this.public_sbx;
+        super.on('public_sbx', (link) => {
+            this.public_sbx = link;
+            this.socket.send('public_sbx', { link });
+        });
 
         // AFK
         this.slow = false;
@@ -79,27 +91,31 @@ class User extends EventEmitter {
             super.emit('close', reason);
         });
 
-        if(version !== process.env.CLIENT_VERSION){
-            this.sendNotification('Please update DiepTool!', color.RED, 60000, 'outdated');
+        if (version !== process.env.CLIENT_VERSION) {
+            this.sendNotification(
+                'Please update DiepTool to the newest version',
+                color.RED,
+                60000,
+                'outdated'
+            );
             this.socket.close();
             return;
         }
-        
-        
+
         this.socket.send('accept');
 
-        this.socket.on('diep_serverbound', (content) => this.ondiep_serverbound(content));
-        this.socket.on('diep_clientbound', (content) => this.ondiep_clientbound(content));
+        this.socket.on('diep_serverbound', ({ buffer }) => this.ondiep_serverbound(buffer));
+        this.socket.on('diep_clientbound', ({ buffer }) => this.ondiep_clientbound(buffer));
 
         this.socket.on('latency', (latency) => (this.latency = latency));
-        this.socket.on('update', (content) => this.onupdate(content));
-        this.socket.on('command', (content) => this.oncommand(content));
-        this.socket.on('pow_result', (content) => this.onpow_result(content));
+        this.socket.on('update', ({ id, value }) => this.onupdate(id, value));
+        this.socket.on('command', ({ id, value }) => this.oncommand(id, value));
+        this.socket.on('pow_result', ({ id, result }) => this.onpow_result(id, result));
     }
     /*
      *    E V E N T   H A N D L E R S
      */
-    onupdate({ id, value }) {
+    onupdate(id, value) {
         console.log(`${this.socket.ip} received update id: ${id} -> ${value}`);
 
         switch (id) {
@@ -144,7 +160,7 @@ class User extends EventEmitter {
                 break;
         }
     }
-    ondiep_serverbound({ buffer }) {
+    ondiep_serverbound(buffer) {
         switch (buffer[0]) {
             case 0x01:
                 this.updatePosition(buffer);
@@ -163,19 +179,20 @@ class User extends EventEmitter {
                     this.sendNotification('💎Made by Cazka💎', '#f5e042');
                     this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
                 }
-
-                this.upgradePath = {};
-                this.tankPath = [];
+                this.resetUpgrades();
                 break;
             case 0x03:
-                const category = buffer[1];
-                const points = buffer[2];
-                if (!this.upgradePath[category]) this.upgradePath[category] = 0;
-                if (points === 1) this.upgradePath[category] += 2;
-                else this.upgradePath[category] = points;
+                const { id, level } = new DiepParser(buffer).serverbound().content;
+                if (!this.upgradeStats[id]) {
+                    this.upgradeStats[id] = 0;
+                    this.upgradeStatsOrder.push(id);
+                }
+                if (level === -1) this.upgradeStats[id] += 2;
+                else this.upgradeStats[id] = level;
                 break;
             case 0x04:
-                this.tankPath.push(buffer[1]);
+                const { id } = new DiepParser(buffer).serverbound().content;
+                this.upgradeTanks.push(id);
                 break;
         }
     }
@@ -206,7 +223,7 @@ class User extends EventEmitter {
             }
         }*/
     }
-    oncommand({id, value}) {
+    oncommand(id, value) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED);
             return;
@@ -217,7 +234,7 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
-                if (this.public_sandbox === this.link)
+                if (this.public_sbx === this.link)
                     return this.sendNotification('bots free zone 🎯');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
@@ -235,7 +252,10 @@ class User extends EventEmitter {
                 if (this.gamemode === 'sandbox')
                     return this.sendNotification('disabled in sandbox 🎈');
                 if (!!value === this.multibox) return;
-                this.sendNotification(`Multiboxing ${!!value ? 'enabled' : 'disabled'}`, color.PINK);
+                this.sendNotification(
+                    `Multiboxing ${!!value ? 'enabled' : 'disabled'}`,
+                    color.PINK
+                );
                 this.multibox = !!value;
                 break;
             case COMMAND.AFK:
@@ -277,44 +297,41 @@ class User extends EventEmitter {
         }
         // initialize bot
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
-        this.bots.add(bot);
         bot.id = this.botCounter++;
-        bot.once('accept', () => {
+        bot.on('open', () => {
+            this.bots.add(bot);
+            bot.on('close', () => this.bots.delete(bot));
+            bot.on('pow_request', ({ difficulty, prefix }) =>
+                this.socket.send('pow_request', { id: bot.id, difficulty, prefix })
+            );
+        });
+        bot.on('accept', () => {
             let int = setInterval(() => {
                 bot.spawn(this.botname());
                 // upgrade path
-                for (let [key, value] of Object.entries(this.upgradePath)) {
-                    bot.sendBinary(new Uint8Array([3, key, value]));
-                }
+                this.upgradeStatsOrder.forEach((id) => {
+                    bot.send('upgrade_stat', { id, level: this.upgradeStats[id] });
+                });
                 // tank path
-                this.tankPath.forEach((upgrade) => bot.sendBinary(new Uint8Array([4, upgrade])));
+                this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
             }, 1000);
-            bot.on('message', ({message}) => {
+            bot.on('close', () => clearInterval(int));
+            bot.on('message', ({ message }) => {
                 if (message.startsWith(`You've killed`))
                     this.sendNotification(message, color.LIGHT_PINK, 6000);
-            });
-            bot.on('close', () => {
-                clearInterval(int);
-                this.bots.delete(bot);
             });
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
             if (bot.gamemode !== this.gamemode) this.socket.close(); // when someone fakes gamemode this will check.
 
-            bot.removeAllListeners('error');
             this.joinBots(--amount, i);
         });
-        bot.on('pow_request', ({difficulty, prefix}) => {
-            this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
-        });
-        bot.once('error', () => {
-            bot.removeAllListeners('accept');
+        bot.on('error', () => {
             this.joinBots(amount, ++i);
-            this.bots.delete(bot);
         });
     }
-    onpow_result({ id, result }) {
+    onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
         if (bot) bot.send('pow_result', { result });
     }
@@ -364,9 +381,12 @@ class User extends EventEmitter {
         const color = hexcolor.startsWith('#')
             ? parseInt(hexcolor.slice(1), 16)
             : parseInt(hexcolor, 16);
-        const packet = new DiepBuilder({type:'message', content: {message, color, time, unique }}).clientbound();
+        const packet = new DiepBuilder({
+            type: 'message',
+            content: { message, color, time, unique },
+        }).clientbound();
 
-        this.socket.send('custom_diep_clientbound', {buffer: packet});
+        this.socket.send('custom_diep_clientbound', { buffer: packet });
         this.updateStatus(message);
     }
     updatePosition(data) {
@@ -434,10 +454,13 @@ const changeFlags = (data, flags) => {
 
     flags |= parsed.flags;
 
-    const packet = new DiepBuilder({type: 'input', content:{
-        parsed,
-        flags
-    }}).serverbound();
+    const packet = new DiepBuilder({
+        type: 'input',
+        content: {
+            parsed,
+            flags,
+        },
+    }).serverbound();
     return packet;
 };
 
