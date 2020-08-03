@@ -154,7 +154,7 @@ class User extends EventEmitter {
                     this.socket.close();
                 break;
             default:
-                console.error(`UPDATE NOT RECOGNIZED: ${id} with data ${data}`);
+                console.error(`UPDATE NOT RECOGNIZED: ${id} with data ${value}`);
                 this.sendNotification('Please reinstall DiepTool', color.red, 0);
                 this.socket.close();
                 break;
@@ -169,7 +169,7 @@ class User extends EventEmitter {
                 }
                 if (this.afk) {
                     buffer = this.stayAFK(buffer);
-                    this.socket.send('custom_diep_serverbound', buffer);
+                    this.socket.send('custom_diep_serverbound',{buffer});
                 }
                 break;
             }
@@ -189,7 +189,7 @@ class User extends EventEmitter {
                     this.upgradeStats[id] = 0;
                     this.upgradeStatsOrder.push(id);
                 }
-                if (level === -1) this.upgradeStats[id] += 2;
+                if (level === -1) this.upgradeStats[id]++;
                 else this.upgradeStats[id] = level;
                 break;
             }
@@ -461,8 +461,9 @@ const changeFlags = (data, flags) => {
     const packet = new DiepBuilder({
         type: 'input',
         content: {
-            parsed,
             flags,
+            mouseX: parsed.mouseX,
+            mouseY: parsed.mouseY
         },
     }).serverbound();
     return packet;
