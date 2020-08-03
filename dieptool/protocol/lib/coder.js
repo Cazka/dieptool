@@ -77,7 +77,6 @@ class Reader {
         this.at += length;
         this.assertNotOOB();
         return out;
-        
     }
     flush() {
         let slice = this.buffer.slice(this.at);
@@ -89,7 +88,7 @@ class Reader {
     }
     assertNotOOB() {
         if (this.at > this.buffer.byteLength) {
-            throw new Error(`Error at ${this.at}: Out of Bounce.\n${this.debugStringFullBuffer()}`);
+            throw new Error(`Error at ${this.at}: Out of Bounds.\n${this.debugStringFullBuffer()}`);
         }
     }
 
@@ -108,7 +107,7 @@ class Reader {
 class Writer {
     constructor() {
         this.length = 0;
-        this.buffer = new Uint8Array(4096);
+        this.buffer = new Uint8Array(8192);
     }
     u8(num) {
         this.buffer[this.length] = num;
