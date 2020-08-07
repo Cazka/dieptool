@@ -10,7 +10,7 @@ const app = express();
 const server = require('http').createServer(app);
 
 // start dieptool
-const dieptool = require('./dieptool/index.js')(server);
+const DiepTool = require('./dieptool/index.js')(server);
 
 // Middleware
 app.use(express.static('public'));
