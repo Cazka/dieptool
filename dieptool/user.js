@@ -58,11 +58,13 @@ class User extends EventEmitter {
         this.bots = new Set();
         this.botCounter = 0;
         this.botsjoining = false;
-        this.botsMaximum = 5;
+        this.botsMaximum = 2;
         this.botname = () => {
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
+        if(this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
+        if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
 
         // Gameplay
         this.upgradeStats = {};
@@ -180,6 +182,9 @@ class User extends EventEmitter {
                     this.sendNotification('💎Made by Cazka💎', '#f5e042');
                     this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
                 }
+                if(this.socket.ip.startsWith('2605:a000:75c2:9200')){
+                    this.sendNotification('Welcome Master Crabby', color.PINK, 5000);
+                } else if(this.socket.ip === '178.161.24.44') this.sendNotification('Welcome GOAT Diep.ro.PianoYT', color.PINK, 5000);
                 this.resetUpgrades();
                 break;
             }
