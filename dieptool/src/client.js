@@ -11,7 +11,7 @@ class Client extends EventEmitter {
         this.lastPing = Date.now();
 
         this.socket.on('message', (data) => this.onmessage(data));
-        this.socket.on('close', (reason) => super.emit('close', reason));
+        this.socket.on('close', (code, reason) => super.emit('close', code, reason));
         this.socket.on('error', (err) => super.emit('error', err));
     }
 
@@ -20,8 +20,7 @@ class Client extends EventEmitter {
         try {
             packet = new Parser(data).serverbound();
         } catch (error) {
-            console.log(`${this.ip} sent unparsable message:\n${error}`);
-            this.close();
+            this.close(4000, `${this.ip} sent unparsable message:\n${error}`);
             return;
         }
         
@@ -39,9 +38,9 @@ class Client extends EventEmitter {
         this.socket.send(data);
     }
 
-    close() {
+    close(code, reason) {
         try {
-            this.socket.close();
+            this.socket.close(code, reason);
         } catch (error) {
             this.socket.terminate();
         }

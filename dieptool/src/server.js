@@ -1,18 +1,13 @@
 'use strict';
 
-const PACKET_ADMIN_COMMANDS = {
-    NOTIFICATION: 0,
-    BAN: 1,
-};
-
-const Client = require('./client.js');
-const User = require('./user.js');
 const DiepSocket = require('diepsocket');
+const Client = require('./client.js');
+const User = require('./user/user.js');
 
 const DiepToolManager = (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
-    new DiepToolServer(wss);
+    return new DiepToolServer(wss);
 };
 
 class DiepToolServer {
@@ -32,8 +27,9 @@ class DiepToolServer {
             }
             this.ips.add(ip);
             ws.on('close', () => this.ips.delete(ip));
+
             const client = new Client(ws, ip);
-            client.once('initial', (content) => this.onLoginHandler(client, content));
+            client.once('initial', (content) => this.oninitial(client, content));
             client.on('error', (err) => {});
         });
 
@@ -46,8 +42,25 @@ class DiepToolServer {
         }, 1000 * 60 * 5);
     }
 
-    createSbx() {
-        DiepSocket.findServer('sandbox', '', (link) => {
+    async createSbx() {
+        const link = await DiepSocket.findServerSync('sandbox');
+        const bot = new DiepSocket(link);
+        let int;
+        bot.on('error', () => {});
+        bot.on('accept', () => {
+            this.public_sbx = bot.link;
+            this.users.forEach((user) => user.emit('public_sbx', this.public_sbx));
+            int = setInterval(() => {
+                bot.spawn('DT');
+                bot.move();
+            }, 4 * 60 * 1000);
+            setTimeout(() => bot.close(), 60 * 60 * 1000);
+        });
+        bot.on('close', () => {
+            clearInterval(int);
+            this.createSbx();
+        });
+        /*DiepSocket.findServer('sandbox', '', (link) => {
             if (!link) {
                 this.createSbx();
                 return;
@@ -68,24 +81,42 @@ class DiepToolServer {
                 clearInterval(int);
                 this.createSbx();
             });
-        });
+        });*/
     }
 
-    onLoginHandler(client, content) {
+    oninitial(client, content) {
         switch (content.authToken) {
+            case 'user':
+                this.userManager(new User(client, content.version, content.authToken));
+                break;
             case process.env.ADMINAUTHTOKEN:
                 this.adminManager(client);
                 break;
             case process.env.MODERATORAUTHTOKEN:
                 this.moderatorManager(client);
                 break;
-            case 'user':
-                this.userManager(new User(client, content.version, content.authToken));
-                break;
             default:
                 client.close();
                 break;
         }
+    }
+
+    userManager(user) {
+        this.users.add(user);
+        console.log(
+            user.socket.ip,
+            'User connected, waiting for User Information:',
+            this.users.size
+        );
+        user.on('close', (code, reason) => {
+            this.users.delete(user);
+            console.log(user.socket.ip, 'User disconnected reason:', code, reason);
+        });
+        user.on('ban', (reason) => {
+            user.socket.close(4000, `User got banned: ${reason}`);
+            this.blacklist.add(user.socket.ip);
+        });
+        user.emit('public_sbx', this.public_sbx);
     }
 
     adminManager(admin) {
@@ -144,24 +175,6 @@ class DiepToolServer {
         moderator.on('close', () => {
             clearInterval(int);
         });
-    }
-
-    userManager(user) {
-        this.users.add(user);
-        console.log(
-            user.socket.ip,
-            'User connected, waiting for User Information:',
-            this.users.size
-        );
-        user.on('close', (reason) => {
-            this.users.delete(user);
-            console.log(user.socket.ip, 'User disconnected reason:', reason);
-        });
-        user.on('ban', () => {
-            user.socket.close();
-            this.blacklist.add(user.socket.ip);
-        });
-        user.emit('public_sbx', this.public_sbx);
     }
 }
 

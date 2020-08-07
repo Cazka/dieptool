@@ -6,7 +6,7 @@ const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
 const ipv6pool = fs
-    .readFileSync(__dirname + '/ipv6')
+    .readFileSync(__dirname + '/../ipv6')
     .toString('utf-8')
     .split('\n');
 
@@ -63,8 +63,13 @@ class User extends EventEmitter {
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
+<<<<<<< HEAD:dieptool/user.js
         if(this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
         else if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
+=======
+        if (this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
+        if (this.socket.ip === '178.161.24.44') this.botsMaximum = 15;
+>>>>>>> b5dd291d0f649c2795e70ea1bef15d4dbd6dffe9:dieptool/src/user/user.js
 
         // Gameplay
         this.upgradeStats = {};
@@ -83,14 +88,14 @@ class User extends EventEmitter {
 
         // AFK
         this.slow = false;
-        this.mouseX;
-        this.mouseY;
+        this.mouseX = 0;
+        this.mouseY = 0;
         this.mouseXFixed;
         this.mouseYFixed;
 
         // Initialize
-        this.socket.on('close', (reason) => {
-            super.emit('close', reason);
+        this.socket.on('close', (code, reason) => {
+            super.emit('close', code, reason);
         });
 
         if (version !== process.env.CLIENT_VERSION) {
@@ -100,12 +105,11 @@ class User extends EventEmitter {
                 60000,
                 'outdated'
             );
-            this.socket.close();
+            this.socket.close(4000, `outdated client ${process.env.CLIENT_VERSION}!=${version}`);
             return;
         }
 
         this.socket.send('accept');
-
         this.socket.on('diep_serverbound', ({ buffer }) => this.ondiep_serverbound(buffer));
         this.socket.on('diep_clientbound', ({ buffer }) => this.ondiep_clientbound(buffer));
 
@@ -157,22 +161,24 @@ class User extends EventEmitter {
                     this.socket.close();
                 break;
             default:
-                console.error(`UPDATE NOT RECOGNIZED: ${id} with data ${value}`);
                 this.sendNotification('Please reinstall DiepTool', color.red, 0);
-                this.socket.close();
+                this.socket.close(4000, `UPDATE NOT RECOGNIZED: ${id} with data ${value}`);
                 break;
         }
     }
     ondiep_serverbound(buffer) {
         switch (buffer[0]) {
-            case 0x01:{
-                this.updatePosition(buffer);
+            case 0x01: {
+                try {
+                    const content = new DiepParser(buffer).serverbound().content;
+                    this.updatePosition(content.mouseX, content.mouseY);
+                } catch (error) {}
                 if (this.multibox && this.gamemode != 'sandbox') {
                     this.bots.forEach((bot) => bot.sendBinary(buffer));
                 }
                 if (this.afk) {
                     buffer = this.stayAFK(buffer);
-                    this.socket.send('custom_diep_serverbound',{buffer});
+                    this.socket.send('custom_diep_serverbound', { buffer });
                 }
                 break;
             }
@@ -183,13 +189,14 @@ class User extends EventEmitter {
                     this.sendNotification('💎Made by Cazka💎', '#f5e042');
                     this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
                 }
-                if(this.socket.ip.startsWith('2605:a000:75c2:9200')){
+                if (this.socket.ip.startsWith('2605:a000:75c2:9200')) {
                     this.sendNotification('Welcome Master Crabby', color.PINK, 5000);
-                } else if(this.socket.ip === '178.161.24.44') this.sendNotification('Welcome GOAT Diep.ro.PianoYT', color.PINK, 5000);
+                } else if (this.socket.ip === '178.161.24.44')
+                    this.sendNotification('Welcome GOAT Diep.ro.PianoYT', color.PINK, 5000);
                 this.resetUpgrades();
                 break;
             }
-            case 0x03:{
+            case 0x03: {
                 const { id, level } = new DiepParser(buffer).serverbound().content;
                 if (!this.upgradeStats[id]) {
                     this.upgradeStats[id] = 0;
@@ -199,7 +206,7 @@ class User extends EventEmitter {
                 else this.upgradeStats[id] = level;
                 break;
             }
-            case 0x04:{
+            case 0x04: {
                 const { id } = new DiepParser(buffer).serverbound().content;
                 this.upgradeTanks.push(id);
                 break;
@@ -311,9 +318,10 @@ class User extends EventEmitter {
         bot.on('open', () => {
             this.bots.add(bot);
             bot.on('close', () => this.bots.delete(bot));
-            bot.on('pow_request', ({ difficulty, prefix }) =>
-                this.socket.send('pow_request', { id: bot.id, difficulty, prefix })
-            );
+            bot.on('pow_request', ({ difficulty, prefix }) => {
+                bot.lastPow = Date.now();
+                this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
+            });
         });
         bot.on('accept', () => {
             let int = setInterval(() => {
@@ -333,7 +341,8 @@ class User extends EventEmitter {
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
-            if (bot.gamemode !== this.gamemode) this.socket.close(); // when someone fakes gamemode this will check.
+            if (bot.gamemode !== this.gamemode)
+                this.socket.close(4000, 'bot gamemode and user gamemode mismatch'); // when someone fakes gamemode this will check.
 
             this.joinBots(--amount, i);
         });
@@ -343,7 +352,8 @@ class User extends EventEmitter {
     }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
-        if (bot) bot.send('pow_result', { result });
+        if (bot)
+            setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
     }
     /*
      *    A F K
@@ -399,17 +409,9 @@ class User extends EventEmitter {
         this.socket.send('custom_diep_clientbound', { buffer: packet });
         this.updateStatus(message);
     }
-    updatePosition(data) {
-        let packet;
-        try {
-            packet = new DiepParser(data).serverbound().content;
-        } catch (error) {
-            this.socket.close();
-            return;
-        }
-
-        this.mouseX = packet.mouseX;
-        this.mouseY = packet.mouseY;
+    updatePosition(mouseX, mouseY) {
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
 
         if (!this.afk) {
             this.mouseXFixed = this.mouseX;
@@ -418,7 +420,7 @@ class User extends EventEmitter {
     }
     ban(reason) {
         this.sendNotification(reason, color.RED, 10000);
-        super.emit('ban', this.socket.ip);
+        super.emit('ban', reason);
     }
     toDataObject() {
         return {
@@ -469,7 +471,7 @@ const changeFlags = (data, flags) => {
         content: {
             flags,
             mouseX: parsed.mouseX,
-            mouseY: parsed.mouseY
+            mouseY: parsed.mouseY,
         },
     }).serverbound();
     return packet;
