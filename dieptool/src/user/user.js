@@ -37,6 +37,7 @@ class User extends EventEmitter {
         this.latency = 0;
 
         // User information
+        this.supporter = false;
         this.authToken = authToken;
         this.link;
         this.name;
@@ -63,8 +64,14 @@ class User extends EventEmitter {
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
-        if(this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
-        else if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
+        if(this.socket.ip.startsWith('2605:a000:75c2:9200')) {
+            this.botsMaximum = 10;
+            this.supporter = true;
+        }
+        else if(this.socket.ip === '178.161.24.44') {
+            this.botsMaximum = 15
+            this.supporter = true;
+        }
 
         // Gameplay
         this.upgradeStats = {};
@@ -313,10 +320,12 @@ class User extends EventEmitter {
         bot.on('open', () => {
             this.bots.add(bot);
             bot.on('close', () => this.bots.delete(bot));
-            bot.on('pow_request', ({ difficulty, prefix }) => {
-                bot.lastPow = Date.now();
-                this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
-            });
+            if(!this.supporter || this.bots.size > 5){
+                bot.on('pow_request', ({ difficulty, prefix }) => {
+                    bot.lastPow = Date.now();
+                    this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
+                });
+            }
         });
         bot.on('accept', () => {
             let int = setInterval(() => {
