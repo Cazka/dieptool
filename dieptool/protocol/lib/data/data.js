@@ -4,33 +4,33 @@ const path = require('path');
 const CLIENTBOUND = retrieveDataSpecs(path.join(__dirname, 'clientbound'));
 const SERVERBOUND = retrieveDataSpecs(path.join(__dirname, 'serverbound'));
 
-function retrieveDataSpecs(dataPath){
-    const obj = {};
-    const files = fs.readdirSync(dataPath)
+function retrieveDataSpecs(dataPath) {
+    const dataSpecs = {};
+    const files = fs.readdirSync(dataPath);
     for (let i = 0; i < files.length; i++) {
-        const data = require(path.join(dataPath, files[i]));
-        if( !usesInterface(data)){
-            const err = new Error(
-                `'${path.join(dataPath, files[i])}' does not match the interface`
+        const filePath = path.join(dataPath, files[i]);
+        const data = require(filePath);
+        //check if interface is implemented
+        if (!usesInterface(data)) throw new Error(`${filePath}: does not match the interface`);
+        //check if type and filename matches
+        if (files[i] !== data.type + '.js')
+            throw new Error(
+                `${filePath}: data.type should match the file name: ${files[i]} !== ${data.type}`
             );
-            throw err;
-        }
-        if (obj[data.id]) {
-            const err = new Error(
-                `${dataPath}: ${obj[data.id].type} and ${data.type} share the same id.`
+        // check if id already exists
+        if (dataSpecs[data.id])
+            throw new Error(
+                `${filePath}: ${dataSpecs[data.id].type} and ${data.type} share the same id`
             );
-            throw err;
-        }
-        obj[data.id] = data;
+        dataSpecs[data.id] = data;
     }
-    obj.getFromType = function(type){
+    dataSpecs.getFromType = function (type) {
         for (let [key, value] of Object.entries(this)) {
-            if(value.type === type) return this[key];
+            if (value.type === type) return this[key];
         }
-        const err = new Error(`cannot find: ${type}`);
-        throw err;
+        throw new Error(`cannot find: ${type}`);
     };
-    return obj;
+    return dataSpecs;
 }
 function usesInterface(data) {
     if (!data) return false;
