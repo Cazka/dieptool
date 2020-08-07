@@ -63,13 +63,8 @@ class User extends EventEmitter {
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
-<<<<<<< HEAD:dieptool/user.js
         if(this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
         else if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
-=======
-        if (this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
-        if (this.socket.ip === '178.161.24.44') this.botsMaximum = 15;
->>>>>>> b5dd291d0f649c2795e70ea1bef15d4dbd6dffe9:dieptool/src/user/user.js
 
         // Gameplay
         this.upgradeStats = {};
