@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.0.0
+// @version      4.1.4
 // @author       Cazka#9552
 // @namespace    *://diep.io/
 // @match        *://diep.io/
@@ -24,9 +24,9 @@ const COMMAND = {
     AFK: 2,
 };
 
-const JOIN_BOTS_AMOUNT = 5;
+const JOIN_BOTS_AMOUNT = 2;
 
-const BACKUP_URL = 'wss://122ff169fb75.eu.ngrok.io/';
+const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 const MAIN_URL = 'wss://dieptool-bycazka.me/';
 let NODESOCKET_URL = MAIN_URL;
 
@@ -41,7 +41,7 @@ const globalUserInfo = {
 let globalWebSocket;
 let globalReadyToInitialize = false;
 let globalSendBlocked = false;
-let globalPublic_sbx;
+let globalPublic_sbx = '';
 if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
@@ -93,7 +93,9 @@ const guiButtons = [];
 
 let multiboxing = false;
 let afk = false;
-let updateOpenTab = false;
+let updateConfirm = false;
+let supportConfirm = false;
+let sbxConfirm = false;
 
 const guiDiepTool = document.createElement('div');
 guiDiepTool.className = 'gui-dieptool';
@@ -113,6 +115,7 @@ const guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, gu
 const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
 const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
 const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
+const guiBtnSupport = addButton('Membership', null, onBtnSupport, guiBody);
 
 // Enable keyboard shortcuts
 document.addEventListener('keydown', (event) => {
@@ -122,7 +125,7 @@ document.addEventListener('keydown', (event) => {
     });
 });
 
-disableGUI();
+enableGUI();
 
 function addButton(text, keyCode, onclick, parent) {
     let button = document.createElement('button');
@@ -205,16 +208,30 @@ function onBtnSbx() {
     setTimeout(() => (window.location.hash = ''), 2000);
 }
 function onBtnUpdate() {
-    if (updateOpenTab) {
-        updateOpenTab = false;
+    if (updateConfirm) {
+        updateConfirm = false;
         window.open('https://greasyfork.org/scripts/401910-diep-io-tool');
         guiBtnUpdate.innerHTML = 'Check for Updates';
     } else {
-        updateOpenTab = true;
-        guiBtnUpdate.innerHTML = 'Open in new Tab?';
+        updateConfirm = true;
+        guiBtnUpdate.innerHTML = 'Open in new tab?';
         setTimeout(() => {
             guiBtnUpdate.innerHTML = 'Check for Updates';
-            updateOpenTab = false;
+            updateConfirm = false;
+        }, 3000);
+    }
+}
+function onBtnSupport() {
+    if (supportConfirm) {
+        supportConfirm = false;
+        window.open('https://www.patreon.com/dieptool');
+        guiBtnSupport.innerHTML = 'Membership';
+    } else {
+        supportConfirm = true;
+        guiBtnSupport.innerHTML = 'Open in new tab?';
+        setTimeout(() => {
+            guiBtnSupport.innerHTML = 'Membership';
+            supportConfirm = false;
         }, 3000);
     }
 }
@@ -222,11 +239,15 @@ function onBtnUpdate() {
 /*
  *    H I J A C K   S E N D ( )
  */
+let lastPow;
 const wsInstances = new Set();
 window.WebSocket.prototype._send = window.WebSocket.prototype.send;
 window.WebSocket.prototype.send = function (data) {
     if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-        if (!(globalSendBlocked && data[0] === 1 && !isClosed())) this._send(data);
+        if (!(globalSendBlocked && data[0] === 1)) {
+            if (data[0] === 10) delayPow(new Int8Array(data));
+            else this._send(data);
+        }
         nodeSocket_send('diep_serverbound', { buffer: data });
 
         if (!wsInstances.has(this)) {
@@ -243,6 +264,7 @@ window.WebSocket.prototype.send = function (data) {
                 if (data[0] === 4) update(UPDATE.GAMEMODE, data);
                 else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
                 else if (data[0] === 10) globalReadyToInitialize = true;
+                else if (data[0] === 11) lastPow = Date.now();
             };
         }
         if (data[0] === 2) update(UPDATE.NAME, data);
@@ -339,7 +361,6 @@ function nodeSocket_send(type, content) {
     }
     nodeSocket.send(writer.out());
 }
-
 function isClosed() {
     if (nodeSocket) return nodeSocket.readyState !== WebSocket.OPEN;
     return true;
@@ -357,6 +378,10 @@ function UTF8ToString(utf8 = '') {
             .map((c) => `%${c.charCodeAt(0).toString(16)}`)
             .join('')
     );
+}
+function delayPow(data) {
+    const time = Date.now() - lastPow;
+    setTimeout(() => globalWebSocket._send(data), 5000 - time);
 }
 
 /*
@@ -387,7 +412,7 @@ function onAcceptHandler() {
             clearInterval(int);
 
             for (let [key, value] of Object.entries(globalUserInfo)) {
-                nodeSocket_send('update', { id: key, data: value });
+                nodeSocket_send('update', { id: key, value });
             }
         }
     });
@@ -454,8 +479,6 @@ function onDisconnectHandler(event) {
  * This is from @cx88 with little modifications made by me.
  * https://github.com/cx88/diepssect/blob/master/diep-bot/coder.js
  */
-('use strict');
-
 const convo = new ArrayBuffer(4);
 const u8 = new Uint8Array(convo);
 const u16 = new Uint16Array(convo);
@@ -540,11 +563,7 @@ class Reader {
     }
     assertNotOOB() {
         if (this.at > this.buffer.byteLength) {
-            throw new Error(
-                `Error at ${
-                    this.at
-                }: Out of Bounce.\n${this.debugStringFullBuffer()}`
-            );
+            throw new Error(`Error at ${this.at}: Out of Bounds.\n${this.debugStringFullBuffer()}`);
         }
     }
 

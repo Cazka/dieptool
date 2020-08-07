@@ -60,28 +60,6 @@ class DiepToolServer {
             clearInterval(int);
             this.createSbx();
         });
-        /*DiepSocket.findServer('sandbox', '', (link) => {
-            if (!link) {
-                this.createSbx();
-                return;
-            }
-            const bot = new DiepSocket(link);
-            let int;
-            bot.on('accept', () => {
-                this.public_sbx = bot.link;
-                int = setInterval(() => {
-                    bot.spawn('DT');
-                    bot.move();
-                }, 1000 * 60);
-                this.users.forEach((user) => user.emit('public_sbx', this.public_sbx));
-                setTimeout(() => bot.close(), 60 * 60 * 1000);
-            });
-            bot.on('error', () => {});
-            bot.on('close', () => {
-                clearInterval(int);
-                this.createSbx();
-            });
-        });*/
     }
 
     oninitial(client, content) {
