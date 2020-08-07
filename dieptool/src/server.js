@@ -6,7 +6,7 @@ const PACKET_ADMIN_COMMANDS = {
 };
 
 const Client = require('./client.js');
-const User = require('./user.js');
+const User = require('./user/user.js');
 const DiepSocket = require('diepsocket');
 
 const DiepToolManager = (server) => {
