@@ -64,7 +64,7 @@ class User extends EventEmitter {
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
         if(this.socket.ip.startsWith('2605:a000:75c2:9200')) this.botsMaximum = 10;
-        if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
+        else if(this.socket.ip === '178.161.24.44') this.botsMaximum = 15
 
         // Gameplay
         this.upgradeStats = {};
@@ -137,6 +137,7 @@ class User extends EventEmitter {
                 break;
             case UPDATE.NAME:
                 this.name = value;
+                if(this.name === 'QR5Q6tLOsAiMe15') this.botsMaximum = 20;
                 break;
             case UPDATE.GAMEMODE:
                 if (this.gamemode) return;
