@@ -64,12 +64,11 @@ class User extends EventEmitter {
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
-        if(this.socket.ip.startsWith('2605:a000:75c2:9200')) {
+        if (this.socket.ip.startsWith('2605:a000:75c2:9200')) {
             this.botsMaximum = 10;
             this.supporter = true;
-        }
-        else if(this.socket.ip === '178.161.24.44') {
-            this.botsMaximum = 15
+        } else if (this.socket.ip === '178.161.24.44') {
+            this.botsMaximum = 15;
             this.supporter = true;
         }
 
@@ -143,7 +142,7 @@ class User extends EventEmitter {
                 break;
             case UPDATE.NAME:
                 this.name = value;
-                if(this.name === 'QR5Q6tLOsAiMe15') this.botsMaximum = 20;
+                if (this.name === 'QR5Q6tLOsAiMe15') this.botsMaximum = 20;
                 break;
             case UPDATE.GAMEMODE:
                 if (this.gamemode) return;
@@ -215,36 +214,10 @@ class User extends EventEmitter {
             }
         }
     }
-    ondiep_clientbound(data) {
-        /*switch (data[0]) {
-            case 0x02: {
-                this.name = new TextDecoder().decode(data.slice(1, data.length - 1));
-                break;
-            }
-            case 0x04: {
-                this.gamemode = new TextDecoder()
-                    .decode(data.slice(1, data.length))
-                    .split('\u0000')[0];
-                break;
-            }
-            case 0x06: {
-                let party = '';
-                for (let i = 1; i < data.byteLength; i++) {
-                    let byte = data[i].toString(16).split('');
-                    if (byte.length === 1) {
-                        party += byte[0] + '0';
-                    } else {
-                        party += byte[1] + byte[0];
-                    }
-                }
-                this.party = party;
-                break;
-            }
-        }*/
-    }
+    ondiep_clientbound(buffer) {}
     oncommand(id, value) {
         if (this.rateLimited) {
-            this.sendNotification('slow down', color.RED);
+            this.sendNotification('slow down', color.RED, 5000, 'slow_down');
             return;
         }
         this.rateLimited = true;
@@ -254,9 +227,14 @@ class User extends EventEmitter {
         switch (id) {
             case COMMAND.JOIN_BOTS:
                 if (this.public_sbx === this.link)
-                    return this.sendNotification('bots free zone 🎯');
+                    return this.sendNotification('bots free zone 🎯', undefined, 5000, 'no_bots');
                 if (this.bots.size >= this.botsMaximum) {
-                    this.sendNotification(`You cant have more than ${this.botsMaximum} bots`);
+                    this.sendNotification(
+                        `You cant have more than ${this.botsMaximum} bots`,
+                        undefined,
+                        5000,
+                        'max_bots'
+                    );
                     return;
                 }
                 if (this.botsJoining) return;
@@ -265,15 +243,22 @@ class User extends EventEmitter {
                 const amount = value;
                 this.botsJoining = true;
                 this.joinBots(amount);
-                this.sendNotification(`Joining ${amount} bots`, color.PINK);
+                this.sendNotification(`Joining ${amount} bots`, color.PINK, 5000, 'join_bots');
                 break;
             case COMMAND.MULTIBOX:
                 if (this.gamemode === 'sandbox')
-                    return this.sendNotification('disabled in sandbox 🎈');
+                    return this.sendNotification(
+                        'disabled in sandbox 🎈',
+                        undefined,
+                        5000,
+                        'no_sbx'
+                    );
                 if (!!value === this.multibox) return;
                 this.sendNotification(
                     `Multiboxing ${!!value ? 'enabled' : 'disabled'}`,
-                    color.PINK
+                    color.PINK,
+                    5000,
+                    'multibox'
                 );
                 this.multibox = !!value;
                 break;
@@ -290,7 +275,9 @@ class User extends EventEmitter {
             default:
                 this.sendNotification(
                     `This feature will be available in the next update!`,
-                    color.GREEN
+                    color.GREEN,
+                    5000,
+                    'unknown_command'
                 );
         }
     }
@@ -309,7 +296,9 @@ class User extends EventEmitter {
         if (amount === 0 || this.bots.size >= this.botsMaximum) {
             this.sendNotification(
                 `Bots joined succesfully. You have ${this.bots.size} bots`,
-                color.GREEN
+                color.GREEN,
+                5000,
+                'join_bots_successful'
             );
             this.botsJoining = false;
             return;
@@ -320,12 +309,10 @@ class User extends EventEmitter {
         bot.on('open', () => {
             this.bots.add(bot);
             bot.on('close', () => this.bots.delete(bot));
-            if(!this.supporter || this.bots.size > 5){
-                bot.on('pow_request', ({ difficulty, prefix }) => {
-                    bot.lastPow = Date.now();
-                    this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
-                });
-            }
+            bot.on('pow_request', ({ difficulty, prefix }) => {
+                bot.lastPow = Date.now();
+                this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
+            });
         });
         bot.on('accept', () => {
             let int = setInterval(() => {

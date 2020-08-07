@@ -15,7 +15,7 @@ class DiepToolServer {
         this.users = new Set();
         this.ips = new Set();
         this.blacklist = new Set();
-        this.createSbx();
+        //this.createSbx();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
