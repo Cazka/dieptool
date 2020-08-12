@@ -22,9 +22,10 @@ const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
     AFK: 2,
+    CLUMP: 3,
 };
 
-const JOIN_BOTS_AMOUNT = 2;
+const JOIN_BOTS_AMOUNT = 10;
 
 const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 const MAIN_URL = 'wss://dieptool-bycazka.me/';
@@ -42,6 +43,7 @@ let globalWebSocket;
 let globalReadyToInitialize = false;
 let globalSendBlocked = false;
 let globalPublic_sbx = '';
+let globalWorker;
 if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
@@ -92,6 +94,7 @@ const guiColors = [
 const guiButtons = [];
 
 let multiboxing = false;
+let clump = false;
 let afk = false;
 let updateConfirm = false;
 let supportConfirm = false;
@@ -112,6 +115,7 @@ guiDiepTool.appendChild(guiBody);
 const guiBtnLatency = addButton('Not connected', null, onBtnLatency, guiHeader);
 const guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
 const guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
+const guiBtnClump = addButton('Enable Clump', 'KeyX', onBtnClump, guiBody);
 const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
 const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
 const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
@@ -177,6 +181,7 @@ function onBtnLatency() {
 }
 function onBtnJoinBots() {
     nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
+    if(!globalWorker) globalWorker = new PowWorker();
 }
 function onBtnMultibox() {
     multiboxing = !multiboxing;
@@ -186,6 +191,16 @@ function onBtnMultibox() {
     } else {
         guiBtnMultibox.innerHTML = 'Enable Multiboxing';
         nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
+    }
+}
+function onBtnClump() {
+    clump = !clump;
+    if (clump) {
+        guiBtnClump.innerHTML = 'Disable Clump';
+        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 1 });
+    } else {
+        guiBtnClump.innerHTML = 'Enable Clump';
+        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 0 });
     }
 }
 function onBtnAfk() {
@@ -200,7 +215,8 @@ function onBtnAfk() {
         nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
-function onBtnSbx() {
+async function onBtnSbx() {
+    globalPublic_sbx = 
     window.location.href = globalPublic_sbx;
     if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
         globalWebSocket.close();
@@ -381,7 +397,36 @@ function UTF8ToString(utf8 = '') {
 }
 function delayPow(data) {
     const time = Date.now() - lastPow;
+    console.log(time);
     setTimeout(() => globalWebSocket._send(data), 5000 - time);
+}
+function get(url, cb) {
+    ajax(url, "GET", null, cb);
+}
+function ajax(url, method, body, cb) {
+    const r = new XMLHttpRequest();
+    r.open(method, url, true);
+    r.onerror = (err) => {
+        if (cb) cb(err);
+        cb = null;
+    };
+    r.onreadystatechange = () => {
+        if (r.readyState != 4) return;
+        let obj;
+        try {
+            obj = JSON.parse(r.responseText);
+        } catch (e) {
+            if (cb)
+                cb("Failed to parse body. Error: \"" + (e.message || e).toString() + "\". Content: " + r.responseText);
+            cb = null;
+            return;
+        }
+        if (r.status >= 200 && r.status <= 299 && !obj.error) {
+            if (cb) cb(null, obj);
+        }else if (cb) cb(obj.error || "Non 2xx status code");
+        cb = null;
+    };
+    r.send(body);
 }
 
 /*
@@ -459,9 +504,12 @@ function onMessageHandler(event) {
             const difficulty = reader.vu();
             const prefix = reader.string();
 
-            unsafeWindow.m28.pow.solve(prefix, difficulty, (result) => {
+            globalWorker.solve(prefix, difficulty, (result) => {
                 nodeSocket_send('pow_result', { id, result });
             });
+            /*unsafeWindow.m28.pow.solve(prefix, difficulty, (result) => {
+                nodeSocket_send('pow_result', { id, result });
+            });*/
             break;
         }
     }
@@ -649,5 +697,28 @@ class Writer {
         return Array.from(this.buffer.subarray(0, this.length))
             .map((r) => r.toString(16).padStart(2, 0))
             .join(' ');
+    }
+}
+
+class PowWorker {
+
+    constructor(){
+        this.worker = new Worker(this._getWorkerPath());
+        this.nextJobId = 0;
+        this.workerCallbacks = {};
+        this.worker.onmessage = (e) => this._onmessage(e);
+    }
+    _getWorkerPath() {
+        return window.location.protocol + "//" + window.location.hostname + window.location.pathname + "pow_worker.js";
+    }
+    _onmessage(e){
+        const data = e.data;
+        const id = data[0];
+        this.workerCallbacks[id](data.slice(1));
+    }
+    solve(prefix, difficulty, cb) {
+        const id = this.nextJobId++;
+        this.worker.postMessage([id, "solve", prefix, difficulty]);
+        this.workerCallbacks[id] = cb;
     }
 }
