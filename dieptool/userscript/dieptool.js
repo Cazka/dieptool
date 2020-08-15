@@ -1,17 +1,17 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.1.4
+// @version      4.1.5
 // @author       Cazka#9552
-// @namespace    *://diep.io/
-// @match        *://diep.io/
+// @namespace    *://diep.io/*
+// @match        *://diep.io/*
 // @grant        GM_info
 // @grant        GM_addStyle
 // ==/UserScript==
 'use strict';
 
 /*
- * E N U M S   A N D   C O N S T A N T S
+ *    E N U M S   A N D   C O N S T A N T S
  */
 const UPDATE = {
     SERVER_PARTY: 0,
@@ -24,13 +24,9 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-
 const JOIN_BOTS_AMOUNT = 10;
-
-const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 const MAIN_URL = 'wss://dieptool-bycazka.me/';
-let NODESOCKET_URL = MAIN_URL;
-
+const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 /*
  *    G L O B A L   V A R I A B L E S
  */
@@ -120,6 +116,24 @@ const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
 const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
 const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
 const guiBtnSupport = addButton('Membership', null, onBtnSupport, guiBody);
+let repel;
+const repelBtn = addButton('Enable Repelling', 'KeyV', () => {
+    if(repel){
+        repelBtn.innerHTML = 'Enable Repelling';
+        clearInterval(repel);
+        repel = undefined;
+    }
+    else{
+        repelBtn.innerHTML = 'Disable Repelling';
+        let a = 25*1000; // repel time in ms.
+        let b = 1300; // additionally wait time
+        repel = setInterval(() => {
+            input.keyDown('16');
+            setTimeout(() => input.keyUp('16'),a);
+        },2*a + b);
+
+    }
+}, guiBody);
 
 // Enable keyboard shortcuts
 document.addEventListener('keydown', (event) => {
@@ -146,6 +160,7 @@ function addButton(text, keyCode, onclick, parent) {
  *    N O D E   W E B S O C K E T
  */
 let failedConnections = 0;
+let NODESOCKET_URL = MAIN_URL;
 let nodeSocket = openSocket();
 function openSocket() {
     if (failedConnections > 10 && NODESOCKET_URL !== BACKUP_URL) {
@@ -181,7 +196,7 @@ function onBtnLatency() {
 }
 function onBtnJoinBots() {
     nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
-    if(!globalWorker) globalWorker = new PowWorker();
+    if (!globalWorker) globalWorker = new PowWorker();
 }
 function onBtnMultibox() {
     multiboxing = !multiboxing;
@@ -216,7 +231,8 @@ function onBtnAfk() {
     }
 }
 async function onBtnSbx() {
-    globalPublic_sbx = 
+    const res = await window.fetch('https://dieptool-sbx.glitch.me');
+    globalPublic_sbx = (await res.json()).link;
     window.location.href = globalPublic_sbx;
     if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
         globalWebSocket.close();
@@ -397,36 +413,7 @@ function UTF8ToString(utf8 = '') {
 }
 function delayPow(data) {
     const time = Date.now() - lastPow;
-    console.log(time);
     setTimeout(() => globalWebSocket._send(data), 5000 - time);
-}
-function get(url, cb) {
-    ajax(url, "GET", null, cb);
-}
-function ajax(url, method, body, cb) {
-    const r = new XMLHttpRequest();
-    r.open(method, url, true);
-    r.onerror = (err) => {
-        if (cb) cb(err);
-        cb = null;
-    };
-    r.onreadystatechange = () => {
-        if (r.readyState != 4) return;
-        let obj;
-        try {
-            obj = JSON.parse(r.responseText);
-        } catch (e) {
-            if (cb)
-                cb("Failed to parse body. Error: \"" + (e.message || e).toString() + "\". Content: " + r.responseText);
-            cb = null;
-            return;
-        }
-        if (r.status >= 200 && r.status <= 299 && !obj.error) {
-            if (cb) cb(null, obj);
-        }else if (cb) cb(obj.error || "Non 2xx status code");
-        cb = null;
-    };
-    r.send(body);
 }
 
 /*
@@ -507,9 +494,6 @@ function onMessageHandler(event) {
             globalWorker.solve(prefix, difficulty, (result) => {
                 nodeSocket_send('pow_result', { id, result });
             });
-            /*unsafeWindow.m28.pow.solve(prefix, difficulty, (result) => {
-                nodeSocket_send('pow_result', { id, result });
-            });*/
             break;
         }
     }
@@ -701,24 +685,29 @@ class Writer {
 }
 
 class PowWorker {
-
-    constructor(){
+    constructor() {
         this.worker = new Worker(this._getWorkerPath());
         this.nextJobId = 0;
         this.workerCallbacks = {};
         this.worker.onmessage = (e) => this._onmessage(e);
     }
     _getWorkerPath() {
-        return window.location.protocol + "//" + window.location.hostname + window.location.pathname + "pow_worker.js";
+        return (
+            window.location.protocol +
+            '//' +
+            window.location.hostname +
+            window.location.pathname +
+            'pow_worker.js'
+        );
     }
-    _onmessage(e){
+    _onmessage(e) {
         const data = e.data;
         const id = data[0];
         this.workerCallbacks[id](data.slice(1));
     }
     solve(prefix, difficulty, cb) {
         const id = this.nextJobId++;
-        this.worker.postMessage([id, "solve", prefix, difficulty]);
+        this.worker.postMessage([id, 'solve', prefix, difficulty]);
         this.workerCallbacks[id] = cb;
     }
 }
