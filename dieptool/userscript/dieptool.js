@@ -27,56 +27,26 @@ const COMMAND = {
 const JOIN_BOTS_AMOUNT = 10;
 const MAIN_URL = 'wss://dieptool-bycazka.me/';
 const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
+let DT_URL = MAIN_URL;
 /*
  *    G L O B A L   V A R I A B L E S
  */
-const globalUserInfo = {
+const gUserInfo = {
     [UPDATE.NAME]: UTF8ToString(window.localStorage.name),
     [UPDATE.SERVER_PARTY]: '',
     [UPDATE.GAMEMODE]: window.localStorage.gamemode,
 };
-let globalWebSocket;
-let globalReadyToInitialize = false;
-let globalSendBlocked = false;
-let globalPublic_sbx = '';
-let globalWorker;
+let gWebSocket;
+let gReadyToInit = false;
+let gSendIsBlocked = false;
+let gWorker;
 if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
  */
-// css, ty excigma for making the gui less ugly
-GM_addStyle(`
-.gui-dieptool button {
-display: block;
-font-family: 'Ubuntu';
-color: white;
-text-shadow:
--0.1em -0.1em 0 #000,
-0      -0.1em 0 #000,
-0.1em  -0.1em 0 #000,
-0.1em  0      0 #000,
-0.1em  0.1em  0 #000,
-0      0.1em  0 #000,
--0.1em 0.1em  0 #000,
--0.1em 0      0 #000;
-opacity: 0.8;
-border: none;
-padding: 0.3em 0.5em;
-width: 100%;
-transition: all 0.15s;
-}
-.gui-dieptool {
-top: 0px;
-left: 0px;
-position: absolute;
-}
-.gui-dieptool button:active:not([disabled]) {
-filter: brightness(0.9)
-}
-.gui-dieptool button:hover:not([disabled]):not(:active) {
-filter: brightness(1.1)
-}
-`);
+GM_addStyle(
+    `.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:none;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}`
+);
 const guiColors = [
     '#E8B18A',
     '#E666EA',
@@ -116,24 +86,6 @@ const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
 const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
 const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
 const guiBtnSupport = addButton('Membership', null, onBtnSupport, guiBody);
-let repel;
-const repelBtn = addButton('Enable Repelling', 'KeyV', () => {
-    if(repel){
-        repelBtn.innerHTML = 'Enable Repelling';
-        clearInterval(repel);
-        repel = undefined;
-    }
-    else{
-        repelBtn.innerHTML = 'Disable Repelling';
-        let a = 25*1000; // repel time in ms.
-        let b = 1300; // additionally wait time
-        repel = setInterval(() => {
-            input.keyDown('16');
-            setTimeout(() => input.keyUp('16'),a);
-        },2*a + b);
-
-    }
-}, guiBody);
 
 // Enable keyboard shortcuts
 document.addEventListener('keydown', (event) => {
@@ -157,51 +109,24 @@ function addButton(text, keyCode, onclick, parent) {
 }
 
 /*
- *    N O D E   W E B S O C K E T
- */
-let failedConnections = 0;
-let NODESOCKET_URL = MAIN_URL;
-let nodeSocket = openSocket();
-function openSocket() {
-    if (failedConnections > 10 && NODESOCKET_URL !== BACKUP_URL) {
-        console.log('using backup url');
-        NODESOCKET_URL = BACKUP_URL;
-        failedConnections = 0;
-    }
-    if (failedConnections > 10) {
-        failedConnections = 0;
-        guiBtnLatency.innerHTML = 'please try again later!';
-        return;
-    }
-    failedConnections++;
-    guiBtnLatency.innerHTML = 'connecting...';
-    let socket = new WebSocket(NODESOCKET_URL);
-    socket.binaryType = 'arraybuffer';
-    socket.onopen = onOpenHandler;
-    socket.onmessage = onMessageHandler;
-    socket.onclose = onDisconnectHandler;
-    return socket;
-}
-
-/*
- *    G U I   E V E N T H A N D L E R S
+ *    B U T T O N   E V E N T H A N D L E R S
  */
 function updateLatency(latency) {
     guiBtnLatency.innerHTML = `${latency} ms DiepTool`;
 }
 function onBtnLatency() {
-    if (isClosed()) nodeSocket = openSocket();
+    if (isClosed()) dtSocket = openSocket();
     if (guiBody.style.display === 'block') disableGUI();
     else enableGUI();
 }
 function onBtnJoinBots() {
     nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
-    if (!globalWorker) globalWorker = new PowWorker();
+    if (!gWorker) gWorker = new PowWorker();
 }
 function onBtnMultibox() {
     multiboxing = !multiboxing;
     if (multiboxing) {
-        guiBtnMultibox.innerHTML = 'Disable Multiboxing';
+        this.innerHTML = 'Disable Multiboxing';
         nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
     } else {
         guiBtnMultibox.innerHTML = 'Enable Multiboxing';
@@ -221,21 +146,20 @@ function onBtnClump() {
 function onBtnAfk() {
     afk = !afk;
     if (afk) {
-        globalSendBlocked = true;
+        gSendIsBlocked = true;
         guiBtnAfk.innerHTML = 'Disable AFK';
         nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
     } else {
-        globalSendBlocked = false;
+        gSendIsBlocked = false;
         guiBtnAfk.innerHTML = 'Enable AFK';
         nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
 async function onBtnSbx() {
     const res = await window.fetch('https://dieptool-sbx.glitch.me');
-    globalPublic_sbx = (await res.json()).link;
-    window.location.href = globalPublic_sbx;
-    if (globalWebSocket && globalWebSocket.readyState === window.WebSocket.OPEN)
-        globalWebSocket.close();
+    window.location.href = (await res.json()).link;
+    if (gWebSocket && gWebSocket.readyState === window.WebSocket.OPEN)
+        gWebSocket.close();
     else window.location.reload();
     setTimeout(() => (window.location.hash = ''), 2000);
 }
@@ -269,14 +193,39 @@ function onBtnSupport() {
 }
 
 /*
+ *    N O D E   W E B S O C K E T
+ */
+let failedConnections = 0;
+let dtSocket = openSocket();
+function openSocket() {
+    if (failedConnections > 10 && DT_URL !== BACKUP_URL) {
+        console.log('using backup url');
+        DT_URL = BACKUP_URL;
+        failedConnections = 0;
+    }
+    if (failedConnections > 10) {
+        failedConnections = 0;
+        guiBtnLatency.innerHTML = 'please try again later!';
+        return;
+    }
+    failedConnections++;
+    guiBtnLatency.innerHTML = 'connecting...';
+    let socket = new WebSocket(DT_URL);
+    socket.binaryType = 'arraybuffer';
+    socket.onopen = onopen;
+    socket.onmessage = onmessage;
+    socket.onclose = onclose;
+    return socket;
+}
+
+/*
  *    H I J A C K   S E N D ( )
  */
-let lastPow;
 const wsInstances = new Set();
 window.WebSocket.prototype._send = window.WebSocket.prototype.send;
 window.WebSocket.prototype.send = function (data) {
     if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-        if (!(globalSendBlocked && data[0] === 1)) {
+        if (!(gSendIsBlocked && data[0] === 1)) {
             if (data[0] === 10) delayPow(new Int8Array(data));
             else this._send(data);
         }
@@ -284,7 +233,7 @@ window.WebSocket.prototype.send = function (data) {
 
         if (!wsInstances.has(this)) {
             wsInstances.add(this);
-            globalWebSocket = this;
+            gWebSocket = this;
             update(UPDATE.SERVER_PARTY, { url: this.url });
 
             this._onmessage = this.onmessage;
@@ -295,8 +244,8 @@ window.WebSocket.prototype.send = function (data) {
 
                 if (data[0] === 4) update(UPDATE.GAMEMODE, data);
                 else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
-                else if (data[0] === 10) globalReadyToInitialize = true;
-                else if (data[0] === 11) lastPow = Date.now();
+                else if (data[0] === 10) gReadyToInit = true;
+                else if (data[0] === 11) gWebSocket.lastPow = Date.now();
             };
         }
         if (data[0] === 2) update(UPDATE.NAME, data);
@@ -312,7 +261,7 @@ function update(type, data) {
             return name;
         },
         [UPDATE.SERVER_PARTY]({ url, party }) {
-            let [userURL, userParty] = globalUserInfo[UPDATE.SERVER_PARTY].split(':');
+            let [userURL, userParty] = gUserInfo[UPDATE.SERVER_PARTY].split(':');
             if (url) {
                 userURL = url.match(/(?<=wss:\/\/).[0-9a-z]{3}(?=.s.m28n.net\/)/)[0];
                 userParty = '';
@@ -336,8 +285,8 @@ function update(type, data) {
             return gamemode;
         },
     };
-    globalUserInfo[type] = updates[type](data);
-    nodeSocket_send('update', { id: type, value: globalUserInfo[type] });
+    gUserInfo[type] = updates[type](data);
+    nodeSocket_send('update', { id: type, value: gUserInfo[type] });
 }
 function nodeSocket_send(type, content) {
     if (isClosed()) return;
@@ -391,10 +340,10 @@ function nodeSocket_send(type, content) {
         default:
             console.error('unrecognized packet type:', type);
     }
-    nodeSocket.send(writer.out());
+    dtSocket.send(writer.out());
 }
 function isClosed() {
-    if (nodeSocket) return nodeSocket.readyState !== WebSocket.OPEN;
+    if (dtSocket) return dtSocket.readyState !== WebSocket.OPEN;
     return true;
 }
 function enableGUI() {
@@ -412,8 +361,8 @@ function UTF8ToString(utf8 = '') {
     );
 }
 function delayPow(data) {
-    const time = Date.now() - lastPow;
-    setTimeout(() => globalWebSocket._send(data), 5000 - time);
+    const time = Date.now() - gWebSocket.lastPow;
+    setTimeout(() => gWebSocket._send(data), 5000 - time);
 }
 
 /*
@@ -422,34 +371,23 @@ function delayPow(data) {
 const canvas = document.getElementById('canvas');
 canvas._onmousemove = canvas.onmousemove;
 canvas.onmousemove = function (e) {
-    if (!globalSendBlocked) this._onmousemove(e);
+    if (!gSendIsBlocked) this._onmousemove(e);
 };
 
 /*
  *    N O D E S O C K E T   E V E N T H A N D L E R
  */
-function onOpenHandler() {
+function onopen() {
     console.log('connected to node.js Server');
     nodeSocket_send('heartbeat');
     nodeSocket_send('initial', {
         version: GM_info.script.version,
         authToken: window.localStorage.DTTOKEN,
     });
-    nodeSocket.lastPing = Date.now();
+    dtSocket.lastPing = Date.now();
     failedConnections = 0;
 }
-function onAcceptHandler() {
-    let int = setInterval(() => {
-        if (globalReadyToInitialize) {
-            clearInterval(int);
-
-            for (let [key, value] of Object.entries(globalUserInfo)) {
-                nodeSocket_send('update', { id: key, value });
-            }
-        }
-    });
-}
-function onMessageHandler(event) {
+function onmessage(event) {
     const reader = new Reader(event.data);
     switch (reader.vu()) {
         case 0: {
@@ -461,17 +399,25 @@ function onMessageHandler(event) {
         case 1: {
             const buffer = reader.buf();
 
-            globalWebSocket._send(buffer);
+            gWebSocket._send(buffer);
             break;
         }
         case 2: {
             const buffer = reader.buf();
 
-            globalWebSocket._onmessage({ data: buffer });
+            gWebSocket._onmessage({ data: buffer });
             break;
         }
         case 3: {
-            onAcceptHandler();
+            let int = setInterval(() => {
+                if (gReadyToInit) {
+                    clearInterval(int);
+
+                    for (let [key, value] of Object.entries(gUserInfo)) {
+                        nodeSocket_send('update', { id: key, value });
+                    }
+                }
+            }, 50);
             break;
         }
         case 4: {
@@ -481,9 +427,9 @@ function onMessageHandler(event) {
             break;
         }
         case 5: {
-            updateLatency(Date.now() - nodeSocket.lastPing);
+            updateLatency(Date.now() - dtSocket.lastPing);
             nodeSocket_send('heartbeat');
-            nodeSocket.lastPing = Date.now();
+            dtSocket.lastPing = Date.now();
             break;
         }
         case 6: {
@@ -491,17 +437,17 @@ function onMessageHandler(event) {
             const difficulty = reader.vu();
             const prefix = reader.string();
 
-            globalWorker.solve(prefix, difficulty, (result) => {
+            gWorker.solve(prefix, difficulty, (result) => {
                 nodeSocket_send('pow_result', { id, result });
             });
             break;
         }
     }
 }
-function onDisconnectHandler(event) {
+function onclose(event) {
     console.log('disconnected from node.js Server');
     guiBtnLatency.innerHTML = 'disconnected';
-    if (event.code === 1006) nodeSocket = openSocket();
+    if (event.code === 1006) dtSocket = openSocket();
 }
 
 /*
@@ -598,7 +544,6 @@ class Reader {
             throw new Error(`Error at ${this.at}: Out of Bounds.\n${this.debugStringFullBuffer()}`);
         }
     }
-
     debugStringFullBuffer() {
         this.at--;
         const s = this.buffer.reduce((acc, x, i) => {
