@@ -40,6 +40,7 @@ let gWebSocket;
 let gReadyToInit = false;
 let gSendIsBlocked = false;
 let gWorker;
+let gFailedConnections = 0;
 if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
 /*
  *    G U I
@@ -185,20 +186,19 @@ function onBtnSupport() {
 /*
  *    N O D E   W E B S O C K E T
  */
-let failedConnections = 0;
 let dtSocket = openSocket();
 function openSocket() {
-    if (failedConnections > 10 && DT_URL !== BACKUP_URL) {
+    if (gFailedConnections > 10 && DT_URL !== BACKUP_URL) {
         console.log('using backup url');
         DT_URL = BACKUP_URL;
-        failedConnections = 0;
+        gFailedConnections = 0;
     }
-    if (failedConnections > 10) {
-        failedConnections = 0;
+    if (gFailedConnections > 10) {
+        gFailedConnections = 0;
         guiBtnHead.innerHTML = 'please try again later!';
         return;
     }
-    failedConnections++;
+    gFailedConnections++;
     guiBtnHead.innerHTML = 'connecting...';
     let socket = new WebSocket(DT_URL);
     socket.binaryType = 'arraybuffer';
@@ -354,15 +354,20 @@ function delayPow(data) {
     const time = Date.now() - gWebSocket.lastPow;
     setTimeout(() => gWebSocket._send(data), 5000 - time);
 }
-
-/*
- *    F R E E Z E   M O U S E
- */
-const canvas = document.getElementById('canvas');
-canvas._onmousemove = canvas.onmousemove;
-canvas.onmousemove = function (e) {
-    if (!gSendIsBlocked) this._onmousemove(e);
-};
+!function freezeMouse() {
+    const canvas = document.getElementById('canvas');
+    canvas._onmousemove = canvas.onmousemove;
+    canvas.onmousemove = function (e) {
+        if (!gSendIsBlocked) this._onmousemove(e);
+    };
+}();
+!function removeAnnoyingAlert() {
+    window._alert = window.alert;
+    window.alert = function (msg) {
+        if (msg.startsWith('Your browser version')) return;
+        this._alert(msg);
+    };
+}();
 
 /*
  *    N O D E S O C K E T   E V E N T H A N D L E R
@@ -375,7 +380,7 @@ function onDtOpen() {
         authToken: window.localStorage.DTTOKEN,
     });
     dtSocket.lastPing = Date.now();
-    failedConnections = 0;
+    gFailedConnections = 0;
 }
 function onDtMessage(event) {
     const reader = new Reader(event.data);
