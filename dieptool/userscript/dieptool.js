@@ -59,26 +59,19 @@ const guiColors = [
 ];
 const guiButtons = [];
 
-let multiboxing = false;
-let clump = false;
-let afk = false;
-let updateConfirm = false;
-let supportConfirm = false;
-let sbxConfirm = false;
-
 const guiDiepTool = document.createElement('div');
 guiDiepTool.className = 'gui-dieptool';
 document.body.appendChild(guiDiepTool);
 
-const guiHeader = document.createElement('div');
-guiHeader.className = 'gui-header';
-guiDiepTool.appendChild(guiHeader);
+const guiHead = document.createElement('div');
+guiHead.className = 'gui-header';
+guiDiepTool.appendChild(guiHead);
 
 const guiBody = document.createElement('div');
 guiBody.className = 'gui-body';
 guiDiepTool.appendChild(guiBody);
 
-const guiBtnLatency = addButton('Not connected', null, onBtnLatency, guiHeader);
+const guiBtnHead = addButton('Not connected', null, onBtnHead, guiHead);
 const guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
 const guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
 const guiBtnClump = addButton('Enable Clump', 'KeyX', onBtnClump, guiBody);
@@ -112,9 +105,9 @@ function addButton(text, keyCode, onclick, parent) {
  *    B U T T O N   E V E N T H A N D L E R S
  */
 function updateLatency(latency) {
-    guiBtnLatency.innerHTML = `${latency} ms DiepTool`;
+    guiBtnHead.innerHTML = `${latency} ms DiepTool`;
 }
-function onBtnLatency() {
+function onBtnHead() {
     if (isClosed()) dtSocket = openSocket();
     if (guiBody.style.display === 'block') disableGUI();
     else enableGUI();
@@ -124,18 +117,18 @@ function onBtnJoinBots() {
     if (!gWorker) gWorker = new PowWorker();
 }
 function onBtnMultibox() {
-    multiboxing = !multiboxing;
-    if (multiboxing) {
+    this.state = !this.state;
+    if (this.state) {
         this.innerHTML = 'Disable Multiboxing';
         nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
     } else {
-        guiBtnMultibox.innerHTML = 'Enable Multiboxing';
+        this.innerHTML = 'Enable Multiboxing';
         nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
     }
 }
 function onBtnClump() {
-    clump = !clump;
-    if (clump) {
+    this.state = !this.state;
+    if (this.state) {
         guiBtnClump.innerHTML = 'Disable Clump';
         nodeSocket_send('command', { id: COMMAND.CLUMP, value: 1 });
     } else {
@@ -144,8 +137,8 @@ function onBtnClump() {
     }
 }
 function onBtnAfk() {
-    afk = !afk;
-    if (afk) {
+    this.state = !this.state;
+    if (this.state) {
         gSendIsBlocked = true;
         guiBtnAfk.innerHTML = 'Disable AFK';
         nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
@@ -158,37 +151,34 @@ function onBtnAfk() {
 async function onBtnSbx() {
     const res = await window.fetch('https://dieptool-sbx.glitch.me');
     window.location.href = (await res.json()).link;
-    if (gWebSocket && gWebSocket.readyState === window.WebSocket.OPEN)
-        gWebSocket.close();
+    if (gWebSocket && gWebSocket.readyState === window.WebSocket.OPEN) gWebSocket.close();
     else window.location.reload();
     setTimeout(() => (window.location.hash = ''), 2000);
 }
 function onBtnUpdate() {
-    if (updateConfirm) {
-        updateConfirm = false;
-        window.open('https://greasyfork.org/scripts/401910-diep-io-tool');
-        guiBtnUpdate.innerHTML = 'Check for Updates';
-    } else {
-        updateConfirm = true;
+    this.confirm = !this.confirm;
+    if (this.confirm) {
         guiBtnUpdate.innerHTML = 'Open in new tab?';
         setTimeout(() => {
             guiBtnUpdate.innerHTML = 'Check for Updates';
-            updateConfirm = false;
+            this.confirm = false;
         }, 3000);
+    } else {
+        window.open('https://greasyfork.org/scripts/401910-diep-io-tool');
+        guiBtnUpdate.innerHTML = 'Check for Updates';
     }
 }
 function onBtnSupport() {
-    if (supportConfirm) {
-        supportConfirm = false;
-        window.open('https://www.patreon.com/dieptool');
-        guiBtnSupport.innerHTML = 'Membership';
-    } else {
-        supportConfirm = true;
+    this.confirm = !this.confirm;
+    if (this.confirm) {
         guiBtnSupport.innerHTML = 'Open in new tab?';
         setTimeout(() => {
             guiBtnSupport.innerHTML = 'Membership';
-            supportConfirm = false;
+            this.confirm = false;
         }, 3000);
+    } else {
+        window.open('https://www.patreon.com/dieptool');
+        guiBtnSupport.innerHTML = 'Membership';
     }
 }
 
@@ -205,14 +195,14 @@ function openSocket() {
     }
     if (failedConnections > 10) {
         failedConnections = 0;
-        guiBtnLatency.innerHTML = 'please try again later!';
+        guiBtnHead.innerHTML = 'please try again later!';
         return;
     }
     failedConnections++;
-    guiBtnLatency.innerHTML = 'connecting...';
+    guiBtnHead.innerHTML = 'connecting...';
     let socket = new WebSocket(DT_URL);
     socket.binaryType = 'arraybuffer';
-    socket.onopen = onopen;
+    socket.onopen = onDtOpen;
     socket.onmessage = onmessage;
     socket.onclose = onclose;
     return socket;
@@ -377,7 +367,7 @@ canvas.onmousemove = function (e) {
 /*
  *    N O D E S O C K E T   E V E N T H A N D L E R
  */
-function onopen() {
+function onDtOpen() {
     console.log('connected to node.js Server');
     nodeSocket_send('heartbeat');
     nodeSocket_send('initial', {
@@ -387,7 +377,7 @@ function onopen() {
     dtSocket.lastPing = Date.now();
     failedConnections = 0;
 }
-function onmessage(event) {
+function onDtMessage(event) {
     const reader = new Reader(event.data);
     switch (reader.vu()) {
         case 0: {
@@ -409,7 +399,7 @@ function onmessage(event) {
             break;
         }
         case 3: {
-            let int = setInterval(() => {
+            const int = setInterval(() => {
                 if (gReadyToInit) {
                     clearInterval(int);
 
@@ -444,9 +434,9 @@ function onmessage(event) {
         }
     }
 }
-function onclose(event) {
+function onDtClose(event) {
     console.log('disconnected from node.js Server');
-    guiBtnLatency.innerHTML = 'disconnected';
+    guiBtnHead.innerHTML = 'disconnected';
     if (event.code === 1006) dtSocket = openSocket();
 }
 
@@ -463,7 +453,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 
-let endianSwap = (val) =>
+const endianSwap = (val) =>
     ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 
 class Reader {
@@ -504,7 +494,7 @@ class Reader {
     }
     vi() {
         let out = this.vu();
-        let sign = out & 1;
+        const sign = out & 1;
         out >>= 1;
         if (sign) out = ~out;
         this.assertNotOOB();
@@ -517,7 +507,7 @@ class Reader {
     }
     string() {
         let out;
-        let at = this.at;
+        const at = this.at;
         while (this.buffer[this.at]) this.at++;
         out = new TextDecoder().decode(this.buffer.subarray(at, this.at++));
         this.assertNotOOB();
@@ -525,14 +515,14 @@ class Reader {
     }
     buf() {
         let out;
-        let length = this.vu();
+        const length = this.vu();
         out = this.buffer.slice(this.at, this.at + length);
         this.at += length;
         this.assertNotOOB();
         return out;
     }
     flush() {
-        let slice = this.buffer.slice(this.at);
+        const slice = this.buffer.slice(this.at);
         this.at += slice.length;
         return slice;
     }
@@ -594,9 +584,9 @@ class Writer {
         return this;
     }
     vi(num) {
-        let sign = (num & 0x80000000) >>> 31;
+        const sign = (num & 0x80000000) >>> 31;
         if (sign) num = ~num;
-        let part = (num << 1) | sign;
+        const part = (num << 1) | sign;
         this.vu(part);
         return this;
     }
@@ -606,7 +596,7 @@ class Writer {
         return this;
     }
     string(str) {
-        let bytes = new TextEncoder().encode(str);
+        const bytes = new TextEncoder().encode(str);
         this.buffer.set(bytes, this.length);
         this.length += bytes.length;
         this.buffer[this.length++] = 0;
