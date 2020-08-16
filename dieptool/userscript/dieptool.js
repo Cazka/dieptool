@@ -41,7 +41,16 @@ let gReadyToInit = false;
 let gSendIsBlocked = false;
 let gWorker;
 let gFailedConnections = 0;
-if (!window.localStorage.DTTOKEN) window.localStorage.DTTOKEN = 'user';
+(function authCallback() {
+    const query = parseQuery(window.location.search);
+    if (query && query.code) {
+        window.localStorage['DTTOKEN'] = query.code;
+        window.location.href = '';
+    } else if (query && query.error) {
+        //Failed
+        window.location.href = '';
+    }
+})();
 /*
  *    G U I
  */
@@ -203,44 +212,44 @@ function openSocket() {
     let socket = new WebSocket(DT_URL);
     socket.binaryType = 'arraybuffer';
     socket.onopen = onDtOpen;
-    socket.onmessage = onmessage;
-    socket.onclose = onclose;
+    socket.onmessage = onDtMessage;
+    socket.onclose = onDtClose;
     return socket;
 }
 
-/*
- *    H I J A C K   S E N D ( )
- */
-const wsInstances = new Set();
-window.WebSocket.prototype._send = window.WebSocket.prototype.send;
-window.WebSocket.prototype.send = function (data) {
-    if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-        if (!(gSendIsBlocked && data[0] === 1)) {
-            if (data[0] === 10) delayPow(new Int8Array(data));
-            else this._send(data);
-        }
-        nodeSocket_send('diep_serverbound', { buffer: data });
+(function hijackSend() {
+    const wsInstances = new Set();
+    window.WebSocket.prototype._send = window.WebSocket.prototype.send;
+    window.WebSocket.prototype.send = function (data) {
+        if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
+            if (!(gSendIsBlocked && data[0] === 1)) {
+                if (data[0] === 10) delayPow(new Int8Array(data));
+                else this._send(data);
+            }
+            nodeSocket_send('diep_serverbound', { buffer: data });
 
-        if (!wsInstances.has(this)) {
-            wsInstances.add(this);
-            gWebSocket = this;
-            update(UPDATE.SERVER_PARTY, { url: this.url });
+            if (!wsInstances.has(this)) {
+                wsInstances.add(this);
+                gWebSocket = this;
+                update(UPDATE.SERVER_PARTY, { url: this.url });
 
-            this._onmessage = this.onmessage;
-            this.onmessage = function (event) {
-                this._onmessage(event);
-                const data = new Uint8Array(event.data);
-                nodeSocket_send('diep_clientbound', { buffer: data });
+                this._onmessage = this.onmessage;
+                this.onmessage = function (event) {
+                    this._onmessage(event);
+                    const data = new Uint8Array(event.data);
+                    nodeSocket_send('diep_clientbound', { buffer: data });
 
-                if (data[0] === 4) update(UPDATE.GAMEMODE, data);
-                else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
-                else if (data[0] === 10) gReadyToInit = true;
-                else if (data[0] === 11) gWebSocket.lastPow = Date.now();
-            };
-        }
-        if (data[0] === 2) update(UPDATE.NAME, data);
-    } else this._send(data);
-};
+                    if (data[0] === 4) update(UPDATE.GAMEMODE, data);
+                    else if (data[0] === 6) update(UPDATE.SERVER_PARTY, { party: data });
+                    else if (data[0] === 10) gReadyToInit = true;
+                    else if (data[0] === 11) gWebSocket.lastPow = Date.now();
+                };
+            }
+            if (data[0] === 2) update(UPDATE.NAME, data);
+        } else this._send(data);
+    };
+})();
+
 /*
  *    H E L P E R   F U N C T I O N S
  */
@@ -354,20 +363,30 @@ function delayPow(data) {
     const time = Date.now() - gWebSocket.lastPow;
     setTimeout(() => gWebSocket._send(data), 5000 - time);
 }
-!function freezeMouse() {
+function parseQuery(q) {
+    const parsed = {};
+    q.substring(1)
+        .split('&')
+        .forEach((e) => {
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
+    return parsed;
+}
+(function freezeMouse() {
     const canvas = document.getElementById('canvas');
     canvas._onmousemove = canvas.onmousemove;
     canvas.onmousemove = function (e) {
         if (!gSendIsBlocked) this._onmousemove(e);
     };
-}();
-!function removeAnnoyingAlert() {
-    window._alert = window.alert;
-    window.alert = function (msg) {
+})();
+(function removeAnnoyingAlert() {
+    unsafeWindow._alert = unsafeWindow.alert;
+    unsafeWindow.alert = function (msg) {
         if (msg.startsWith('Your browser version')) return;
         this._alert(msg);
     };
-}();
+})();
 
 /*
  *    N O D E S O C K E T   E V E N T H A N D L E R
