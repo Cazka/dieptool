@@ -1,6 +1,5 @@
-if(!window.localStorage['DTTOKEN']) addButton('Login', null, onBtnLogin, guiHead);
+
 else {
-    const guiBtnClump = addButton('Enable Clump', 'KeyX', onBtnClump, guiBody);
     const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
     const guiBtnSupport = addButton('Membership', null, onBtnSupport, guiBody);
 }
@@ -41,10 +40,4 @@ function onBtnSupport() {
         window.open('https://www.patreon.com/dieptool');
         guiBtnSupport.innerHTML = 'Membership';
     }
-}
-function enableGUI() {
-    guiBody.style.display = 'block';
-}
-function disableGUI() {
-    guiBody.style.display = 'none';
 }
