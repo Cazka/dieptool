@@ -51,7 +51,7 @@ class Reader {
     }
     vi() {
         let out = this.vu();
-        let sign = out & 1;
+        const sign = out & 1;
         out >>= 1;
         if (sign) out = ~out;
         this.assertNotOOB();
@@ -64,7 +64,7 @@ class Reader {
     }
     string() {
         let out;
-        let at = this.at;
+        const at = this.at;
         while (this.buffer[this.at]) this.at++;
         out = new TextDecoder().decode(this.buffer.subarray(at, this.at++));
         this.assertNotOOB();
@@ -72,14 +72,14 @@ class Reader {
     }
     buf() {
         let out;
-        let length = this.vu();
+        const length = this.vu();
         out = this.buffer.slice(this.at, this.at + length);
         this.at += length;
         this.assertNotOOB();
         return out;
     }
     flush() {
-        let slice = this.buffer.slice(this.at);
+        const slice = this.buffer.slice(this.at);
         this.at += slice.length;
         return slice;
     }
@@ -92,8 +92,14 @@ class Reader {
         }
     }
 
-    debugStringFullBuffer() {
+    /**
+     * Reverse Variable Length.
+     */
+    rv() {
         this.at--;
+        while (this.buffer[this.at - 1] & 0x80) this.at--;
+    }
+    debugStringFullBuffer() {
         const s = this.buffer.reduce((acc, x, i) => {
             x = x.toString(16).padStart(2, 0).toUpperCase();
             if (this.at === i) x = `>${x}`;
@@ -142,9 +148,9 @@ class Writer {
         return this;
     }
     vi(num) {
-        let sign = (num & 0x80000000) >>> 31;
+        const sign = (num & 0x80000000) >>> 31;
         if (sign) num = ~num;
-        let part = (num << 1) | sign;
+        const part = (num << 1) | sign;
         this.vu(part);
         return this;
     }
@@ -154,7 +160,7 @@ class Writer {
         return this;
     }
     string(str) {
-        let bytes = new TextEncoder().encode(str);
+        const bytes = new TextEncoder().encode(str);
         this.buffer.set(bytes, this.length);
         this.length += bytes.length;
         this.buffer[this.length++] = 0;

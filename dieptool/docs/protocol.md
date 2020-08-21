@@ -97,7 +97,7 @@ Currently all commands:
 | `01` | custom_diep_serverbound |
 | `02` | custom_diep_clientbound |
 | `03` | accept                  |
-| `04` | authToken denied        |
+| `04` | deny                    |
 | `05` | heartbeat               |
 | `06` | pow_request             |
 
@@ -130,7 +130,7 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
 
-#### `04` authToken denied
+#### `04` deny
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
