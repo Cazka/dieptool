@@ -230,10 +230,10 @@ class Writer {
     }
 }
 class DTSocket {
-    constructor(url, options) {
-        this.url = url;
+    constructor() {
+        this.url = MAIN_URL;
         this._socket;
-        this._options = options;
+        this._lastPing = Date.now();
         this.connect();
     }
 
@@ -253,52 +253,57 @@ class DTSocket {
             if (this.onclose) this.onclose(event);
         };
     }
-
     _onopen() {
         this.send('heartbeat');
         this.send('initial', {
-            version: this._options.version,
-            authToken: this._options.authToken,
+            version: GM_info.script.version,
+            authToken: window.localStorage.DTTOKEN,
         });
     }
-
     _onmessage(event) {
         const reader = new Reader(event.data);
         switch (reader.vu()) {
             case 0: {
                 const authToken = reader.string();
 
-                if (this.onauthtoken) this.onauthtoken(authToken);
+                window.localStorage['DTTOKEN'] = authToken;
                 break;
             }
             case 1: {
                 const buffer = reader.buf();
 
-                if (this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
+                gWebSocket._send(buffer);
                 break;
             }
             case 2: {
                 const buffer = reader.buf();
 
-                if (this.oncustom_diep_clientbound) this.oncustom_diep_clientbound(buffer);
+                gWebSocket._onmessage({ data: buffer });
                 break;
             }
             case 3: {
-                if (this.onaccept) this.onaccept();
+                enableGui();
+                const int = setInterval(() => {
+                    if (gReadyToInit) {
+                        clearInterval(int);
+
+                        for (let [key, value] of Object.entries(gUserInfo))
+                            this.send('update', { id: key, value });
+                    }
+                }, 100);
                 break;
             }
             case 4: {
-                const link = reader.string();
-
-                if (this.onpublic_sbx_link) this.onpublic_sbx_link(link);
+                window.localStorage['DTTOKEN'] = '';
+                btnHead.innerHTML = 'Login To DiepTool';
                 break;
             }
             case 5: {
-                const latency = Date.now() - this.lastPing;
+                const latency = Date.now() - this._lastPing;
                 this.send('heartbeat');
-                this.lastPing = Date.now();
+                this._lastPing = Date.now();
 
-                if (this.onlatency) this.onlatency(latency);
+                btnHead.innerHTML = `${latency} ms DiepTool`;
                 break;
             }
             case 6: {
@@ -314,8 +319,18 @@ class DTSocket {
             }
         }
     }
-
-    _onclose(event) {}
+    _onclose(event) {
+        console.log('disconnected from DT server');
+        if (this.url === MAIN_URL) {
+            console.log('Using backup url');
+            this.url = BACKUP_URL;
+            this.connect();
+        } else {
+            this.url = MAIN_URL;
+            btnHead.innerHTML = 'Reconnect';
+            console.log('Please try again later.');
+        }
+    }
 
     send(type, content) {
         if (this.isClosed()) return;
@@ -373,7 +388,7 @@ class DTSocket {
     }
 
     isClosed() {
-        if (this.socket) return this.socket.readyState !== WebSocket.OPEN;
+        if (this.socket) return this.socket.readyState === WebSocket.CLOSED;
         return true;
     }
 }
@@ -468,16 +483,58 @@ function addButton(parent, text, onclick, keyCode) {
     guiButtons.push(button);
     return button;
 }
-function onBtnHead(){
-    if(!window.localStorage['DTTOKEN']){
-        window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
-    }
-    else {
-
+function enableGui() {
+    guiBody.style.display = 'block';
+}
+function disableGui() {
+    guiBody.style.display = 'none';
+}
+function onBtnHead() {
+    if (!window.localStorage['DTTOKEN']) {
+        window.location.href =
+            'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+    } else if (dtSocket.isClosed()) {
+        dtSocket.connect();
+    } else if (guiBody.style.display === 'block') disableGui();
+    else enableGui();
+}
+function onBtnJoinBots() {
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
+}
+function onBtnMultibox() {
+    this.active = !this.active;
+    if (this.active) {
+        this.innerHTML = 'Disable Multiboxing';
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
+    } else {
+        this.innerHTML = 'Enable Multiboxing';
+        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
     }
 }
-function onBtnDiscord(){
-    window.location.href = 'https://discord.gg/8saC9pq';
+function onBtnAfk() {
+    this.active = !this.active;
+    if (this.active) {
+        gSendIsBlocked = true;
+        guiBtnAfk.innerHTML = 'Disable AFK';
+        nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
+    } else {
+        gSendIsBlocked = false;
+        guiBtnAfk.innerHTML = 'Enable AFK';
+        nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
+    }
+}
+function onBtnClump() {
+    this.active = !this.active;
+    if (this.active) {
+        guiBtnClump.innerHTML = 'Disable Clump';
+        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 1 });
+    } else {
+        guiBtnClump.innerHTML = 'Enable Clump';
+        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 0 });
+    }
+}
+function onBtnDiscord() {
+    window.open('https://discord.gg/8saC9pq');
 }
 
 (function hijackWebSocket() {
@@ -499,6 +556,14 @@ function onBtnDiscord(){
             }
         } else this._send(data);
     };
+})();
+(function enableShortcuts() {
+    document.addEventListener('keydown', (event) => {
+        if (document.getElementById('textInputContainer').style['display'] === 'block') return;
+        guiButtons.forEach((button) => {
+            if (button.keyCode === event.code) button.onclick();
+        });
+    });
 })();
 (function freezeMouse() {
     const canvas = document.getElementById('canvas');
@@ -541,7 +606,7 @@ let gReadyToInit = false;
  *   G U I
  */
 GM_addStyle(`
-.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:none;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}
+.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:0;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}
 `);
 const guiColors = [
     '#E8B18A',
@@ -559,52 +624,24 @@ const guiDiepTool = document.createElement('div');
 guiDiepTool.className = 'gui-dieptool';
 document.body.appendChild(guiDiepTool);
 
-const btnHead = addButton(guiDiepTool, 'Login to DiepTool', onBtnHead);
-const btnDiscord = addButton(guiDiepTool, 'Discord Server', onBtnDiscord);
+const guiHead = document.createElement('div');
+guiDiepTool.appendChild(guiHead);
 
+const guiBody = document.createElement('div');
+guiDiepTool.appendChild(guiBody);
 
-/*
- *   D T   S O C K E T
- */
-const dtSocket = new DTSocket(MAIN_URL, {
-    version: GM_info.script.version,
-    authToken: window.localStorage.DTTOKEN,
-});
-dtSocket.onopen = function () {
-    console.log('connected to DT server');
-};
-dtSocket.onclose = function (event) {
-    console.log('disconnected from DT server');
-    if (this.url === MAIN_URL) {
-        console.log('Using backup url');
-        this.url = BACKUP_URL;
-        this.connect();
-    } else {
-        this.url = MAIN_URL;
-        console.log('Please try again later.');
-    }
-};
-dtSocket.onauthtoken = function(authToken){
-    window.localStorage['DTTOKEN'] = authToken
-};
-dtSocket.oncustom_diep_serverbound = function(buffer){
-    gWebSocket._send(buffer);
-}
-dtSocket.oncustom_diep_clientbound = function(buffer) {
-    gWebSocket._onmessage({ data: buffer });
-}
-dtSocket.onaccept = function() {
-    btnHead.innerHTML = 'Connected';
-    const int = setInterval(() => {
-        if (gReadyToInit) {
-            clearInterval(int);
+//add buttons
+const btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
+const btnJoinBots = addButton(guiBody, 'Join Bots', onBtnJoinBots);
+const btnMultibox = addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
+const guiBtnClump = addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
+const btnAfk = addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
+const btnDiscord = addButton(
+    window.localStorage['DTTOKEN'] ? guiBody : guiHead,
+    'Discord Server',
+    onBtnDiscord
+);
 
-            for (let [key, value] of Object.entries(gUserInfo)) {
-                this.send('update', { id: key, value });
-            }
-        }
-    }, 50);
-};
-//dtSocket.onlatency = function(latency){
-//console.log(latency);
-//}
+disableGui();
+
+const dtSocket = new DTSocket();

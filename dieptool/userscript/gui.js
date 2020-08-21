@@ -1,96 +1,14 @@
-const guiDiepTool = document.createElement('div');
-guiDiepTool.className = 'gui-dieptool';
-document.body.appendChild(guiDiepTool);
-
-const guiHead = document.createElement('div');
-guiHead.className = 'gui-header';
-guiDiepTool.appendChild(guiHead);
-
-const guiBody = document.createElement('div');
-guiBody.className = 'gui-body';
-guiDiepTool.appendChild(guiBody);
-
 if(!window.localStorage['DTTOKEN']) addButton('Login', null, onBtnLogin, guiHead);
 else {
-    const guiBtnLatency = addButton('not connected', null, onBtnLatency, guiHead);
-    const guiBtnJoinBots = addButton(`Join ${JOIN_BOTS_AMOUNT} bots`, 'KeyJ', onBtnJoinBots, guiBody);
-    const guiBtnMultibox = addButton('Enable Multiboxing', 'KeyF', onBtnMultibox, guiBody);
     const guiBtnClump = addButton('Enable Clump', 'KeyX', onBtnClump, guiBody);
-    const guiBtnAfk = addButton('Enable AFK', 'KeyQ', onBtnAfk, guiBody);
-    const guiBtnSbx = addButton('Join Public Sandbox', null, onBtnSbx, guiBody);
     const guiBtnUpdate = addButton('Check for updates', null, onBtnUpdate, guiBody);
     const guiBtnSupport = addButton('Membership', null, onBtnSupport, guiBody);
 }
-// Enable keyboard shortcuts
-document.addEventListener('keydown', (event) => {
-    if (document.getElementById('textInputContainer').style['display'] === 'block') return;
-    guiButtons.forEach((button) => {
-        if (button.keyCode === event.code) button.onclick();
-    });
-});
 
-disableGUI();
-
-function addButton(text, keyCode, onclick, parent) {
-    const button = document.createElement('button');
-    parent.appendChild(button);
-    button.innerHTML = text;
-    button.keyCode = keyCode;
-    button.onclick = onclick;
-    button.style['background-color'] = guiColors[guiButtons.length % guiColors.length];
-    guiButtons.push(button);
-    return button;
-}
 
 /*
  *    B U T T O N   E V E N T H A N D L E R S
  */
-function updateLatency(latency) {
-    guiBtnLatency.innerHTML = `${latency} ms DiepTool`;
-}
-function onBtnLogin() {
-    window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify';
-}
-function onBtnLatency() {
-    if (guiBody.style.display === 'block') disableGUI();
-    else enableGUI();
-}
-function onBtnJoinBots() {
-    nodeSocket_send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
-    if (!gWorker) gWorker = new PowWorker();
-}
-function onBtnMultibox() {
-    this.state = !this.state;
-    if (this.state) {
-        this.innerHTML = 'Disable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
-    } else {
-        this.innerHTML = 'Enable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
-    }
-}
-function onBtnClump() {
-    this.state = !this.state;
-    if (this.state) {
-        guiBtnClump.innerHTML = 'Disable Clump';
-        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 1 });
-    } else {
-        guiBtnClump.innerHTML = 'Enable Clump';
-        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 0 });
-    }
-}
-function onBtnAfk() {
-    this.state = !this.state;
-    if (this.state) {
-        gSendIsBlocked = true;
-        guiBtnAfk.innerHTML = 'Disable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
-    } else {
-        gSendIsBlocked = false;
-        guiBtnAfk.innerHTML = 'Enable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
-    }
-}
 async function onBtnSbx() {
     const res = await window.fetch('https://dieptool-sbx.glitch.me');
     window.location.href = (await res.json()).link;
