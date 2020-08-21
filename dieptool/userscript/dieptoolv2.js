@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool v2
 // @description  made with much love.
-// @version      4.1.5
+// @version      4.2.0
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
