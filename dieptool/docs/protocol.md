@@ -51,10 +51,10 @@ Currently all user information:
 | `01` | name         |
 | `02` | gamemode     |
 
-| index | Value Type | Description |
-| ----- | ---------- | ----------- |
-| 0     | `vu`       | packet id   |
-| 1     | `vu`       | update id   |
+| index | Value Type | Description  |
+| ----- | ---------- | ------------ |
+| 0     | `vu`       | packet id    |
+| 1     | `vu`       | update id    |
 | 2     | `string`   | update value |
 
 #### `04` command
@@ -69,10 +69,10 @@ Currently all commands:
 | `01` | Multibox    | on/off         |
 | `02` | AFK         | on/off         |
 
-| index | Value Type | Description  |
-| ----- | ---------- | ------------ |
-| 0     | `vu`       | packet id    |
-| 1     | `vu`       | command id   |
+| index | Value Type | Description   |
+| ----- | ---------- | ------------- |
+| 0     | `vu`       | packet id     |
+| 1     | `vu`       | command id    |
 | 2     | `vu`       | command value |
 
 #### `05` heartbeat
@@ -93,18 +93,17 @@ Currently all commands:
 
 | ID   | Description             |
 | ---- | ----------------------- |
-| `00` | authtoken               |
+| `00` | authToken               |
 | `01` | custom_diep_serverbound |
 | `02` | custom_diep_clientbound |
 | `03` | accept                  |
-| `04` | public_sbx_link         |
+| `04` | authToken denied        |
 | `05` | heartbeat               |
 | `06` | pow_request             |
 
 #### `00` authtoken
 
-If the client uses the standart authToken `'user'`, we will sent a unique authToken
-to the client, which will be stored in localStorage.
+When the client sends the discord access-grant- token we respond with an unqiue authtoken.
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
@@ -131,12 +130,11 @@ to the client, which will be stored in localStorage.
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
 
-#### `04` public sandbox link
+#### `04` authToken denied
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
-| 1     | `string`   | sbx link    |
 
 #### `05` heartbeat
 
