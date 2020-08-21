@@ -1,18 +1,3 @@
-GM_addStyle(
-    `.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:none;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}`
-);
-const guiColors = [
-    '#E8B18A',
-    '#E666EA',
-    '#9566EA',
-    '#6690EA',
-    '#E7D063',
-    '#EA6666',
-    '#92EA66',
-    '#66EAE6',
-];
-const guiButtons = [];
-
 const guiDiepTool = document.createElement('div');
 guiDiepTool.className = 'gui-dieptool';
 document.body.appendChild(guiDiepTool);
