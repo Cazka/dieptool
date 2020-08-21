@@ -147,7 +147,6 @@ class Reader {
         }
     }
     debugStringFullBuffer() {
-        this.at--;
         const s = this.buffer.reduce((acc, x, i) => {
             x = x.toString(16).padStart(2, 0).toUpperCase();
             if (this.at === i) x = `>${x}`;
@@ -161,7 +160,7 @@ class Reader {
 class Writer {
     constructor() {
         this.length = 0;
-        this.buffer = new Uint8Array(8192);
+        this.buffer = new Uint8Array(16384);
     }
     u8(num) {
         this.buffer[this.length] = num;
@@ -438,13 +437,14 @@ function updateInformation(type, data) {
 }
 function _send(data) {
     dtSocket.send('diep_serverbound', { buffer: data });
-    if (gSendIsBlocked && data[0] === 1) return;
+
     if (data[0] === 10) {
         const d = new Int8Array(data);
         const time = Date.now() - this.lastPow;
         setTimeout(() => this._send(d), 5000 - time);
         return;
     }
+    if (gSendIsBlocked && data[0] === 1) return;
     if (data[0] === 2) updateInformation(UPDATE.NAME, data);
     this._send(data);
 }
@@ -458,13 +458,34 @@ function _onmessage(event) {
     else if (data[0] === 11) this.lastPow = Date.now();
     this._onmessage(event);
 }
-(function hijackSend() {
+function addButton(parent, text, onclick, keyCode) {
+    let button = document.createElement('button');
+    parent.appendChild(button);
+    button.innerHTML = text;
+    button.keyCode = keyCode;
+    button.onclick = onclick;
+    button.style['background-color'] = guiColors[guiButtons.length % guiColors.length];
+    guiButtons.push(button);
+    return button;
+}
+function onBtnHead(){
+    if(!window.localStorage['DTTOKEN']){
+        window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+    }
+    else {
+
+    }
+}
+function onBtnDiscord(){
+    window.location.href = 'https://discord.gg/8saC9pq';
+}
+
+(function hijackWebSocket() {
     const wsInstances = new Set();
     window.WebSocket.prototype._send = window.WebSocket.prototype.send;
     window.WebSocket.prototype.send = function (data) {
         if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-            if (_send) _send.call(this, data);
-            else this._send(data);
+            _send.call(this, data);
 
             if (!wsInstances.has(this)) {
                 wsInstances.add(this);
@@ -473,8 +494,7 @@ function _onmessage(event) {
 
                 this._onmessage = this.onmessage;
                 this.onmessage = function (event) {
-                    if (_onmessage) _onmessage.call(this, event);
-                    else this._onmessage(event);
+                    _onmessage.call(this, event);
                 };
             }
         } else this._send(data);
@@ -496,10 +516,10 @@ function _onmessage(event) {
 })();
 (function authCallback() {
     const query = parseQuery(window.location.search);
-    if (query && query.code) {
+    if (query.code) {
         window.localStorage['DTTOKEN'] = query.code;
         window.location.href = '';
-    } else if (query && query.error) {
+    } else if (query.error) {
         window.localStorage['DTTOKEN'] = '';
         window.location.href = '';
     }
@@ -520,6 +540,28 @@ let gReadyToInit = false;
 /*
  *   G U I
  */
+GM_addStyle(`
+.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:none;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}
+`);
+const guiColors = [
+    '#E8B18A',
+    '#E666EA',
+    '#9566EA',
+    '#6690EA',
+    '#E7D063',
+    '#EA6666',
+    '#92EA66',
+    '#66EAE6',
+];
+const guiButtons = [];
+
+const guiDiepTool = document.createElement('div');
+guiDiepTool.className = 'gui-dieptool';
+document.body.appendChild(guiDiepTool);
+
+const btnHead = addButton(guiDiepTool, 'Login to DiepTool', onBtnHead);
+const btnDiscord = addButton(guiDiepTool, 'Discord Server', onBtnDiscord);
+
 
 /*
  *   D T   S O C K E T
@@ -542,10 +584,17 @@ dtSocket.onclose = function (event) {
         console.log('Please try again later.');
     }
 };
-dtSocket.onauthtoken = (authToken) => (window.localStorage['DTTOKEN'] = authToken);
-dtSocket.oncustom_diep_serverbound = (buffer) => gWebSocket._send(buffer);
-dtSocket.oncustom_diep_clientbound = (buffer) => gWebSocket._onmessage({ data: buffer });
-dtSocket.onaccept = () => {
+dtSocket.onauthtoken = function(authToken){
+    window.localStorage['DTTOKEN'] = authToken
+};
+dtSocket.oncustom_diep_serverbound = function(buffer){
+    gWebSocket._send(buffer);
+}
+dtSocket.oncustom_diep_clientbound = function(buffer) {
+    gWebSocket._onmessage({ data: buffer });
+}
+dtSocket.onaccept = function() {
+    btnHead.innerHTML = 'Connected';
     const int = setInterval(() => {
         if (gReadyToInit) {
             clearInterval(int);
@@ -556,4 +605,6 @@ dtSocket.onaccept = () => {
         }
     }, 50);
 };
-//dtSocket.onlatency = (latency) => console.log(latency);
+//dtSocket.onlatency = function(latency){
+//console.log(latency);
+//}
