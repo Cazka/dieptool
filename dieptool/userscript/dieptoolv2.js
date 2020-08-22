@@ -24,9 +24,10 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-const MAIN_URL = 'wss://dieptool-bycazka.me/';
-const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
-
+//const MAIN_URL = 'wss://dieptool-bycazka.me/';
+const MAIN_URL = 'ws://localhost:3000';
+//const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
+const BACKUP_URL = 'ws://localhost:3001';
 /*
  *   C L A S S E S
  */
@@ -234,7 +235,6 @@ class DTSocket {
         this.url = MAIN_URL;
         this._socket;
         this._lastPing = Date.now();
-        this.connect();
     }
 
     connect() {
@@ -321,14 +321,16 @@ class DTSocket {
     }
     _onclose(event) {
         console.log('disconnected from DT server');
-        if (this.url === MAIN_URL) {
-            console.log('Using backup url');
-            this.url = BACKUP_URL;
-            this.connect();
-        } else {
-            this.url = MAIN_URL;
-            btnHead.innerHTML = 'Reconnect';
-            console.log('Please try again later.');
+        if (event.code === 1006) {
+            if (this.url === MAIN_URL) {
+                console.log('Using backup url');
+                this.url = BACKUP_URL;
+                this.connect();
+            } else {
+                this.url = MAIN_URL;
+                btnHead.innerHTML = 'Connection failed';
+                console.log('Please try again later.');
+            }
         }
     }
 
@@ -388,7 +390,7 @@ class DTSocket {
     }
 
     isClosed() {
-        if (this.socket) return this.socket.readyState === WebSocket.CLOSED;
+        if (this.socket) return this.socket.readyState !== WebSocket.OPEN;
         return true;
     }
 }
@@ -499,38 +501,38 @@ function onBtnHead() {
     else enableGui();
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: JOIN_BOTS_AMOUNT });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
     if (this.active) {
         this.innerHTML = 'Disable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 1 });
+        dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 1 });
     } else {
         this.innerHTML = 'Enable Multiboxing';
-        nodeSocket_send('command', { id: COMMAND.MULTIBOX, value: 0 });
+        dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 0 });
     }
 }
 function onBtnAfk() {
     this.active = !this.active;
     if (this.active) {
         gSendIsBlocked = true;
-        guiBtnAfk.innerHTML = 'Disable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, value: 1 });
+        btnAfk.innerHTML = 'Disable AFK';
+        dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
     } else {
         gSendIsBlocked = false;
-        guiBtnAfk.innerHTML = 'Enable AFK';
-        nodeSocket_send('command', { id: COMMAND.AFK, value: 0 });
+        btnAfk.innerHTML = 'Enable AFK';
+        dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
 function onBtnClump() {
     this.active = !this.active;
     if (this.active) {
-        guiBtnClump.innerHTML = 'Disable Clump';
-        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 1 });
+        btnClump.innerHTML = 'Disable Clump';
+        dtSocket.send('command', { id: COMMAND.CLUMP, value: 1 });
     } else {
-        guiBtnClump.innerHTML = 'Enable Clump';
-        nodeSocket_send('command', { id: COMMAND.CLUMP, value: 0 });
+        btnClump.innerHTML = 'Enable Clump';
+        dtSocket.send('command', { id: COMMAND.CLUMP, value: 0 });
     }
 }
 function onBtnDiscord() {
@@ -634,7 +636,7 @@ guiDiepTool.appendChild(guiBody);
 const btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
 const btnJoinBots = addButton(guiBody, 'Join Bots', onBtnJoinBots);
 const btnMultibox = addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
-const guiBtnClump = addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
+const btnClump = addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
 const btnAfk = addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
 const btnDiscord = addButton(
     window.localStorage['DTTOKEN'] ? guiBody : guiHead,
@@ -645,3 +647,4 @@ const btnDiscord = addButton(
 disableGui();
 
 const dtSocket = new DTSocket();
+if (window.localStorage['DTTOKEN']) dtSocket.connect();
