@@ -81,11 +81,6 @@ class User extends EventEmitter {
             this.upgradeStatsOrder = [];
             this.upgradeTanks = [];
         };
-        this.public_sbx;
-        super.on('public_sbx', (link) => {
-            this.public_sbx = link;
-            this.socket.send('public_sbx', { link });
-        });
 
         // AFK
         this.slow = false;
@@ -226,8 +221,7 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
             case COMMAND.JOIN_BOTS:
-                if (this.public_sbx === this.link)
-                    return this.sendNotification('bots free zone 🎯', undefined, 5000, 'no_bots');
+                //return this.sendNotification('bots free zone 🎯', undefined, 5000, 'no_bots');
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(
                         `You cant have more than ${this.botsMaximum} bots`,

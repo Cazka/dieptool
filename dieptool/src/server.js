@@ -1,6 +1,6 @@
 'use strict';
 
-const DiepSocket = require('diepsocket');
+const fetch = require('node-fetch');
 const Client = require('./client.js');
 const User = require('./user/user.js');
 
@@ -13,24 +13,15 @@ const DiepToolManager = (server) => {
 class DiepToolServer {
     constructor(wss) {
         this.users = new Set();
-        this.ips = new Set();
-        this.blacklist = new Set();
-        //this.createSbx();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
                 ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
                 : req.connection.remoteAddress;
-            if (this.ips.has(ip) || this.blacklist.has(ip)) {
-                ws.close();
-                return;
-            }
-            this.ips.add(ip);
-            ws.on('close', () => this.ips.delete(ip));
 
             const client = new Client(ws, ip);
-            client.once('initial', (content) => this.oninitial(client, content));
             client.on('error', (err) => {});
+            client.once('initial', (content) => this.oninitial(client, content));
         });
 
         this.connectionLog = [];
@@ -42,41 +33,38 @@ class DiepToolServer {
         }, 1000 * 60 * 5);
     }
 
-    async createSbx() {
-        const link = await DiepSocket.findServerSync('sandbox');
-        const bot = new DiepSocket(link);
-        let int;
-        bot.on('error', () => {});
-        bot.on('accept', () => {
-            this.public_sbx = bot.link;
-            this.users.forEach((user) => user.emit('public_sbx', this.public_sbx));
-            int = setInterval(() => {
-                bot.spawn('DT');
-                bot.move();
-            }, 4 * 60 * 1000);
-            setTimeout(() => bot.close(), 60 * 60 * 1000);
-        });
-        bot.on('close', () => {
-            clearInterval(int);
-            this.createSbx();
-        });
-    }
-
-    oninitial(client, content) {
-        switch (content.authToken) {
-            case 'user':
-                this.userManager(new User(client, content.version, content.authToken));
-                break;
-            case process.env.ADMINAUTHTOKEN:
-                this.adminManager(client);
-                break;
-            case process.env.MODERATORAUTHTOKEN:
-                this.moderatorManager(client);
-                break;
-            default:
-                client.close();
-                break;
+    async oninitial(client, content) {
+        if (content.authToken.startsWith('DT_')) {
+        } else {
+            const data = {
+                client_id: process.env.DISCORD_CLIENT_ID,
+                client_secret: process.env.DISCORD_CLIENT_SECRET,
+                grant_type: 'authorization_code',
+                redirect_uri: 'https://diep.io',
+                code: content.authToken,
+                scope: 'identify',
+            };
+            const result = await fetch('https://discordapp.com/api/oauth2/token', {
+                method: 'POST',
+                body: new URLSearchParams(data),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }).then((res) => res.json());
+            if (result.error) {
+                client.send('deny');
+                client.close(4000, result.error_description);
+                return;
+            }
+            console.log(result);
+            const user_info = await fetch('https://discordapp.com/api/users/@me', {
+                        headers: {
+                            authorization: `${result.token_type} ${result.access_token}`,
+                        },
+                    }).then(res => res.json());
+            console.log(user_info);
         }
+        this.userManager(new User(client, content.version, content.authToken));
     }
 
     userManager(user) {
@@ -94,7 +82,6 @@ class DiepToolServer {
             user.socket.close(4000, `User got banned: ${reason}`);
             this.blacklist.add(user.socket.ip);
         });
-        user.emit('public_sbx', this.public_sbx);
     }
 
     adminManager(admin) {
