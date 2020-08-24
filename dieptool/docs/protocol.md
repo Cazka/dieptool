@@ -135,6 +135,7 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
 | 0     | `vu`       | packet id   |
+| 1     | `string`   | reason      |
 
 #### `05` heartbeat
 
