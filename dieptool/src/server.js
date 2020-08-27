@@ -1,12 +1,15 @@
 'use strict';
 
-const fetch = require('node-fetch');
 const Client = require('./client.js');
 const User = require('./user/user.js');
+const { nanoid } = require('nanoid');
+const discord = require('./discord');
+const database = require('./database');
 
-const DiepToolManager = (server) => {
+const DiepToolManager = async (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
+    await database.setAllOffline();
     return new DiepToolServer(wss);
 };
 
@@ -21,6 +24,9 @@ class DiepToolServer {
 
             const client = new Client(ws, ip);
             client.on('error', (err) => {});
+            client.on('close', (code, reason) => console.log(code, reason));
+
+            if (!discord.ready && !database.ready) return client.close(4000, 'Server not ready');
             client.once('initial', (content) => this.oninitial(client, content));
         });
 
@@ -34,37 +40,80 @@ class DiepToolServer {
     }
 
     async oninitial(client, content) {
+        let dbUser;
         if (content.authToken.startsWith('DT_')) {
-        } else {
-            const data = {
-                client_id: process.env.DISCORD_CLIENT_ID,
-                client_secret: process.env.DISCORD_CLIENT_SECRET,
-                grant_type: 'authorization_code',
-                redirect_uri: 'https://diep.io',
-                code: content.authToken,
-                scope: 'identify',
-            };
-            const result = await fetch('https://discordapp.com/api/oauth2/token', {
-                method: 'POST',
-                body: new URLSearchParams(data),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-            }).then((res) => res.json());
-            if (result.error) {
-                client.send('deny');
-                client.close(4000, result.error_description);
+            dbUser = await database.getUserByToken(content.authToken);
+            if (!dbUser) {
+                const reason = 'Unknown DT Token';
+                client.send('deny', { reason });
+                client.close(4000, reason);
                 return;
             }
-            console.log(result);
-            const user_info = await fetch('https://discordapp.com/api/users/@me', {
-                        headers: {
-                            authorization: `${result.token_type} ${result.access_token}`,
-                        },
-                    }).then(res => res.json());
-            console.log(user_info);
+            if (dbUser.online) {
+                const reason = 'DT Token is already in use';
+                client.send('deny', { reason });
+                client.close(4000, reason);
+                return;
+            }
+            // Refresh Token
+            const exchange = await discord.refreshToken(dbUser.refresh_token);
+            if (exchange.error) {
+                const reason = 'Authentication failed';
+                client.send('deny', { reason });
+                client.close(4000, exchange.error_description);
+                return;
+            }
+            dbUser.refresh_token = exchange.refresh_token;
+            await dbUser.save();
+        } else {
+            const exchange = await discord.exchangeToken(content.authToken);
+            if (exchange.error) {
+                const reason = 'Discord authentication failed';
+                client.send('deny', { reason });
+                client.close(4000, exchange.error_description);
+                return;
+            }
+            const discordResult = await discord.apiFetch(exchange);
+            dbUser = await database.getUserById(discordResult.id);
+            if (dbUser) {
+                content.authToken = dbUser.auth_token;
+                client.send('authtoken', { authtoken: dbUser.auth_token });
+                this.oninitial(client, content);
+                return;
+            }
+            dbUser = {
+                auth_token: `DT_${nanoid(32)}`,
+                user_id: discordResult.id,
+                username: `${discordResult.username}#${discordResult.discriminator}`,
+                refresh_token: exchange.refresh_token,
+            };
+
+            dbUser = await database.addUser(dbUser);
+            client.send('authtoken', { authtoken: dbUser.auth_token });
         }
-        this.userManager(new User(client, content.version, content.authToken));
+        if (!discord.isPatreon(dbUser.user_id)) {
+            const reason = 'Not a patron';
+            client.send('deny', {reason});
+            client.close(4000, reason);
+        }
+
+        dbUser.online = true;
+        await dbUser.save();
+        client.on('close', async () => {
+            dbUser.online = false;
+            await dbUser.save();
+        });
+
+        if(discord.isBasic(dbUser.user_id)){
+            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 5}));
+        }else if(discord.isPremium(dbUser.user_id)){
+            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 10}));
+        } else if(discord.isDT_PRO(dbUser.user_id)){
+            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 10}));
+        } else {
+            client.send('deny',{reason:'missing roles'});
+            client.close(4000, 'missing roles');
+        }
     }
 
     userManager(user) {
