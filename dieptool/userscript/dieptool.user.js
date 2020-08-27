@@ -68,7 +68,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -231,8 +231,8 @@ class Writer {
     }
 }
 class DTSocket {
-    constructor() {
-        this.url = MAIN_URL;
+    constructor(url) {
+        this.url = url;
         this._socket;
         this._lastPing = Date.now();
     }
@@ -282,20 +282,13 @@ class DTSocket {
                 break;
             }
             case 3: {
-                enableGui();
-                const int = setInterval(() => {
-                    if (gReadyToInit) {
-                        clearInterval(int);
-
-                        for (let [key, value] of Object.entries(gUserInfo))
-                            this.send('update', { id: key, value });
-                    }
-                }, 100);
+                if(this.onaccept) this.onaccept();
                 break;
             }
             case 4: {
-                window.localStorage['DTTOKEN'] = '';
-                btnHead.innerHTML = 'Login To DiepTool';
+                const reason = reader.string();
+
+                if(this.ondeny) this.ondeny(reason);
                 break;
             }
             case 5: {
@@ -303,7 +296,7 @@ class DTSocket {
                 this.send('heartbeat');
                 this._lastPing = Date.now();
 
-                btnHead.innerHTML = `${latency} ms DiepTool`;
+                if(this.onlatency) this.onlatency(latency);
                 break;
             }
             case 6: {
@@ -313,26 +306,13 @@ class DTSocket {
                 const prefix = reader.string();
 
                 this._pow_worker.solve(prefix, difficulty, (result) =>
-                    nodeSocket_send('pow_result', { id, result })
-                );
+                                       this.send('pow_result', { id, result })
+                                      );
                 break;
             }
         }
     }
-    _onclose(event) {
-        console.log('disconnected from DT server');
-        if (event.code === 1006) {
-            if (this.url === MAIN_URL) {
-                console.log('Using backup url');
-                this.url = BACKUP_URL;
-                this.connect();
-            } else {
-                this.url = MAIN_URL;
-                btnHead.innerHTML = 'Connection failed';
-                console.log('Please try again later.');
-            }
-        }
-    }
+    _onclose(event) {}
 
     send(type, content) {
         if (this.isClosed()) return;
@@ -400,32 +380,10 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
     );
-}
-function parseParty(data) {
-    let party = '';
-    for (let i = 1; i < data.byteLength; i++) {
-        let byte = data[i].toString(16).split('');
-        if (byte.length === 1) {
-            party += byte[0] + '0';
-        } else {
-            party += byte[1] + byte[0];
-        }
-    }
-    return party;
-}
-function parseQuery(q) {
-    const parsed = {};
-    q.substring(1)
-        .split('&')
-        .forEach((e) => {
-            e = e.split('=');
-            parsed[e[0]] = e[1];
-        });
-    return parsed;
 }
 function updateInformation(type, data) {
     const updates = {
@@ -440,6 +398,18 @@ function updateInformation(type, data) {
                 userParty = '';
             }
             if (party) {
+                function parseParty(data) {
+                    let party = '';
+                    for (let i = 1; i < data.byteLength; i++) {
+                        let byte = data[i].toString(16).split('');
+                        if (byte.length === 1) {
+                            party += byte[0] + '0';
+                        } else {
+                            party += byte[1] + byte[0];
+                        }
+                    }
+                    return party;
+                }
                 userParty = parseParty(party);
             }
             return `${userURL}:${userParty}`;
@@ -497,11 +467,14 @@ function onBtnHead() {
             'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
     } else if (dtSocket.isClosed()) {
         dtSocket.connect();
-    } else if (guiBody.style.display === 'block') disableGui();
-    else enableGui();
+    } else if (guiBody.style.display === 'block') {
+        disableGui();
+    } else {
+        enableGui();
+    }
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 1 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
@@ -517,26 +490,29 @@ function onBtnAfk() {
     this.active = !this.active;
     if (this.active) {
         gSendIsBlocked = true;
-        btnAfk.innerHTML = 'Disable AFK';
+        this.innerHTML = 'Disable AFK';
         dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
     } else {
         gSendIsBlocked = false;
-        btnAfk.innerHTML = 'Enable AFK';
+        this.innerHTML = 'Enable AFK';
         dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
 function onBtnClump() {
     this.active = !this.active;
     if (this.active) {
-        btnClump.innerHTML = 'Disable Clump';
+        this.innerHTML = 'Disable Clump';
         dtSocket.send('command', { id: COMMAND.CLUMP, value: 1 });
     } else {
-        btnClump.innerHTML = 'Enable Clump';
+        this.innerHTML = 'Enable Clump';
         dtSocket.send('command', { id: COMMAND.CLUMP, value: 0 });
     }
 }
 function onBtnDiscord() {
     window.open('https://discord.gg/8saC9pq');
+}
+function onBtnPatreon(){
+    window.open('https://www.patreon.com/dieptool');
 }
 
 (function hijackWebSocket() {
@@ -582,6 +558,16 @@ function onBtnDiscord() {
     };
 })();
 (function authCallback() {
+    function parseQuery(q) {
+        const parsed = {};
+        q.substring(1)
+            .split('&')
+            .forEach((e) => {
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
+        return parsed;
+    }
     const query = parseQuery(window.location.search);
     if (query.code) {
         window.localStorage['DTTOKEN'] = query.code;
@@ -633,18 +619,59 @@ const guiBody = document.createElement('div');
 guiDiepTool.appendChild(guiBody);
 
 //add buttons
-const btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
-const btnJoinBots = addButton(guiBody, 'Join Bots', onBtnJoinBots);
-const btnMultibox = addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
-const btnClump = addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
-const btnAfk = addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
-const btnDiscord = addButton(
-    window.localStorage['DTTOKEN'] ? guiBody : guiHead,
-    'Discord Server',
-    onBtnDiscord
-);
+let btnHead;
+if(window.localStorage['DTTOKEN']){
+    btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
+    addButton(guiBody, 'Join Bots', onBtnJoinBots);
+    addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
+    addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
+    addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
+    disableGui();
+}
+else {
+    btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
+    addButton(guiBody, 'Discord Server', onBtnDiscord);
+    addButton(guiBody, 'Membership', onBtnPatreon);
+}
 
-disableGui();
+// connect to server
+const dtSocket = new DTSocket(MAIN_URL);
+dtSocket.onclose = function(){
+    console.log('disconnected from DT server');
+    if(window.localStorage['DTTOKEN']) btnHead.innerHTML = 'Disconnected';
 
-const dtSocket = new DTSocket();
-if (window.localStorage['DTTOKEN']) dtSocket.connect();
+    if (event.code === 1006){
+        if (this.url === MAIN_URL) {
+            console.log('Using backup url');
+            btnHead.innerHTML = 'Connecting...';
+
+            this.url = BACKUP_URL;
+            this.connect();
+        } else {
+            console.log('Please try again later.');
+            btnHead.innerHTML = 'Please try again later';
+
+            this.url = MAIN_URL;
+        }
+    }
+}
+dtSocket.onaccept = function(){
+    dtSocket.onlatency = (latency) => btnHead.innerHTML = `${latency} ms DiepTool`;
+    const int = setInterval(() => {
+        if (gReadyToInit) {
+            clearInterval(int);
+
+            for (let [key, value] of Object.entries(gUserInfo))
+                this.send('update', { id: key, value });
+        }
+    }, 100);
+}
+dtSocket.ondeny = function(reason){
+    window.localStorage['DTTOKEN'] = '';
+    console.log('login failed with reason:', reason);
+    btnHead.innerHTML = 'Login failed';
+    addButton(guiHead, reason);
+    setTimeout(() => window.location.reload(), 4000);
+}
+
+if(window.localStorage['DTTOKEN']) dtSocket.connect();
