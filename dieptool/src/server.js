@@ -97,12 +97,12 @@ class DiepToolServer {
             client.close(4000, reason);
         }*/
 
-        dbUser.online = true;
-        await dbUser.save();
         client.on('close', async () => {
             dbUser.online = false;
             await dbUser.save();
         });
+        dbUser.online = true;
+        await dbUser.save();
         this.userManager(new User(client, content.version, dbUser, { botsMaximum: 2 }));
         /*
         if (discord.isBasic(dbUser.user_id)) {
