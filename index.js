@@ -37,7 +37,7 @@ app.use(
 app.use(bodyParser.json());
 
 // Routes
-app.get('/dieptool.js', (req, res) => {
+app.get('/dieptool.user.js', (req, res) => {
     res.download(__dirname + '/dieptool/userscript/dieptool.user.js');
 })
 app.get('/', (req, res) => {

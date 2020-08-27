@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Diep.io Tool v2
+// @name         Diep.io Tool
 // @description  made with much love.
 // @version      4.2.0
 // @author       Cazka#9552
