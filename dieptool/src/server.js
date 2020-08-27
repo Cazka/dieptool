@@ -91,11 +91,11 @@ class DiepToolServer {
             dbUser = await database.addUser(dbUser);
             client.send('authtoken', { authtoken: dbUser.auth_token });
         }
-        if (!discord.isPatreon(dbUser.user_id)) {
+        /*if (!discord.isPatreon(dbUser.user_id)) {
             const reason = 'Not a patron';
             client.send('deny', { reason });
             client.close(4000, reason);
-        }
+        }*/
 
         dbUser.online = true;
         await dbUser.save();
