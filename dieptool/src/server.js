@@ -93,7 +93,7 @@ class DiepToolServer {
         }
         if (!discord.isPatreon(dbUser.user_id)) {
             const reason = 'Not a patron';
-            client.send('deny', {reason});
+            client.send('deny', { reason });
             client.close(4000, reason);
         }
 
@@ -104,14 +104,14 @@ class DiepToolServer {
             await dbUser.save();
         });
 
-        if(discord.isBasic(dbUser.user_id)){
-            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 5}));
-        }else if(discord.isPremium(dbUser.user_id)){
-            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 10}));
-        } else if(discord.isDT_PRO(dbUser.user_id)){
-            this.userManager(new User(client, content.version, dbUser, {botsMaximum: 10}));
+        if (discord.isBasic(dbUser.user_id)) {
+            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 5 }));
+        } else if (discord.isPremium(dbUser.user_id)) {
+            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
+        } else if (discord.isDT_PRO(dbUser.user_id)) {
+            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
         } else {
-            client.send('deny',{reason:'missing roles'});
+            client.send('deny', { reason: 'missing roles' });
             client.close(4000, 'missing roles');
         }
     }
