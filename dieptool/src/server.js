@@ -4,12 +4,12 @@ const Client = require('./client.js');
 const User = require('./user.js');
 const { nanoid } = require('nanoid');
 const discord = require('./discord');
-//const database = require('./database');
+const database = require('./database');
 
 const DiepToolManager = async (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
-    //await database.setAllOffline();
+    await database.setAllOffline();
     return new DiepToolServer(wss);
 };
 
@@ -41,7 +41,7 @@ class DiepToolServer {
 
     async oninitial(client, content) {
         let dbUser;
-        /*if (content.authToken.startsWith('DT_')) {
+        if (content.authToken.startsWith('DT_')) {
             dbUser = await database.getUserByToken(content.authToken);
             if (!dbUser) {
                 const reason = 'Unknown DT Token';
@@ -97,12 +97,12 @@ class DiepToolServer {
             client.close(4000, reason);
         }
 
-        /*dbUser.online = true;
+        dbUser.online = true;
         await dbUser.save();
         client.on('close', async () => {
             dbUser.online = false;
             await dbUser.save();
-        });*/
+        });
         this.userManager(new User(client, content.version, dbUser, { botsMaximum: 2 }));
         /*
         if (discord.isBasic(dbUser.user_id)) {
