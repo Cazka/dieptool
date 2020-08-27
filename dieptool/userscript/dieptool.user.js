@@ -472,7 +472,7 @@ function onBtnHead() {
     }
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 1 });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
