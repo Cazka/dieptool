@@ -24,10 +24,8 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-//const MAIN_URL = 'wss://dieptool-bycazka.me/';
-const MAIN_URL = 'ws://localhost:3000';
-//const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
-const BACKUP_URL = 'ws://localhost:3001';
+const MAIN_URL = 'wss://dieptool-bycazka.me/';
+const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 /*
  *   C L A S S E S
  */
