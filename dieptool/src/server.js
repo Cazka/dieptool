@@ -1,7 +1,7 @@
 'use strict';
 
 const Client = require('./client.js');
-const User = require('./user/user.js');
+const User = require('./user.js');
 const { nanoid } = require('nanoid');
 const discord = require('./discord');
 const database = require('./database');
