@@ -234,7 +234,8 @@ class DTSocket {
         this.url = url;
         this._socket;
         this._lastPing = Date.now();
-        this._pow_workers = [...Array(2)].map((x) => new PowWorker());
+        this._maxWorkers = 5;
+        this._pow_workers = [];
     }
 
     connect() {
@@ -266,7 +267,7 @@ class DTSocket {
             case 0: {
                 const authToken = reader.string();
 
-                window.localStorage['DTTOKEN'] = authToken;
+                window.localStorage.DTTOKEN = authToken;
                 break;
             }
             case 1: {
@@ -303,8 +304,9 @@ class DTSocket {
                 const id = reader.vu();
                 const difficulty = reader.vu();
                 const prefix = reader.string();
+                if(id >= this._pow_workers.length && this._pow_workers.length <= this._maxWorkers) this._pow_workers.push(new PowWorker());
                 //look for a worker thats not busy, but definetly take the last one
-                for (let i = 0; i < this._pow_workers; i++) {
+                for (let i = 0; i < this._pow_workers.length; i++) {
                     if (!this._pow_workers[i].busy || i+1 === this._pow_workers.length) {
                         this._pow_workers[i].busy = true;
                         this._pow_workers[i].solve(prefix, difficulty, (result) => {
@@ -468,7 +470,7 @@ function disableGui() {
     guiBody.style.display = 'none';
 }
 function onBtnHead() {
-    if (!window.localStorage['DTTOKEN']) {
+    if (!window.localStorage.DTTOKEN) {
         window.location.href =
             'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
     } else if (dtSocket.isClosed()) {
@@ -480,7 +482,7 @@ function onBtnHead() {
     }
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 1 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
@@ -576,10 +578,10 @@ function onBtnPatreon() {
     }
     const query = parseQuery(window.location.search);
     if (query.code) {
-        window.localStorage['DTTOKEN'] = query.code;
+        window.localStorage.DTTOKEN = query.code;
         window.history.pushState(null, 'diep.io', 'https://diep.io/');
     } else if (query.error) {
-        window.localStorage['DTTOKEN'] = '';
+        window.localStorage.DTTOKEN = '';
         window.history.pushState(null, 'diep.io', 'https://diep.io/');
     }
 })();
@@ -626,7 +628,7 @@ guiDiepTool.appendChild(guiBody);
 
 //add buttons
 let btnHead;
-if (window.localStorage['DTTOKEN']) {
+if (window.localStorage.DTTOKEN) {
     btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
     addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
     addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
@@ -642,7 +644,7 @@ if (window.localStorage['DTTOKEN']) {
 const dtSocket = new DTSocket(MAIN_URL);
 dtSocket.onclose = function () {
     console.log('disconnected from DT server');
-    if (window.localStorage['DTTOKEN']) btnHead.innerHTML = 'Disconnected';
+    if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
 
     if (event.code === 1006) {
         if (this.url === MAIN_URL) {
@@ -671,11 +673,11 @@ dtSocket.onaccept = function () {
     }, 100);
 };
 dtSocket.ondeny = function (reason) {
-    window.localStorage['DTTOKEN'] = '';
+    window.localStorage.DTTOKEN = '';
     console.log('login failed with reason:', reason);
     btnHead.innerHTML = 'Login failed';
     addButton(guiHead, reason);
     setTimeout(() => window.location.reload(), 4000);
 };
 
-if (window.localStorage['DTTOKEN']) dtSocket.connect();
+if (window.localStorage.DTTOKEN) dtSocket.connect();

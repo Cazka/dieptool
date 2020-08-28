@@ -320,7 +320,7 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
+        let bot = new DiepSocket(this.link, { forceTeam: true });
         bot.id = this.botCounter++;
         bot.on('open', () => {
             this.bots.add(bot);
