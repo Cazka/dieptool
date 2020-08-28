@@ -67,7 +67,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -387,9 +387,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
     );
 }
 function updateInformation(type, data) {
@@ -469,15 +469,12 @@ function disableGui() {
     guiBody.style.display = 'none';
 }
 function onBtnHead() {
-    if (!window.localStorage.DTTOKEN) {
-        window.location.href =
-            'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
-    } else if (dtSocket.isClosed()) {
-        dtSocket.connect();
-    } else if (guiBody.style.display === 'block') {
-        disableGui();
+    if (dtSocket.isClosed()) {
+        if (!window.localStorage.DTTOKEN) window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+        else dtSocket.connect();
     } else {
-        enableGui();
+        if (guiBody.style.display === 'block') disableGui();
+        else enableGui();
     }
 }
 function onBtnJoinBots() {
@@ -570,9 +567,9 @@ function onBtnPatreon() {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-                e = e.split('=');
-                parsed[e[0]] = e[1];
-            });
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
         return parsed;
     }
     const query = parseQuery(window.location.search);
