@@ -15,7 +15,7 @@ class DiscordBot {
         this._client.login(process.env.DISCORD_TOKEN);
         this._client.on('ready', () => this._ready());
     }
-    async _ready(){
+    async _ready() {
         this.ready = true;
         console.log('Discord is ready!');
         this._guild = this._client.guilds.cache.get(GUILD_ID);
@@ -66,33 +66,39 @@ class DiscordBot {
         }).then((res) => res.json());
         return res;
     }
-    
-    _getUser(user_id){
+
+    _getUser(user_id) {
         return this._guild.member(user_id);
     }
 
-    getRoles(user_id){
+    getRoles(user_id) {
         const user = this._getUser(user_id);
-        const roles = user?.roles.cache.map(x => {return {id:x.id,name:x.name}});
+        const roles = user?.roles.cache.map((x) => {
+            return { id: x.id, name: x.name };
+        });
         return roles || [];
-    }    
+    }
 
-    isPatreon(user_id){
+    isInGuild(user_id) {
+        return this._getUser(user_id) ? true : false;
+    }
+
+    isPatreon(user_id) {
         const user = this._getUser(user_id);
         return user.roles.cache.has(patreon_role);
     }
 
-    isBasic(user_id){
+    isBasic(user_id) {
         const user = this._getUser(user_id);
         return user.roles.cache.has(basic_role);
     }
 
-    isPremium(user_id){
+    isPremium(user_id) {
         const user = this._getUser(user_id);
         return user.roles.cache.has(premium_role);
     }
 
-    isDT_PRO(user_id){
+    isDT_PRO(user_id) {
         const user = this._getUser(user_id);
         return user.roles.cache.has(dtpro_role);
     }
