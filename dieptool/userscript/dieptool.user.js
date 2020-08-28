@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.0
+// @version      4.2.1
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -569,10 +569,12 @@ function onBtnPatreon(){
     const query = parseQuery(window.location.search);
     if (query.code) {
         window.localStorage['DTTOKEN'] = query.code;
-        window.location.href = '';
+        window.history.pushState(null, "diep.io", "https://diep.io/");
+
     } else if (query.error) {
         window.localStorage['DTTOKEN'] = '';
-        window.location.href = '';
+        window.history.pushState(null, "diep.io", "https://diep.io/");
+
     }
 })();
 
@@ -620,7 +622,7 @@ guiDiepTool.appendChild(guiBody);
 let btnHead;
 if(window.localStorage['DTTOKEN']){
     btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
-    addButton(guiBody, 'Join Bots', onBtnJoinBots);
+    addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
     addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
     addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
     addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
@@ -631,7 +633,6 @@ else {
     addButton(guiBody, 'Discord Server', onBtnDiscord);
     addButton(guiBody, 'Membership', onBtnPatreon);
 }
-
 // connect to server
 const dtSocket = new DTSocket(MAIN_URL);
 dtSocket.onclose = function(){
