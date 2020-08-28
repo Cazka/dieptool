@@ -234,8 +234,7 @@ class DTSocket {
         this.url = url;
         this._socket;
         this._lastPing = Date.now();
-        this._maxWorkers = 5;
-        this._pow_workers = [];
+        this._pow_workers = [...Array(4)].map((x) => new PowWorker());
     }
 
     connect() {
@@ -304,10 +303,10 @@ class DTSocket {
                 const id = reader.vu();
                 const difficulty = reader.vu();
                 const prefix = reader.string();
-                if(id >= this._pow_workers.length && this._pow_workers.length <= this._maxWorkers) this._pow_workers.push(new PowWorker());
+
                 //look for a worker thats not busy, but definetly take the last one
                 for (let i = 0; i < this._pow_workers.length; i++) {
-                    if (!this._pow_workers[i].busy || i+1 === this._pow_workers.length) {
+                    if (!this._pow_workers[i].busy || i + 1 === this._pow_workers.length) {
                         this._pow_workers[i].busy = true;
                         this._pow_workers[i].solve(prefix, difficulty, (result) => {
                             this._pow_workers[i].busy = false;
@@ -482,7 +481,7 @@ function onBtnHead() {
     }
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 1 });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
