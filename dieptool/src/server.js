@@ -24,7 +24,7 @@ class DiepToolServer {
 
             const client = new Client(ws, ip);
             client.on('error', (err) => {});
-            client.on('close', (code, reason) => console.log(code, reason));
+            client.on('close', (code, reason) => console.log(ip, ' closed', code, reason));
 
             if (!discord.ready && !database.ready) return client.close(4000, 'Server not ready');
             client.once('initial', (content) => this.oninitial(client, content));
@@ -58,43 +58,55 @@ class DiepToolServer {
             // Refresh Token
             const exchange = await discord.refreshToken(dbUser.refresh_token);
             if (exchange.error) {
-                const reason = 'Authentication failed';
+                const reason = 'Discord Authentification failed';
                 client.send('deny', { reason });
                 client.close(4000, exchange.error_description);
+                await dbUser.deleteOne(); // not good solution
                 return;
             }
+            // Use accesstoken to get Userinformation
+            const discordResult = await discord.apiFetch(exchange);
+            dbUser.username = `${discordResult.username}#${discordResult.discriminator}`;
             dbUser.refresh_token = exchange.refresh_token;
             await dbUser.save();
         } else {
+            // Exchange code for accesstoken
             const exchange = await discord.exchangeToken(content.authToken);
             if (exchange.error) {
-                const reason = 'Discord authentication failed';
+                const reason = 'Discord authentification failed';
                 client.send('deny', { reason });
                 client.close(4000, exchange.error_description);
                 return;
             }
+            // Use accesstoken to get Userinformation
             const discordResult = await discord.apiFetch(exchange);
+            // Find user in database.
             dbUser = await database.getUserById(discordResult.id);
-            if (dbUser) {
-                content.authToken = dbUser.auth_token;
-                client.send('authtoken', { authtoken: dbUser.auth_token });
-                this.oninitial(client, content);
-                return;
+            if (!dbUser) {
+                dbUser = {
+                    auth_token: `DT_${nanoid(32)}`,
+                    user_id: discordResult.id,
+                    username: `${discordResult.username}#${discordResult.discriminator}`,
+                    refresh_token: exchange.refresh_token,
+                };
+                dbUser = await database.addUser(dbUser);
             }
-            dbUser = {
-                auth_token: `DT_${nanoid(32)}`,
-                user_id: discordResult.id,
-                username: `${discordResult.username}#${discordResult.discriminator}`,
-                refresh_token: exchange.refresh_token,
-            };
-
-            dbUser = await database.addUser(dbUser);
+            content.authToken = dbUser.auth_token;
             client.send('authtoken', { authtoken: dbUser.auth_token });
+            this.oninitial(client, content);
+            return;
+        }
+        if (!discord.isInGuild(dbUser.user_id)) {
+            const reason = 'Not in Discord Server';
+            client.send('deny', { reason });
+            client.close(400, reason);
+            return;
         }
         /*if (!discord.isPatreon(dbUser.user_id)) {
             const reason = 'Not a patron';
             client.send('deny', { reason });
             client.close(4000, reason);
+            return;
         }*/
 
         client.on('close', async () => {
@@ -126,11 +138,6 @@ class DiepToolServer {
         );
         user.on('close', (code, reason) => {
             this.users.delete(user);
-            console.log(user.socket.ip, 'User disconnected reason:', code, reason);
-        });
-        user.on('ban', (reason) => {
-            user.socket.close(4000, `User got banned: ${reason}`);
-            this.blacklist.add(user.socket.ip);
         });
     }
 
@@ -165,30 +172,6 @@ class DiepToolServer {
                     break;
                 }
             }
-        });
-    }
-
-    moderatorManager(moderator) {
-        console.log('Moderator connected');
-
-        moderator.send(42, [this.connectionLog]);
-        const int = setInterval(() => {
-            moderator.send(40, [this.users.size]);
-            moderator.send(41, [
-                Array.from(this.users).map((user) => {
-                    user = user.toDataObject();
-                    return {
-                        name: user.name,
-                        link: user.link,
-                        gamemode: user.gamemode,
-                        time: user.time,
-                        latency: user.latency,
-                    };
-                }),
-            ]);
-        }, 100);
-        moderator.on('close', () => {
-            clearInterval(int);
         });
     }
 }
