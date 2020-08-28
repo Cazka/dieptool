@@ -33,6 +33,7 @@ class PowWorker {
     constructor() {
         this.worker = new Worker(this._getWorkerPath());
         this.nextJobId = 0;
+        this.busy = false;
         this.workerCallbacks = {};
         this.worker.onmessage = (e) => this._onmessage(e);
     }
@@ -66,7 +67,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -233,6 +234,7 @@ class DTSocket {
         this.url = url;
         this._socket;
         this._lastPing = Date.now();
+        this._pow_workers = [...Array(2)].map((x) => new PowWorker());
     }
 
     connect() {
@@ -280,13 +282,13 @@ class DTSocket {
                 break;
             }
             case 3: {
-                if(this.onaccept) this.onaccept();
+                if (this.onaccept) this.onaccept();
                 break;
             }
             case 4: {
                 const reason = reader.string();
 
-                if(this.ondeny) this.ondeny(reason);
+                if (this.ondeny) this.ondeny(reason);
                 break;
             }
             case 5: {
@@ -294,18 +296,24 @@ class DTSocket {
                 this.send('heartbeat');
                 this._lastPing = Date.now();
 
-                if(this.onlatency) this.onlatency(latency);
+                if (this.onlatency) this.onlatency(latency);
                 break;
             }
             case 6: {
-                if (!this._pow_worker) this._pow_worker = new PowWorker();
                 const id = reader.vu();
                 const difficulty = reader.vu();
                 const prefix = reader.string();
-
-                this._pow_worker.solve(prefix, difficulty, (result) =>
-                                       this.send('pow_result', { id, result })
-                                      );
+                //look for a worker thats not busy, but definetly take the last one
+                for (let i = 0; i < this._pow_workers; i++) {
+                    if (!this._pow_workers[i].busy || i+1 === this._pow_workers.length) {
+                        this._pow_workers[i].busy = true;
+                        this._pow_workers[i].solve(prefix, difficulty, (result) => {
+                            this._pow_workers[i].busy = false;
+                            this.send('pow_result', { id, result });
+                        });
+                        return;
+                    }
+                }
                 break;
             }
         }
@@ -378,9 +386,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-        .split('')
-        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-        .join('')
+            .split('')
+            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+            .join('')
     );
 }
 function updateInformation(type, data) {
@@ -509,7 +517,7 @@ function onBtnClump() {
 function onBtnDiscord() {
     window.open('https://discord.gg/8saC9pq');
 }
-function onBtnPatreon(){
+function onBtnPatreon() {
     window.open('https://www.patreon.com/dieptool');
 }
 
@@ -561,20 +569,18 @@ function onBtnPatreon(){
         q.substring(1)
             .split('&')
             .forEach((e) => {
-            e = e.split('=');
-            parsed[e[0]] = e[1];
-        });
+                e = e.split('=');
+                parsed[e[0]] = e[1];
+            });
         return parsed;
     }
     const query = parseQuery(window.location.search);
     if (query.code) {
         window.localStorage['DTTOKEN'] = query.code;
-        window.history.pushState(null, "diep.io", "https://diep.io/");
-
+        window.history.pushState(null, 'diep.io', 'https://diep.io/');
     } else if (query.error) {
         window.localStorage['DTTOKEN'] = '';
-        window.history.pushState(null, "diep.io", "https://diep.io/");
-
+        window.history.pushState(null, 'diep.io', 'https://diep.io/');
     }
 })();
 
@@ -620,26 +626,25 @@ guiDiepTool.appendChild(guiBody);
 
 //add buttons
 let btnHead;
-if(window.localStorage['DTTOKEN']){
+if (window.localStorage['DTTOKEN']) {
     btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
     addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
     addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
     addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
     addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
     disableGui();
-}
-else {
+} else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
     addButton(guiBody, 'Discord Server', onBtnDiscord);
     addButton(guiBody, 'Membership', onBtnPatreon);
 }
 // connect to server
 const dtSocket = new DTSocket(MAIN_URL);
-dtSocket.onclose = function(){
+dtSocket.onclose = function () {
     console.log('disconnected from DT server');
-    if(window.localStorage['DTTOKEN']) btnHead.innerHTML = 'Disconnected';
+    if (window.localStorage['DTTOKEN']) btnHead.innerHTML = 'Disconnected';
 
-    if (event.code === 1006){
+    if (event.code === 1006) {
         if (this.url === MAIN_URL) {
             console.log('Using backup url');
             btnHead.innerHTML = 'Connecting...';
@@ -653,9 +658,9 @@ dtSocket.onclose = function(){
             this.url = MAIN_URL;
         }
     }
-}
-dtSocket.onaccept = function(){
-    dtSocket.onlatency = (latency) => btnHead.innerHTML = `${latency} ms DiepTool`;
+};
+dtSocket.onaccept = function () {
+    dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
     const int = setInterval(() => {
         if (gReadyToInit) {
             clearInterval(int);
@@ -664,13 +669,13 @@ dtSocket.onaccept = function(){
                 this.send('update', { id: key, value });
         }
     }, 100);
-}
-dtSocket.ondeny = function(reason){
+};
+dtSocket.ondeny = function (reason) {
     window.localStorage['DTTOKEN'] = '';
     console.log('login failed with reason:', reason);
     btnHead.innerHTML = 'Login failed';
     addButton(guiHead, reason);
     setTimeout(() => window.location.reload(), 4000);
-}
+};
 
-if(window.localStorage['DTTOKEN']) dtSocket.connect();
+if (window.localStorage['DTTOKEN']) dtSocket.connect();

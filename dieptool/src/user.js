@@ -138,24 +138,10 @@ class User extends EventEmitter {
                 break;
             case UPDATE.NAME:
                 this.name = value;
-                if (this.name === 'QR5Q6tLOsAiMe15') this.botsMaximum = 20;
                 break;
             case UPDATE.GAMEMODE:
                 if (this.gamemode) return;
                 this.gamemode = value;
-                if (
-                    ![
-                        'dom',
-                        'ffa',
-                        'tag',
-                        'maze',
-                        'teams',
-                        '4teams',
-                        'sandbox',
-                        'survival',
-                    ].includes(this.gamemode)
-                )
-                    this.socket.close();
                 break;
             default:
                 this.sendNotification('Please reinstall DiepTool', color.red, 0);
@@ -184,7 +170,7 @@ class User extends EventEmitter {
                             if (euclid_distance > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags,
+                                    content.flags & 129,
                                     content.mouseX,
                                     content.mouseY
                                 );
@@ -204,13 +190,12 @@ class User extends EventEmitter {
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
                     this.sendNotification(undefined, undefined, 1, 'adblock');
-                    this.sendNotification('💎Made by Cazka💎', '#f5e042');
-                    this.sendNotification('🔥 Thank you for using Diep.io Tool 🔥', color.GREEN);
+                    this.sendNotification(
+                        `💎 Welcome back ${this.dbUser.username.split('#')[0]} 💎`,
+                        '#f5e042'
+                    );
+                    this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
                 }
-                if (this.socket.ip.startsWith('2605:a000:75c2:9200')) {
-                    this.sendNotification('Welcome Master Crabby', color.PINK, 5000);
-                } else if (this.socket.ip === '178.161.24.44')
-                    this.sendNotification('Welcome GOAT Diep.ro.PianoYT', color.PINK, 5000);
                 this.resetUpgrades();
                 break;
             }
@@ -294,7 +279,7 @@ class User extends EventEmitter {
                 this.afk = !!value;
                 break;
             case COMMAND.CLUMP:
-                if (!!value === this.afk) return;
+                if (!!value === this.clump) return;
                 this.sendNotification(
                     `Clump ${!!value ? 'enabled' : 'disabled'}`,
                     color.PINK,
@@ -364,13 +349,11 @@ class User extends EventEmitter {
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
             if (bot.gamemode !== this.gamemode)
-                this.socket.close(4000, 'bot gamemode and user gamemode mismatch'); // when someone fakes gamemode this will check.
+                this.socket.close(4000, 'bot gamemode and user gamemode mismatch');
 
             this.joinBots(--amount, i);
         });
-        bot.on('error', () => {
-            this.joinBots(amount, ++i);
-        });
+        bot.on('error', () => this.joinBots(amount, ++i));
     }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
@@ -439,10 +422,6 @@ class User extends EventEmitter {
             this.mouseXFixed = this.mouseX;
             this.mouseYFixed = this.mouseY;
         }
-    }
-    ban(reason) {
-        this.sendNotification(reason, color.RED, 10000);
-        super.emit('ban', reason);
     }
     toDataObject() {
         return {
