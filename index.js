@@ -5,6 +5,7 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
+const cors = require('cors');
 
 const app = express();
 const server = require('http').createServer(app);
@@ -13,6 +14,7 @@ const server = require('http').createServer(app);
 const DiepTool = require('./dieptool')(server);
 
 // Middleware
+app.use(cors());
 app.use(express.static('public'));
 app.use(
     '/login',
