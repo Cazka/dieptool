@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.2
+// @version      4.2.3
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -483,15 +483,13 @@ function disableGui() {
     guiBody.style.display = 'none';
 }
 function onBtnHead() {
-    if (!window.localStorage.DTTOKEN) {
-        window.location.href =
-            'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
-    } else if (dtSocket.isClosed()) {
-        dtSocket.connect();
-    } else if (guiBody.style.display === 'block') {
-        disableGui();
-    } else {
-        enableGui();
+    if (dtSocket.isClosed()) {
+        if (!window.localStorage.DTTOKEN) window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+        else dtSocket.connect();
+    }
+    else {
+        if (guiBody.style.display === 'block') disableGui();
+        else enableGui();
     }
 }
 function onBtnJoinBots() {
