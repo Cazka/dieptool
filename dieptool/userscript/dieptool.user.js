@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.1
+// @version      4.2.2
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -24,7 +24,7 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-const MAIN_URL = 'wss://dieptool-bycazka.me/';
+const SERVERS = ['wss://dieptool-bycazka.me/', 'wss://us.dieptool-bycazka.me/'];
 const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
 /*
  *   C L A S S E S
@@ -380,6 +380,20 @@ class DTSocket {
         if (this.socket) return this.socket.readyState !== WebSocket.OPEN;
         return true;
     }
+
+    static findServerPreference(urls){
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => resolve(urls[0]), 5000);
+            for(let i=0; i< urls.length; i++){
+                const ws = new WebSocket(urls[i]);
+                ws.onopen = function () {
+                    clearTimeout(timeout);
+                    ws.close();
+                    resolve(ws.url);
+                }
+            }
+        });
+    }
 }
 /*
  *   H E L P E R   F U N C T I O N S
@@ -469,12 +483,15 @@ function disableGui() {
     guiBody.style.display = 'none';
 }
 function onBtnHead() {
-    if (dtSocket.isClosed()) {
-        if (!window.localStorage.DTTOKEN) window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
-        else dtSocket.connect();
+    if (!window.localStorage.DTTOKEN) {
+        window.location.href =
+            'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+    } else if (dtSocket.isClosed()) {
+        dtSocket.connect();
+    } else if (guiBody.style.display === 'block') {
+        disableGui();
     } else {
-        if (guiBody.style.display === 'block') disableGui();
-        else enableGui();
+        enableGui();
     }
 }
 function onBtnJoinBots() {
@@ -593,6 +610,7 @@ const gUserInfo = {
 let gWebSocket;
 let gSendIsBlocked = false;
 let gReadyToInit = false;
+let dtSocket;
 
 /*
  *   G U I
@@ -637,43 +655,46 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Membership', onBtnPatreon);
 }
 // connect to server
-const dtSocket = new DTSocket(MAIN_URL);
-dtSocket.onclose = function () {
-    console.log('disconnected from DT server');
-    if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
+(async function initializeSocket(){
+    const url = await DTSocket.findServerPreference(SERVERS);
+    dtSocket = new DTSocket(url);
+    dtSocket.onclose = function () {
+        console.log('disconnected from DT server');
+        if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
 
-    if (event.code === 1006) {
-        if (this.url === MAIN_URL) {
-            console.log('Using backup url');
-            btnHead.innerHTML = 'Connecting...';
+        if (event.code === 1006) {
+            if (this.url !== BACKUP_URL) {
+                console.log('Using backup url');
+                btnHead.innerHTML = 'Connecting...';
 
-            this.url = BACKUP_URL;
-            this.connect();
-        } else {
-            console.log('Please try again later.');
-            btnHead.innerHTML = 'Please try again later';
+                this.url = BACKUP_URL;
+                this.connect();
+            } else {
+                console.log('Please try again later.');
+                btnHead.innerHTML = 'Please try again later';
 
-            this.url = MAIN_URL;
+                this.url = MAIN_URL;
+            }
         }
-    }
-};
-dtSocket.onaccept = function () {
-    dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
-    const int = setInterval(() => {
-        if (gReadyToInit) {
-            clearInterval(int);
+    };
+    dtSocket.onaccept = function () {
+        dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
+        const int = setInterval(() => {
+            if (gReadyToInit) {
+                clearInterval(int);
 
-            for (let [key, value] of Object.entries(gUserInfo))
-                this.send('update', { id: key, value });
-        }
-    }, 100);
-};
-dtSocket.ondeny = function (reason) {
-    window.localStorage.DTTOKEN = '';
-    console.log('login failed with reason:', reason);
-    btnHead.innerHTML = 'Login failed';
-    addButton(guiHead, reason);
-    setTimeout(() => window.location.reload(), 4000);
-};
+                for (let [key, value] of Object.entries(gUserInfo))
+                    this.send('update', { id: key, value });
+            }
+        }, 100);
+    };
+    dtSocket.ondeny = function (reason) {
+        window.localStorage.DTTOKEN = '';
+        console.log('login failed with reason:', reason);
+        btnHead.innerHTML = 'Login failed';
+        addButton(guiHead, reason);
+        setTimeout(() => window.location.reload(), 4000);
+    };
 
-if (window.localStorage.DTTOKEN) dtSocket.connect();
+    if (window.localStorage.DTTOKEN) dtSocket.connect();
+})();
