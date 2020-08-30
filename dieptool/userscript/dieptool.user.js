@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.3
+// @version      4.2.2
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -289,9 +289,7 @@ class DTSocket {
                 break;
             }
             case 4: {
-                const reason = reader.string();
-
-                if (this.ondeny) this.ondeny(reason);
+                if (this.ondeny) this.ondeny();
                 break;
             }
             case 5: {
@@ -320,9 +318,17 @@ class DTSocket {
                 }
                 break;
             }
+            case 7: {
+                const message = reader.string();
+
+                if(this.onalert) this.onalert(message);
+                break;
+            }
         }
     }
-    _onclose(event) {}
+    _onclose(event) {
+        this._pow_workers.forEach(worker => worker.terminate());
+    }
 
     send(type, content) {
         if (this.isClosed()) return;
@@ -386,7 +392,7 @@ class DTSocket {
 
     static findServerPreference(urls) {
         return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => resolve(urls[0]), 5000);
+            const timeout = setTimeout(() => resolve(), 5000);
             for (let i = 0; i < urls.length; i++) {
                 const ws = new WebSocket(urls[i]);
                 ws.onopen = function () {
@@ -560,7 +566,7 @@ function onBtnPatreon() {
 })();
 (function enableShortcuts() {
     document.addEventListener('keydown', (event) => {
-        if (document.getElementById('textInputContainer').style['display'] === 'block') return;
+        if (document.getElementById('textInputContainer').style.display === 'block') return;
         guiButtons.forEach((button) => {
             if (button.keyCode === event.code) button.onclick();
         });
@@ -612,8 +618,7 @@ const gUserInfo = {
 let gWebSocket;
 let gSendIsBlocked = false;
 let gReadyToInit = false;
-let dtSocket;
-
+let dtSocket = new DTSocket();
 /*
  *   G U I
  */
@@ -656,18 +661,18 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Discord Server', onBtnDiscord);
     addButton(guiBody, 'Membership', onBtnPatreon);
 }
-// connect to server
+
 (async function initializeSocket() {
     const url = await DTSocket.findServerPreference(SERVERS);
+    if(!url) {
+        console.log('Please try again later.');
+        btnHead.innerHTML = 'Please try again later';
+        return;
+    }
     dtSocket = new DTSocket(url);
     dtSocket.onclose = function () {
         console.log('disconnected from DT server');
         if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
-
-        if (event.code === 1006) {
-            console.log('Please try again later.');
-            btnHead.innerHTML = 'Please try again later';
-        }
     };
     dtSocket.onaccept = function () {
         dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
@@ -680,13 +685,15 @@ if (window.localStorage.DTTOKEN) {
             }
         }, 100);
     };
-    dtSocket.ondeny = function (reason) {
+    dtSocket.ondeny = function () {
         window.localStorage.DTTOKEN = '';
-        console.log('login failed with reason:', reason);
-        btnHead.innerHTML = 'Login failed';
-        addButton(guiHead, reason);
         setTimeout(() => window.location.reload(), 4000);
     };
+    dtSocket.onalert = function (message){
+        console.log('DiepTool alert:', message);
+        const btnAlert = addButton(guiHead, `Alert: ${message}`);
+        setTimeout(() => btnAlert.style.display = 'none', 5000);
+    }
 
     if (window.localStorage.DTTOKEN) dtSocket.connect();
 })();

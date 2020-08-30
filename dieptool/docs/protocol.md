@@ -100,6 +100,7 @@ Currently all commands:
 | `04` | deny                    |
 | `05` | heartbeat               |
 | `06` | pow_request             |
+| `07` | alert                   |
 
 #### `00` authtoken
 
@@ -151,3 +152,10 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | 1     | `vu`       | pow id      |
 | 2     | `vu`       | difficulty  |
 | 3     | `string`   | prefix      |
+
+#### `07` alert
+
+| index | Value Type | Description |
+| ----- | ---------- | ----------- |
+| 0     | `vu`       | packet id   |
+| 3     | `string`   | message     |
