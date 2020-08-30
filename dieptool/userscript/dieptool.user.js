@@ -24,8 +24,11 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-const SERVERS = ['wss://dieptool-bycazka.me/', 'wss://us.dieptool-bycazka.me/'];
-const BACKUP_URL = 'wss://ff7ffb71ec81.eu.ngrok.io/';
+const SERVERS = [
+    'wss://dieptool-bycazka.me/',
+    'wss://us.dieptool-bycazka.me/',
+    'wss://ff7ffb71ec81.eu.ngrok.io/',
+];
 /*
  *   C L A S S E S
  */
@@ -67,7 +70,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -381,16 +384,16 @@ class DTSocket {
         return true;
     }
 
-    static findServerPreference(urls){
+    static findServerPreference(urls) {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => resolve(urls[0]), 5000);
-            for(let i=0; i< urls.length; i++){
+            for (let i = 0; i < urls.length; i++) {
                 const ws = new WebSocket(urls[i]);
                 ws.onopen = function () {
                     clearTimeout(timeout);
                     ws.close();
                     resolve(ws.url);
-                }
+                };
             }
         });
     }
@@ -401,9 +404,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-        .split('')
-        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-        .join('')
+            .split('')
+            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+            .join('')
     );
 }
 function updateInformation(type, data) {
@@ -484,10 +487,11 @@ function disableGui() {
 }
 function onBtnHead() {
     if (dtSocket.isClosed()) {
-        if (!window.localStorage.DTTOKEN) window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+        if (!window.localStorage.DTTOKEN)
+            window.location.href =
+                'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
         else dtSocket.connect();
-    }
-    else {
+    } else {
         if (guiBody.style.display === 'block') disableGui();
         else enableGui();
     }
@@ -582,9 +586,9 @@ function onBtnPatreon() {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-            e = e.split('=');
-            parsed[e[0]] = e[1];
-        });
+                e = e.split('=');
+                parsed[e[0]] = e[1];
+            });
         return parsed;
     }
     const query = parseQuery(window.location.search);
@@ -653,7 +657,7 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Membership', onBtnPatreon);
 }
 // connect to server
-(async function initializeSocket(){
+(async function initializeSocket() {
     const url = await DTSocket.findServerPreference(SERVERS);
     dtSocket = new DTSocket(url);
     dtSocket.onclose = function () {
@@ -661,18 +665,8 @@ if (window.localStorage.DTTOKEN) {
         if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
 
         if (event.code === 1006) {
-            if (this.url !== BACKUP_URL) {
-                console.log('Using backup url');
-                btnHead.innerHTML = 'Connecting...';
-
-                this.url = BACKUP_URL;
-                this.connect();
-            } else {
-                console.log('Please try again later.');
-                btnHead.innerHTML = 'Please try again later';
-
-                this.url = MAIN_URL;
-            }
+            console.log('Please try again later.');
+            btnHead.innerHTML = 'Please try again later';
         }
     };
     dtSocket.onaccept = function () {
