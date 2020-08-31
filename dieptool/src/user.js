@@ -249,7 +249,7 @@ class User extends EventEmitter {
                 if (!this.link) return;
 
                 this.botsJoining = true;
-                const amount = value;
+                let amount = value;
                 amount =
                     this.bots.size + amount > this.botsMaximum
                         ? this.botsMaximum - this.bots.size
