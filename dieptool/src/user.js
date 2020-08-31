@@ -93,12 +93,7 @@ class User extends EventEmitter {
         });
 
         if (version !== process.env.CLIENT_VERSION) {
-            this.sendNotification(
-                'Please update DiepTool to the newest version',
-                color.RED,
-                60000,
-                'outdated'
-            );
+            this.socket.send('alert', { message: 'Please update DiepTool to the newest version' });
             this.socket.close(
                 4000,
                 `outdated client expected: ${process.env.CLIENT_VERSION}, got: ${version}`
@@ -253,40 +248,34 @@ class User extends EventEmitter {
                 if (this.botsJoining) return;
                 if (!this.link) return;
 
-                const amount = value;
                 this.botsJoining = true;
+                const amount = value;
+                amount =
+                    this.bots.size + amount > this.botsMaximum
+                        ? this.botsMaximum - this.bots.size
+                        : amount;
+                this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
                 this.joinBots(amount);
-                this.sendNotification(`Joining ${amount} bots`, color.PINK, 5000, 'join_bots');
                 break;
             case COMMAND.MULTIBOX:
                 if (!!value === this.multibox) return;
                 this.sendNotification(
-                    `Multiboxing ${!!value ? 'enabled' : 'disabled'}`,
-                    color.PINK,
+                    `Multiboxing: ${!!value ? 'ON' : 'OFF'}`,
+                    '#5200eb',
                     5000,
                     'multibox'
                 );
                 this.multibox = !!value;
                 break;
-            case COMMAND.AFK:
-                if (!!value === this.afk) return;
-                this.sendNotification(
-                    `AFK ${!!value ? 'enabled' : 'disabled'}`,
-                    color.PINK,
-                    5000,
-                    'afk'
-                );
-                this.afk = !!value;
-                break;
             case COMMAND.CLUMP:
                 if (!!value === this.clump) return;
-                this.sendNotification(
-                    `Clump ${!!value ? 'enabled' : 'disabled'}`,
-                    color.PINK,
-                    5000,
-                    'clump'
-                );
+                this.sendNotification(`Clump: ${!!value ? 'ON' : 'OFF'}`, '#004aeb', 5000, 'clump');
                 this.clump = !!value;
+                break;
+            case COMMAND.AFK:
+                if (!!value === this.afk) return;
+                this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
+                this.afk = !!value;
                 break;
             default:
                 this.sendNotification(
