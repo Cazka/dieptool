@@ -132,6 +132,7 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | 0     | `vu`       | packet id   |
 
 #### `04` deny
+Is send when the DT_TOKEN or the CODE is invalid
 
 | index | Value Type | Description |
 | ----- | ---------- | ----------- |
