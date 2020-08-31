@@ -16,17 +16,30 @@ const DiepToolManager = async (server) => {
 class DiepToolServer {
     constructor(wss) {
         this.users = new Set();
+        this.ips = new Set();
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
                 ? req.headers['x-forwarded-for'].split(/\s*,\s*/)[0]
                 : req.connection.remoteAddress;
-
             const client = new Client(ws, ip);
             client.on('error', (err) => {});
             client.on('close', (code, reason) => console.log(ip, ' closed', code, reason));
+            if (this.ips.has(ip)) {
+                const message = 'ip connection limit';
+                client.send('alert', { message });
+                client.close(4000, message);
+                return;
+            }
+            client.on('close', () => this.ips.delete(ip));
+            this.ips.add(ip);
 
-            if (!discord.ready && !database.ready) return client.close(4000, 'Server not ready');
+            if (!(discord.ready && database.ready)) {
+                const message = 'Server not ready';
+                client.send('alert', { message });
+                client.close(4000, message);
+                return;
+            }
             client.once('initial', (content) => this.oninitial(client, content));
         });
 
@@ -42,43 +55,57 @@ class DiepToolServer {
     async oninitial(client, content) {
         let dbUser;
         if (content.authToken.startsWith('DT_')) {
+            // what do we do here?
+            // search token in database
+            // update access token
+            // update username
+            // return dbUser
             dbUser = await database.getUserByToken(content.authToken);
             if (!dbUser) {
-                const reason = 'Unknown DT Token';
-                client.send('deny', { reason });
-                client.close(4000, reason);
+                const message = 'Unknown DT Token';
+                client.send('deny');
+                client.send('alert', { message });
+                client.close(4000, message);
                 return;
             }
             if (dbUser.online) {
-                const reason = 'DT Token is already in use';
-                client.send('deny', { reason });
-                client.close(4000, reason);
+                const message = 'DT Token is already in use';
+                client.send('alert', { message });
+                client.close(4000, message);
                 return;
             }
-            // Refresh Token
+            // use refresh token
             const exchange = await discord.refreshToken(dbUser.refresh_token);
             if (exchange.error) {
-                const reason = 'Discord Authentification failed';
-                client.send('deny', { reason });
+                const message = 'Discord authentification failed';
+                client.send('deny');
+                client.send('alert', { message });
                 client.close(4000, exchange.error_description);
-                await dbUser.deleteOne(); // not good solution
+                await dbUser.deleteOne();
                 return;
             }
-            // Use accesstoken to get Userinformation
+            // Use accesstoken to get user information
             const discordResult = await discord.apiFetch(exchange);
             dbUser.username = `${discordResult.username}#${discordResult.discriminator}`;
             dbUser.refresh_token = exchange.refresh_token;
             await dbUser.save();
         } else {
+            //what do we do here?
+            // exchange code for accestoken
+            // get user information
+            // save user in database
+            // return dbUser
+
             // Exchange code for accesstoken
             const exchange = await discord.exchangeToken(content.authToken);
             if (exchange.error) {
-                const reason = 'Discord authentification failed';
-                client.send('deny', { reason });
+                const message = 'Discord authentification failed';
+                client.send('deny');
+                client.send('alert', { message });
                 client.close(4000, exchange.error_description);
                 return;
             }
-            // Use accesstoken to get Userinformation
+            // Use accesstoken to get user information
             const discordResult = await discord.apiFetch(exchange);
             // Find user in database.
             dbUser = await database.getUserById(discordResult.id);
@@ -97,24 +124,26 @@ class DiepToolServer {
             return;
         }
         if (!discord.isInGuild(dbUser.user_id)) {
-            const reason = 'Not in Discord Server';
-            client.send('deny', { reason });
-            client.close(400, reason);
+            const message = 'You have to join the discord server';
+            client.send('alert', { message });
+            client.close(400, message);
             return;
         }
         /*if (!discord.isPatreon(dbUser.user_id)) {
-            const reason = 'Not a patron';
-            client.send('deny', { reason });
-            client.close(4000, reason);
+            const message = 'DiepTool is exclusive to our patrons';
+            client.send('alert', {message}):
+            client.close(4000, message);
             return;
         }*/
 
+        if (client.isClosed()) return;
+        dbUser.online = true;
         client.on('close', async () => {
             dbUser.online = false;
             await dbUser.save();
         });
-        dbUser.online = true;
         await dbUser.save();
+        if (client.isClosed()) return;
         this.userManager(new User(client, content.version, dbUser, { botsMaximum: 2 }));
         /*
         if (discord.isBasic(dbUser.user_id)) {
@@ -124,7 +153,7 @@ class DiepToolServer {
         } else if (discord.isDT_PRO(dbUser.user_id)) {
             this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
         } else {
-            client.send('deny', { reason: 'missing roles' });
+            client.send('alert', { message: 'missing roles' });
             client.close(4000, 'missing roles');
         }*/
     }
