@@ -18,9 +18,9 @@ class MongoDB {
         this.db = mongoose.connection;
         this.ready = false;
         this.db.on('error', console.error.bind(console, 'connection error:'));
-        this.db.once('open', function () {
-            console.log('Database is ready!');
+        this.db.once('open', () => {
             this.ready = true;
+            console.log('Database is ready!');
         });
     }
 
