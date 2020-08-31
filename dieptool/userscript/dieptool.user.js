@@ -24,9 +24,7 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-const SERVERS = [
-    'ws://localhost:3000'
-];
+const SERVERS = ['ws://localhost:3000'];
 /*
  *   C L A S S E S
  */
@@ -57,7 +55,7 @@ class PowWorker {
         this.worker.postMessage([id, 'solve', prefix, difficulty]);
         this.workerCallbacks[id] = cb;
     }
-    terminate(){
+    terminate() {
         this.worker.terminate();
     }
 }
@@ -71,7 +69,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -412,9 +410,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-        .split('')
-        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-        .join('')
+            .split('')
+            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+            .join('')
     );
 }
 function updateInformation(type, data) {
@@ -508,7 +506,7 @@ async function onBtnHead() {
             this.innerHTML = 'Connecting...';
             dtSocket.connect(url);
         }
-    } else if(dtSocket.accepted){
+    } else if (dtSocket.accepted) {
         if (guiBody.style.display === 'block') disableGui();
         else enableGui();
     }
@@ -603,9 +601,9 @@ function onBtnPatreon() {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-            e = e.split('=');
-            parsed[e[0]] = e[1];
-        });
+                e = e.split('=');
+                parsed[e[0]] = e[1];
+            });
         return parsed;
     }
     const query = parseQuery(window.location.search);
