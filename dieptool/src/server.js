@@ -144,7 +144,7 @@ class DiepToolServer {
         });
         await dbUser.save();
         if (client.isClosed()) return;
-        this.userManager(new User(client, content.version, dbUser, { botsMaximum: 2 }));
+        this.userManager(new User(client, content.version, dbUser, { botsMaximum: 5 }));
         /*
         if (discord.isBasic(dbUser.user_id)) {
             this.userManager(new User(client, content.version, dbUser, { botsMaximum: 5 }));

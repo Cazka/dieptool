@@ -292,7 +292,7 @@ class User extends EventEmitter {
     joinBots(amount, i = 0) {
         if (i >= ipv6pool.length) {
             this.sendNotification(
-                `Not enough Proxies available. You have ${this.bots.size} bots`,
+                `Can't join bots because your team is full. You have ${this.bots.size} bots`,
                 color.GREEN
             );
             this.botsJoining = false;
