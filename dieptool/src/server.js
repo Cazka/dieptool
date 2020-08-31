@@ -129,12 +129,12 @@ class DiepToolServer {
             client.close(400, message);
             return;
         }
-        /*if (!discord.isPatreon(dbUser.user_id)) {
+        if (!discord.isPatreon(dbUser.user_id)) {
             const message = 'DiepTool is exclusive to our patrons';
-            client.send('alert', {message}):
+            client.send('alert', { message });
             client.close(4000, message);
             return;
-        }*/
+        }
 
         if (client.isClosed()) return;
         dbUser.online = true;
@@ -144,18 +144,17 @@ class DiepToolServer {
         });
         await dbUser.save();
         if (client.isClosed()) return;
-        this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
-        /*
+
         if (discord.isBasic(dbUser.user_id)) {
             this.userManager(new User(client, content.version, dbUser, { botsMaximum: 5 }));
         } else if (discord.isPremium(dbUser.user_id)) {
             this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
         } else if (discord.isDT_PRO(dbUser.user_id)) {
-            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
+            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 15 }));
         } else {
             client.send('alert', { message: 'missing roles' });
             client.close(4000, 'missing roles');
-        }*/
+        }
     }
 
     userManager(user) {
