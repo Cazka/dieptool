@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.2
+// @version      4.2.3
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -25,9 +25,7 @@ const COMMAND = {
     CLUMP: 3,
 };
 const SERVERS = [
-    'wss://dieptool-bycazka.me/',
-    'wss://us.dieptool-bycazka.me/',
-    'wss://ff7ffb71ec81.eu.ngrok.io/',
+    'ws://localhost:3000'
 ];
 /*
  *   C L A S S E S
@@ -59,6 +57,9 @@ class PowWorker {
         this.worker.postMessage([id, 'solve', prefix, difficulty]);
         this.workerCallbacks[id] = cb;
     }
+    terminate(){
+        this.worker.terminate();
+    }
 }
 /*
  * This is from @cx88 with little modifications made by me.
@@ -70,7 +71,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -233,15 +234,15 @@ class Writer {
     }
 }
 class DTSocket {
-    constructor(url) {
-        this.url = url;
+    constructor() {
         this._socket;
         this._lastPing = Date.now();
         this._pow_workers = [...Array(4)].map((x) => new PowWorker());
+        this.accepted = false;
     }
 
-    connect() {
-        this.socket = new WebSocket(this.url);
+    connect(url) {
+        this.socket = new WebSocket(url);
         this.socket.binaryType = 'arraybuffer';
         this.socket.onopen = () => {
             this._onopen();
@@ -285,6 +286,7 @@ class DTSocket {
                 break;
             }
             case 3: {
+                this.accepted = true;
                 if (this.onaccept) this.onaccept();
                 break;
             }
@@ -321,13 +323,13 @@ class DTSocket {
             case 7: {
                 const message = reader.string();
 
-                if(this.onalert) this.onalert(message);
+                if (this.onalert) this.onalert(message);
                 break;
             }
         }
     }
     _onclose(event) {
-        this._pow_workers.forEach(worker => worker.terminate());
+        this._pow_workers.forEach((pow_worker) => pow_worker.terminate());
     }
 
     send(type, content) {
@@ -410,9 +412,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
     );
 }
 function updateInformation(type, data) {
@@ -491,13 +493,22 @@ function enableGui() {
 function disableGui() {
     guiBody.style.display = 'none';
 }
-function onBtnHead() {
+async function onBtnHead() {
     if (dtSocket.isClosed()) {
         if (!window.localStorage.DTTOKEN)
             window.location.href =
                 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
-        else dtSocket.connect();
-    } else {
+        else {
+            const url = await DTSocket.findServerPreference(SERVERS);
+            if (!url) {
+                console.log('Please try again later.');
+                btnHead.innerHTML = 'Please try again later';
+                return;
+            }
+            this.innerHTML = 'Connecting...';
+            dtSocket.connect(url);
+        }
+    } else if(dtSocket.accepted){
         if (guiBody.style.display === 'block') disableGui();
         else enableGui();
     }
@@ -508,10 +519,10 @@ function onBtnJoinBots() {
 function onBtnMultibox() {
     this.active = !this.active;
     if (this.active) {
-        this.innerHTML = 'Disable Multiboxing';
+        this.innerHTML = 'Multiboxing: ON';
         dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 1 });
     } else {
-        this.innerHTML = 'Enable Multiboxing';
+        this.innerHTML = 'Multiboxing: OFF';
         dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 0 });
     }
 }
@@ -519,21 +530,21 @@ function onBtnAfk() {
     this.active = !this.active;
     if (this.active) {
         gSendIsBlocked = true;
-        this.innerHTML = 'Disable AFK';
+        this.innerHTML = 'AFK: ON';
         dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
     } else {
         gSendIsBlocked = false;
-        this.innerHTML = 'Enable AFK';
+        this.innerHTML = 'AFK: OFF';
         dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
     }
 }
 function onBtnClump() {
     this.active = !this.active;
     if (this.active) {
-        this.innerHTML = 'Disable Clump';
+        this.innerHTML = 'Clump: ON';
         dtSocket.send('command', { id: COMMAND.CLUMP, value: 1 });
     } else {
-        this.innerHTML = 'Enable Clump';
+        this.innerHTML = 'Clump: OFF';
         dtSocket.send('command', { id: COMMAND.CLUMP, value: 0 });
     }
 }
@@ -592,9 +603,9 @@ function onBtnPatreon() {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-                e = e.split('=');
-                parsed[e[0]] = e[1];
-            });
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
         return parsed;
     }
     const query = parseQuery(window.location.search);
@@ -652,9 +663,9 @@ let btnHead;
 if (window.localStorage.DTTOKEN) {
     btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
     addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
-    addButton(guiBody, 'Enable Multiboxing', onBtnMultibox, 'KeyF');
-    addButton(guiBody, 'Enable Clump', onBtnClump, 'KeyX');
-    addButton(guiBody, 'Enable AFK', onBtnAfk, 'KeyQ');
+    addButton(guiBody, 'Multiboxing: OFF', onBtnMultibox, 'KeyF');
+    addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
+    addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
     disableGui();
 } else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
@@ -664,15 +675,15 @@ if (window.localStorage.DTTOKEN) {
 
 (async function initializeSocket() {
     const url = await DTSocket.findServerPreference(SERVERS);
-    if(!url) {
+    if (!url) {
         console.log('Please try again later.');
         btnHead.innerHTML = 'Please try again later';
         return;
     }
-    dtSocket = new DTSocket(url);
     dtSocket.onclose = function () {
         console.log('disconnected from DT server');
-        if (window.localStorage.DTTOKEN) btnHead.innerHTML = 'Disconnected';
+        btnHead.innerHTML = 'Disconnected';
+        disableGui();
     };
     dtSocket.onaccept = function () {
         dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
@@ -689,11 +700,11 @@ if (window.localStorage.DTTOKEN) {
         window.localStorage.DTTOKEN = '';
         setTimeout(() => window.location.reload(), 4000);
     };
-    dtSocket.onalert = function (message){
+    dtSocket.onalert = function (message) {
         console.log('DiepTool alert:', message);
-        const btnAlert = addButton(guiHead, `Alert: ${message}`);
-        setTimeout(() => btnAlert.style.display = 'none', 5000);
-    }
+        const btnAlert = addButton(guiHead, message);
+        setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
+    };
 
-    if (window.localStorage.DTTOKEN) dtSocket.connect();
+    if (window.localStorage.DTTOKEN) dtSocket.connect(url);
 })();
