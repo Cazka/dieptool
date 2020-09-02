@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.3
+// @version      4.2.4
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -24,7 +24,12 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
 };
-const SERVERS = ['ws://localhost:3000'];
+const SERVERS = [
+    'wss://dieptool-bycazka.me/',
+    'wss://us.dieptool-bycazka.me/',
+    'wss://miami.dieptool-bycazka.me/',
+    'wss://ff7ffb71ec81.eu.ngrok.io/',
+];
 /*
  *   C L A S S E S
  */
