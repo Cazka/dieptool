@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.4
+// @version      4.2.5
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -25,10 +25,9 @@ const COMMAND = {
     CLUMP: 3,
 };
 const SERVERS = [
-    'wss://dieptool-bycazka.me/',
-    'wss://us.dieptool-bycazka.me/',
     'wss://miami.dieptool-bycazka.me/',
-    'wss://ff7ffb71ec81.eu.ngrok.io/',
+    'wss://us.dieptool-bycazka.me/',
+    'wss://amsterdam.dieptool-bycazka.me/',
 ];
 /*
  *   C L A S S E S
@@ -244,18 +243,22 @@ class DTSocket {
         this.accepted = false;
     }
 
+    get region() {
+        return new URL(this._socket.url).host.split('.')[0];
+    }
+
     connect(url) {
-        this.socket = new WebSocket(url);
-        this.socket.binaryType = 'arraybuffer';
-        this.socket.onopen = () => {
+        this._socket = new WebSocket(url);
+        this._socket.binaryType = 'arraybuffer';
+        this._socket.onopen = () => {
             this._onopen();
             if (this.onopen) this.onopen();
         };
-        this.socket.onmessage = (event) => {
+        this._socket.onmessage = (event) => {
             this._onmessage(event);
             if (this.onmessage) this.onmessage(event);
         };
-        this.socket.onclose = (event) => {
+        this._socket.onclose = (event) => {
             this._onclose(event);
             if (this.onclose) this.onclose(event);
         };
@@ -387,11 +390,11 @@ class DTSocket {
             default:
                 console.error('unrecognized packet type:', type);
         }
-        this.socket.send(writer.out());
+        this._socket.send(writer.out());
     }
 
     isClosed() {
-        if (this.socket) return this.socket.readyState !== WebSocket.OPEN;
+        if (this._socket) return this._socket.readyState !== WebSocket.OPEN;
         return true;
     }
 
@@ -678,6 +681,7 @@ if (window.localStorage.DTTOKEN) {
 
 (async function initializeSocket() {
     const url = await DTSocket.findServerPreference(SERVERS);
+    console.log('found server preference', url);
     if (!url) {
         console.log('Please try again later.');
         btnHead.innerHTML = 'Please try again later';
@@ -689,7 +693,7 @@ if (window.localStorage.DTTOKEN) {
         disableGui();
     };
     dtSocket.onaccept = function () {
-        dtSocket.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms DiepTool`);
+        this.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms ${this.region} DiepTool`);
         const int = setInterval(() => {
             if (gReadyToInit) {
                 clearInterval(int);
