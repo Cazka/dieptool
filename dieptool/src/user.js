@@ -312,7 +312,6 @@ class User extends EventEmitter {
      *    C O M M A N D S
      */
     joinBots(amount, i = 0) {
-        console.log('joining bot', this.link);
         if (i >= ipv6pool.length) {
             this.sendNotification(
                 `Can't join bots because your team is full. You have ${this.bots.size} bots`,
