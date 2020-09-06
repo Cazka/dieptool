@@ -91,7 +91,7 @@ class DiepToolServer {
             await dbUser.save();
         } else {
             //what do we do here?
-            // exchange code for accestoken
+            // exchange code for accesstoken
             // get user information
             // save user in database
             // return dbUser
@@ -123,19 +123,8 @@ class DiepToolServer {
             this.oninitial(client, content);
             return;
         }
-        if (!discord.isInGuild(dbUser.user_id)) {
-            const message = 'You have to join the discord server';
-            client.send('alert', { message });
-            client.close(400, message);
-            return;
-        }
-        if (!discord.isPatreon(dbUser.user_id)) {
-            const message = 'DiepTool is exclusive to our patrons';
-            client.send('alert', { message });
-            client.close(4000, message);
-            return;
-        }
 
+        // Set dbUser to online
         if (client.isClosed()) return;
         dbUser.online = true;
         client.on('close', async () => {
@@ -145,15 +134,31 @@ class DiepToolServer {
         await dbUser.save();
         if (client.isClosed()) return;
 
-        if (discord.isBasic(dbUser.user_id)) {
-            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 5 }));
+        // Determine which tier the user has, free, basic, premium, premium+(dt_pro)
+        if (!discord.isInGuild(dbUser.user_id)) {
+            client.send('alert', {
+                message: 'Join our awesome discord server!',
+            });
+            this.userManager(
+                new User(client, content.version, dbUser, { permissions: 7, botsMaximum: 2 })
+            );
+        } else if (discord.isBasic(dbUser.user_id)) {
+            this.userManager(
+                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 5 })
+            );
         } else if (discord.isPremium(dbUser.user_id)) {
-            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 10 }));
+            this.userManager(
+                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 10 })
+            );
         } else if (discord.isDT_PRO(dbUser.user_id)) {
-            this.userManager(new User(client, content.version, dbUser, { botsMaximum: 15 }));
+            this.userManager(
+                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 15 })
+            );
         } else {
-            client.send('alert', { message: 'missing roles' });
-            client.close(4000, 'missing roles');
+            //no roles => free tier
+            this.userManager(
+                new User(client, content.version, dbUser, { permissions: 7, botsMaximum: 2 })
+            );
         }
     }
 

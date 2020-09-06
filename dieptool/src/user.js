@@ -10,19 +10,24 @@ const ipv6pool = fs
     .toString('utf-8')
     .split('\n');
 
+const CLIENT_VERSION = '4.2.5';
 const UPDATE = {
     SERVER_PARTY: 0,
     NAME: 1,
     GAMEMODE: 2,
 };
-
 const COMMAND = {
     JOIN_BOTS: 0,
     MULTIBOX: 1,
     AFK: 2,
     CLUMP: 3,
 };
-
+const PERMISSIONS = {
+    AFK: 1,
+    JOIN_BOTS: 2,
+    MULTIBOX: 4,
+    CLUMP: 8,
+};
 const color = {
     PINK: '#ff00ff',
     GREEN: '#00ff00',
@@ -92,7 +97,7 @@ class User extends EventEmitter {
             super.emit('close', code, reason);
         });
 
-        if (version !== process.env.CLIENT_VERSION) {
+        if (version !== CLIENT_VERSION) {
             this.socket.send('alert', { message: 'Please update DiepTool to the newest version' });
             this.socket.close(
                 4000,
@@ -235,7 +240,20 @@ class User extends EventEmitter {
 
         console.log(`${this.socket.ip} used command: ${id}`);
         switch (id) {
+            case COMMAND.AFK:
+                if (!(this.permissions & PERMISSIONS.AFK)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
+                if (!!value === this.afk) return;
+                this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
+                this.afk = !!value;
+                break;
             case COMMAND.JOIN_BOTS:
+                if (!(this.permissions & PERMISSIONS.JOIN_BOTS)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
                 if (this.bots.size >= this.botsMaximum) {
                     this.sendNotification(
                         `You cant have more than ${this.botsMaximum} bots`,
@@ -258,6 +276,10 @@ class User extends EventEmitter {
                 this.joinBots(amount);
                 break;
             case COMMAND.MULTIBOX:
+                if (!(this.permissions & PERMISSIONS.MULTIBOX)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
                 if (!!value === this.multibox) return;
                 this.sendNotification(
                     `Multiboxing: ${!!value ? 'ON' : 'OFF'}`,
@@ -268,14 +290,13 @@ class User extends EventEmitter {
                 this.multibox = !!value;
                 break;
             case COMMAND.CLUMP:
+                if (!(this.permissions & PERMISSIONS.CLUMP)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
                 if (!!value === this.clump) return;
                 this.sendNotification(`Clump: ${!!value ? 'ON' : 'OFF'}`, '#004aeb', 5000, 'clump');
                 this.clump = !!value;
-                break;
-            case COMMAND.AFK:
-                if (!!value === this.afk) return;
-                this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
-                this.afk = !!value;
                 break;
             default:
                 this.sendNotification(
