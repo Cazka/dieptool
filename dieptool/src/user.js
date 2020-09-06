@@ -335,7 +335,6 @@ class User extends EventEmitter {
         let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
         bot.id = this.botCounter++;
         bot.on('open', () => {
-            console.log('open', i);
             this.bots.add(bot);
             bot.on('close', () => this.bots.delete(bot));
             bot.on('pow_request', ({ difficulty, prefix }) => {
@@ -344,7 +343,6 @@ class User extends EventEmitter {
             });
         });
         bot.on('accept', () => {
-            console.log('accept', i);
             let int = setInterval(() => {
                 bot.spawn(this.botname());
                 // upgrade path
@@ -368,7 +366,6 @@ class User extends EventEmitter {
             this.joinBots(--amount, i);
         });
         bot.on('error', (err) => {
-            console.log('error', err);
             this.joinBots(amount, ++i);
         });
     }
