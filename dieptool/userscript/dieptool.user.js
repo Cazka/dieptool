@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.5
+// @version      4.2.6
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -26,7 +26,7 @@ const COMMAND = {
 };
 const SERVERS = [
     'wss://miami.dieptool-bycazka.me/',
-    'wss://us.dieptool-bycazka.me/',
+    'wss://la.dieptool-bycazka.me/',
     'wss://amsterdam.dieptool-bycazka.me/',
 ];
 /*
