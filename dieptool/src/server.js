@@ -140,7 +140,7 @@ class DiepToolServer {
                 message: 'Join our awesome discord server!',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 2 })
+                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 1 })
             );
         } else if (discord.isBasic(dbUser.user_id)) {
             this.userManager(
@@ -157,7 +157,7 @@ class DiepToolServer {
         } else {
             //no roles => free tier
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 2 })
+                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 1 })
             );
         }
     }
