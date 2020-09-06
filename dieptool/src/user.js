@@ -44,6 +44,7 @@ class User extends EventEmitter {
 
         // User information
         this.dbUser = dbUser;
+        this.permissions = options.permissions;
         this.link;
         this.name;
         this.gamemode;
