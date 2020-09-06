@@ -312,6 +312,7 @@ class User extends EventEmitter {
      *    C O M M A N D S
      */
     joinBots(amount, i = 0) {
+        console.log('joining bot');
         if (i >= ipv6pool.length) {
             this.sendNotification(
                 `Can't join bots because your team is full. You have ${this.bots.size} bots`,
@@ -364,7 +365,10 @@ class User extends EventEmitter {
 
             this.joinBots(--amount, i);
         });
-        bot.on('error', () => this.joinBots(amount, ++i));
+        bot.on('error', (err) => {
+            this.joinBots(amount, ++i);
+            console.log(err);
+        });
     }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
