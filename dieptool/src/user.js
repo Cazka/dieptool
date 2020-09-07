@@ -169,7 +169,7 @@ class User extends EventEmitter {
                     const tolerance = 2 * 50;
 
                     if (length > tolerance)
-                        buffer = new DiepBuilder({
+                        packet = new DiepBuilder({
                             type: 'input',
                             content: {
                                 flags: content.flags | DiepSocket.INPUT.gamepad,
