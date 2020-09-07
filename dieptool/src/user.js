@@ -158,7 +158,7 @@ class User extends EventEmitter {
                 } catch (error) {}
 
                 if (this.afk) {
-                    const packet = buffer;
+                    let packet = buffer;
 
                     const deltaX = this.tankXFixed - this.tankX;
                     const deltaY = this.tankYFixed - this.tankY;
