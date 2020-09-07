@@ -301,6 +301,7 @@ class User extends EventEmitter {
                 this.clump = !!value;
                 break;
             case COMMAND.SPINBOT:
+                this.sendNotification('test');
                 break;
             default:
                 this.sendNotification(
