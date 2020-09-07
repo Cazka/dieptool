@@ -85,10 +85,8 @@ class User extends EventEmitter {
 
         // AFK
         this.slow = false;
-        this.mouseX = 0;
-        this.mouseY = 0;
-        this.mouseXFixed;
-        this.mouseYFixed;
+        this.tankXFixed = 0.1;
+        this.tankYFixed = 0.1;
 
         // CLUMP
         this.entityId;
@@ -158,9 +156,36 @@ class User extends EventEmitter {
                 let content;
                 try {
                     content = new DiepParser(buffer).serverbound().content;
-                    this.updatePosition(content.mouseX, content.mouseY);
                 } catch (error) {}
 
+                if (this.afk) {
+                    function inputPacket(){
+                        if (this.slow) return buffer;
+                        this.slow = true;
+                
+                        const deltaX = this.tankXFixed - this.tankX;
+                        const deltaY = this.tankYFixed - this.tankY;
+                        const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+                
+                        const tolerance = 2 * 50;
+                
+                        // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
+                        let timeout = (-Math.log(length - 150) + 5.3) * 100;
+                        timeout = timeout !== timeout || timeout >= 250 ? 250 : timeout <= 0 ? 0 : timeout;
+                        setTimeout(() => (this.slow = false), timeout);
+                
+                        if (length > tolerance) return new DiepBuilder({type:'input', content: {
+                            flags: content.flags | DiepSocket.INPUT.gamepad,
+                            mouseX: content.mouseX,
+                            mouseY: content.mouseY,
+                            velocityX: deltaX / length, 
+                            velocityY: deltaY / length,
+                        }}).serverbound();
+                        return buffer;
+                    }
+                    const packet = inputPacket();
+                    this.socket.send('custom_diep_serverbound', { buffer: packet });
+                }
                 if (this.multibox) {
                     if (!this.clump) this.bots.forEach((bot) => bot.sendBinary(buffer));
                     else {
@@ -182,10 +207,6 @@ class User extends EventEmitter {
                             }
                         });
                     }
-                }
-                if (this.afk) {
-                    buffer = this.stayAFK(buffer);
-                    this.socket.send('custom_diep_serverbound', { buffer });
                 }
                 if(this.spinbot) {
                     const now = Date.now() / 70;
@@ -264,6 +285,11 @@ class User extends EventEmitter {
                 if (!!value === this.afk) return;
                 this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
                 this.afk = !!value;
+
+                if(this.afk){
+                    this.tankXFixed = this.tankX;
+                    this.tankYFixed = this.tankY;
+                }
                 break;
             case COMMAND.JOIN_BOTS:
                 if (!(this.permissions & PERMISSIONS.JOIN_BOTS)) {
@@ -402,44 +428,6 @@ class User extends EventEmitter {
         if (bot)
             setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
     }
-    /*
-     *    A F K
-     */
-    stayAFK(data) {
-        if (this.slow) return data;
-        this.slow = true;
-
-        // BLOCKWIDTH = 50 units.
-        const tolerance = 2 * 50;
-        const euclid_distance = Math.sqrt(
-            Math.pow(this.mouseX - this.mouseXFixed, 2) +
-                Math.pow(this.mouseY - this.mouseYFixed, 2)
-        );
-
-        // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
-        let timeout = (-Math.log(euclid_distance - 150) + 5.3) * 100;
-        timeout = timeout !== timeout || timeout >= 250 ? 250 : timeout <= 0 ? 0 : timeout;
-        setTimeout(() => (this.slow = false), timeout);
-        const flags = this.calcFlags();
-        if (euclid_distance > tolerance) return changeFlags(data, flags);
-        return data;
-    }
-    calcFlags() {
-        let flags = 2048;
-        const distanceX = this.mouseX - this.mouseXFixed;
-        const distanceY = this.mouseY - this.mouseYFixed;
-        if (distanceX > 0) {
-            flags += 4; // move west
-        } else if (distanceX < 0) {
-            flags += 16; //move east
-        }
-        if (distanceY > 0) {
-            flags += 2; // move north
-        } else if (distanceY < 0) {
-            flags += 8; // move south
-        }
-        return flags;
-    }
 
     /*
      *    H E L P E R   F U N C T I O N S
@@ -455,15 +443,6 @@ class User extends EventEmitter {
 
         this.socket.send('custom_diep_clientbound', { buffer: packet });
         this.updateStatus(message);
-    }
-    updatePosition(mouseX, mouseY) {
-        this.mouseX = mouseX;
-        this.mouseY = mouseY;
-
-        if (!this.afk) {
-            this.mouseXFixed = this.mouseX;
-            this.mouseYFixed = this.mouseY;
-        }
     }
     toDataObject() {
         return {
