@@ -159,7 +159,7 @@ class User extends EventEmitter {
                 } catch (error) {}
 
                 if (this.afk) {
-                    function inputPacket(){
+                    const inputPacket = () => {
                         if (this.slow) return buffer;
                         this.slow = true;
                 
