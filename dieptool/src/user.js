@@ -84,7 +84,6 @@ class User extends EventEmitter {
         };
 
         // AFK
-        this.slow = false;
         this.tankXFixed = 0.1;
         this.tankYFixed = 0.1;
 
@@ -159,31 +158,26 @@ class User extends EventEmitter {
                 } catch (error) {}
 
                 if (this.afk) {
-                    const inputPacket = () => {
-                        if (this.slow) return buffer;
-                        this.slow = true;
-                
-                        const deltaX = this.tankXFixed - this.tankX;
-                        const deltaY = this.tankYFixed - this.tankY;
-                        const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-                
-                        const tolerance = 2 * 50;
-                
-                        // there is probably a better function to calc the speed relative to the distance from the fixed position. if you have a better one pls tell me.
-                        let timeout = (-Math.log(length - 150) + 5.3) * 100;
-                        timeout = timeout !== timeout || timeout >= 250 ? 250 : timeout <= 0 ? 0 : timeout;
-                        setTimeout(() => (this.slow = false), timeout);
-                
-                        if (length > tolerance) return new DiepBuilder({type:'input', content: {
-                            flags: content.flags | DiepSocket.INPUT.gamepad,
-                            mouseX: content.mouseX,
-                            mouseY: content.mouseY,
-                            velocityX: deltaX / length, 
-                            velocityY: deltaY / length,
-                        }}).serverbound();
-                        return buffer;
-                    }
-                    const packet = inputPacket();
+                    const packet = buffer;
+
+                    const deltaX = this.tankXFixed - this.tankX;
+                    const deltaY = this.tankYFixed - this.tankY;
+                    const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+                    const tolerance = 2 * 50;
+
+                    if (length > tolerance)
+                        buffer = new DiepBuilder({
+                            type: 'input',
+                            content: {
+                                flags: content.flags | DiepSocket.INPUT.gamepad,
+                                mouseX: content.mouseX,
+                                mouseY: content.mouseY,
+                                velocityX: deltaX / length,
+                                velocityY: deltaY / length,
+                            },
+                        }).serverbound();
+
                     this.socket.send('custom_diep_serverbound', { buffer: packet });
                 }
                 if (this.multibox) {
@@ -208,18 +202,21 @@ class User extends EventEmitter {
                         });
                     }
                 }
-                if(this.spinbot) {
+                if (this.spinbot) {
                     const now = Date.now() / 70;
                     const mx = Math.cos(now) * 1000000;
                     const my = Math.sin(now) * 1000000;
-                    const packet = new DiepBuilder({type:'input' , content:{
-                        flags: content.flags,
-                        mouseX: mx,
-                        mouseY: my,
-                        velocityX: content.velocityX,
-                        velocityY: content.velocityY,
-                    }}).serverbound();
-                    this.socket.send('custom_diep_serverbound', {buffer: packet});
+                    const packet = new DiepBuilder({
+                        type: 'input',
+                        content: {
+                            flags: content.flags,
+                            mouseX: mx,
+                            mouseY: my,
+                            velocityX: content.velocityX,
+                            velocityY: content.velocityY,
+                        },
+                    }).serverbound();
+                    this.socket.send('custom_diep_serverbound', { buffer: packet });
                 }
                 break;
             }
@@ -286,7 +283,7 @@ class User extends EventEmitter {
                 this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
                 this.afk = !!value;
 
-                if(this.afk){
+                if (this.afk) {
                     this.tankXFixed = this.tankX;
                     this.tankYFixed = this.tankY;
                 }
