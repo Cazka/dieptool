@@ -158,26 +158,20 @@ class User extends EventEmitter {
                 } catch (error) {}
 
                 if (this.afk) {
-                    let packet = buffer;
-
                     const deltaX = this.tankXFixed - this.tankX;
                     const deltaY = this.tankYFixed - this.tankY;
                     const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-                    
+
                     const tolerance = 2 * 50;
                     if (length > tolerance) {
-                        packet = new DiepBuilder({
-                            type: 'input',
-                            content: {
-                                flags: content.flags | DiepSocket.INPUT.gamepad,
-                                mouseX: content.mouseX,
-                                mouseY: content.mouseY,
-                                velocityX: deltaX / length,
-                                velocityY: deltaY / length,
-                            },
-                        }).serverbound();
+                        content = {
+                            flags: content.flags | DiepSocket.INPUT.gamepad,
+                            mouseX: content.mouseX,
+                            mouseY: content.mouseY,
+                            velocityX: deltaX / length,
+                            velocityY: deltaY / length,
+                        };
                     }
-                    this.socket.send('custom_diep_serverbound', { buffer: packet });
                 }
                 if (this.multibox) {
                     if (!this.clump) this.bots.forEach((bot) => bot.sendBinary(buffer));
@@ -202,20 +196,21 @@ class User extends EventEmitter {
                     }
                 }
                 if (this.spinbot) {
-                    const now = Date.now() / 70;
+                    const now = Date.now() / 50;
                     const mx = Math.cos(now) * 1000000;
                     const my = Math.sin(now) * 1000000;
-                    const packet = new DiepBuilder({
-                        type: 'input',
-                        content: {
-                            flags: content.flags,
-                            mouseX: mx,
-                            mouseY: my,
-                            velocityX: content.velocityX,
-                            velocityY: content.velocityY,
-                        },
-                    }).serverbound();
-                    this.socket.send('custom_diep_serverbound', { buffer: packet });
+                    content = {
+                        flags: content.flags,
+                        mouseX: mx,
+                        mouseY: my,
+                        velocityX: content.velocityX,
+                        velocityY: content.velocityY,
+                    };
+                }
+                if (this.afk || this.spinbot) {
+                    this.socket.send('custom_diep_serverbound', {
+                        buffer: new DiepBuilder({ type: 'input', content }).serverbound(),
+                    });
                 }
                 break;
             }
