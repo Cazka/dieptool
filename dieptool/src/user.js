@@ -21,6 +21,7 @@ const COMMAND = {
     MULTIBOX: 1,
     AFK: 2,
     CLUMP: 3,
+    SPINBOT: 4,
 };
 const PERMISSIONS = {
     AFK: 1,
@@ -298,6 +299,8 @@ class User extends EventEmitter {
                 if (!!value === this.clump) return;
                 this.sendNotification(`Clump: ${!!value ? 'ON' : 'OFF'}`, '#004aeb', 5000, 'clump');
                 this.clump = !!value;
+                break;
+            case COMMAND.SPINBOT:
                 break;
             default:
                 this.sendNotification(
