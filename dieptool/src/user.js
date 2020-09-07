@@ -162,6 +162,8 @@ class User extends EventEmitter {
 
                     const deltaX = this.tankXFixed - this.tankX;
                     const deltaY = this.tankYFixed - this.tankY;
+                    console.log(this.tankXFixed, this.tankYFixed);
+                    console.log(this.tankX, this.tankY);
                     const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
                     const tolerance = 2 * 50;
