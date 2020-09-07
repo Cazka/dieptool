@@ -56,6 +56,7 @@ class User extends EventEmitter {
         this.multibox = false;
         this.afk = false;
         this.clump = false;
+        this.spinbot = false;
 
         // Flags
         this.welcomeMessageSend = false;
@@ -186,6 +187,19 @@ class User extends EventEmitter {
                     buffer = this.stayAFK(buffer);
                     this.socket.send('custom_diep_serverbound', { buffer });
                 }
+                if(this.spinbot) {
+                    const now = Date.now() / 70;
+                    const mx = Math.cos(now) * 1000000;
+                    const my = Math.sin(now) * 1000000;
+                    const packet = new DiepBuilder({type:'input' , content:{
+                        flags: content.flags,
+                        mouseX: mx,
+                        mouseY: my,
+                        velocityX: content.velocityX,
+                        velocityY: content.velocityY,
+                    }}).serverbound();
+                    this.socket.send('custom_diep_serverbound', {buffer: packet});
+                }
                 break;
             }
             case 0x02: {
@@ -301,7 +315,18 @@ class User extends EventEmitter {
                 this.clump = !!value;
                 break;
             case COMMAND.SPINBOT:
-                this.sendNotification('test');
+                if (!(this.permissions & PERMISSIONS.MULTIBOX)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
+                if (!!value === this.spinbot) return;
+                this.sendNotification(
+                    `Spinbot: ${!!value ? 'ON' : 'OFF'}`,
+                    '#5200eb',
+                    5000,
+                    'spinbot'
+                );
+                this.spinbot = !!value;
                 break;
             default:
                 this.sendNotification(
