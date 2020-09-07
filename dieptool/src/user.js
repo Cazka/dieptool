@@ -166,16 +166,19 @@ class User extends EventEmitter {
                     console.log(this.tankX, this.tankY);
                     const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
-                    packet = new DiepBuilder({
-                        type: 'input',
-                        content: {
-                            flags: content.flags | DiepSocket.INPUT.gamepad,
-                            mouseX: content.mouseX,
-                            mouseY: content.mouseY,
-                            velocityX: deltaX / length,
-                            velocityY: deltaY / length,
-                        },
-                    }).serverbound();
+                    const tolerance = 2 * 50;
+
+                    if (length > tolerance)
+                        packet = new DiepBuilder({
+                            type: 'input',
+                            content: {
+                                flags: content.flags | DiepSocket.INPUT.gamepad,
+                                mouseX: content.mouseX,
+                                mouseY: content.mouseY,
+                                velocityX: deltaX / length,
+                                velocityY: deltaY / length,
+                            },
+                        }).serverbound();
 
                     this.socket.send('custom_diep_serverbound', { buffer: packet });
                 }
