@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.6
+// @version      4.2.7
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -23,11 +23,10 @@ const COMMAND = {
     MULTIBOX: 1,
     AFK: 2,
     CLUMP: 3,
+    SPINBOT: 4,
 };
 const SERVERS = [
-    'wss://miami.dieptool-bycazka.me/',
-    'wss://la.dieptool-bycazka.me/',
-    'wss://amsterdam.dieptool-bycazka.me/',
+    'wss://ff7ffb71ec81.eu.ngrok.io',
 ];
 /*
  *   C L A S S E S
@@ -73,7 +72,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -282,7 +281,7 @@ class DTSocket {
             case 1: {
                 const buffer = reader.buf();
 
-                gWebSocket._send(buffer);
+                if(this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
                 break;
             }
             case 2: {
@@ -418,9 +417,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
     );
 }
 function updateInformation(type, data) {
@@ -459,29 +458,6 @@ function updateInformation(type, data) {
     };
     gUserInfo[type] = updates[type](data);
     dtSocket.send('update', { id: type, value: gUserInfo[type] });
-}
-function _send(data) {
-    dtSocket.send('diep_serverbound', { buffer: data });
-
-    if (data[0] === 10) {
-        const d = new Int8Array(data);
-        const time = Date.now() - this.lastPow;
-        setTimeout(() => this._send(d), 5000 - time);
-        return;
-    }
-    if (gSendIsBlocked && data[0] === 1) return;
-    if (data[0] === 2) updateInformation(UPDATE.NAME, data);
-    this._send(data);
-}
-function _onmessage(event) {
-    const data = new Uint8Array(event.data);
-    dtSocket.send('diep_clientbound', { buffer: data });
-
-    if (data[0] === 4) updateInformation(UPDATE.GAMEMODE, data);
-    else if (data[0] === 6) updateInformation(UPDATE.SERVER_PARTY, { party: data });
-    else if (data[0] === 10) gReadyToInit = true;
-    else if (data[0] === 11) this.lastPow = Date.now();
-    this._onmessage(event);
 }
 function addButton(parent, text, onclick, keyCode) {
     let button = document.createElement('button');
@@ -535,11 +511,11 @@ function onBtnMultibox() {
 function onBtnAfk() {
     this.active = !this.active;
     if (this.active) {
-        gSendIsBlocked = true;
+        gAfk = true;
         this.innerHTML = 'AFK: ON';
         dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
     } else {
-        gSendIsBlocked = false;
+        gAfk = false;
         this.innerHTML = 'AFK: OFF';
         dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
     }
@@ -554,6 +530,18 @@ function onBtnClump() {
         dtSocket.send('command', { id: COMMAND.CLUMP, value: 0 });
     }
 }
+function onBtnSpinbot() {
+    this.active = !this.active;
+    if (this.active) {
+        gSpinbot = true;
+        this.innerHTML = 'Spinbot: ON';
+        dtSocket.send('command', { id: COMMAND.SPINBOT, value: 1 });
+    } else {
+        gSpinbot = false;
+        this.innerHTML = 'Spinbot: OFF';
+        dtSocket.send('command', { id: COMMAND.SPINBOT, value: 0 });
+    }
+}
 function onBtnDiscord() {
     window.open('https://discord.gg/8saC9pq');
 }
@@ -561,6 +549,42 @@ function onBtnPatreon() {
     window.open('https://www.patreon.com/dieptool');
 }
 
+function _send(data) {
+    dtSocket.send('diep_serverbound', { buffer: data });
+
+    if (data[0] === 2) updateInformation(UPDATE.NAME, data);
+    if (data[0] === 10) {
+        const d = new Int8Array(data);
+        const time = Date.now() - this.lastPow;
+        setTimeout(() => this._send(d), 5000 - time);
+        return;
+    }
+    if(data[0] === 1){
+        if(gAfk) return;
+
+        if(gSpinbot){
+            const reader = new Reader(data);
+            const id = reader.vu();
+            const flags = reader.vu();
+            if(flags & 1) gCustomServerboundIsBlocked = true;
+            else {
+                gCustomServerboundIsBlocked = false;
+                return;
+            }
+        }
+    }
+    this._send(data);
+}
+function _onmessage(event) {
+    const data = new Uint8Array(event.data);
+    dtSocket.send('diep_clientbound', { buffer: data });
+
+    if (data[0] === 4) updateInformation(UPDATE.GAMEMODE, data);
+    else if (data[0] === 6) updateInformation(UPDATE.SERVER_PARTY, { party: data });
+    else if (data[0] === 10) gReadyToInit = true;
+    else if (data[0] === 11) this.lastPow = Date.now();
+    this._onmessage(event);
+}
 (function hijackWebSocket() {
     const wsInstances = new Set();
     window.WebSocket.prototype._send = window.WebSocket.prototype.send;
@@ -593,7 +617,7 @@ function onBtnPatreon() {
     const canvas = document.getElementById('canvas');
     canvas._onmousemove = canvas.onmousemove;
     canvas.onmousemove = function (e) {
-        if (!gSendIsBlocked) this._onmousemove(e);
+        if (!gFreezeMouse) this._onmousemove(e);
     };
 })();
 (function removeAnnoyingAlert() {
@@ -609,9 +633,9 @@ function onBtnPatreon() {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-                e = e.split('=');
-                parsed[e[0]] = e[1];
-            });
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
         return parsed;
     }
     const query = parseQuery(window.location.search);
@@ -633,7 +657,10 @@ const gUserInfo = {
     [UPDATE.GAMEMODE]: window.localStorage.gamemode,
 };
 let gWebSocket;
-let gSendIsBlocked = false;
+let gAfk = false;
+let gFreezeMouse = false;
+let gSpinbot = false;
+let gCustomServerboundIsBlocked = false;
 let gReadyToInit = false;
 let dtSocket = new DTSocket();
 /*
@@ -672,6 +699,7 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Multiboxing: OFF', onBtnMultibox, 'KeyF');
     addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
     addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
+    addButton(guiBody, 'Spinbot OFF', onBtnSpinbot);
     disableGui();
 } else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
@@ -712,6 +740,9 @@ if (window.localStorage.DTTOKEN) {
         const btnAlert = addButton(guiHead, message);
         setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
     };
+    dtSocket.oncustom_diep_serverbound = function (data) {
+        if(!gCustomServerboundIsBlocked) gWebSocket._send(data);
+    }
 
     if (window.localStorage.DTTOKEN) dtSocket.connect(url);
 })();
