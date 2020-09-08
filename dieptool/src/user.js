@@ -28,6 +28,7 @@ const PERMISSIONS = {
     JOIN_BOTS: 2,
     MULTIBOX: 4,
     CLUMP: 8,
+    SPINBOT: 16,
 };
 const color = {
     PINK: '#ff00ff',
@@ -117,37 +118,6 @@ class User extends EventEmitter {
     /*
      *    E V E N T   H A N D L E R S
      */
-    onupdate(id, value) {
-        console.log(`${this.socket.ip} received update id: ${id} -> ${value}`);
-
-        switch (id) {
-            case UPDATE.SERVER_PARTY:
-                const [server, party] = value?.split(':');
-                try {
-                    this.link = DiepSocket.getLink(server, party);
-                } catch (error) {
-                    console.log(
-                        `${this.socket.ip} couldn't update link: ${server},${party}\n${error}`
-                    );
-                    this.socket.close();
-                    return;
-                }
-                this.gamemode = undefined;
-                this.bots.forEach((bot) => bot.close());
-                break;
-            case UPDATE.NAME:
-                this.name = value;
-                break;
-            case UPDATE.GAMEMODE:
-                if (this.gamemode) return;
-                this.gamemode = value;
-                break;
-            default:
-                this.sendNotification('Please reinstall DiepTool', color.red, 0);
-                this.socket.close(4000, `UPDATE NOT RECOGNIZED: ${id} with data ${value}`);
-                break;
-        }
-    }
     ondiep_serverbound(buffer) {
         switch (buffer[0]) {
             case 0x01: {
@@ -175,7 +145,7 @@ class User extends EventEmitter {
                 if (this.multibox) {
                     if (!this.clump) this.bots.forEach((bot) => bot.sendBinary(buffer));
                     else {
-                        const tolerance = 5 * 50;
+                        const tolerance = (4 + this.bots.size / 4) * 50;
                         this.bots.forEach((bot) => {
                             const euclid_distance = Math.sqrt(
                                 Math.pow(bot.position.x - this.tankX, 2) +
@@ -274,6 +244,37 @@ class User extends EventEmitter {
             }
         }
     }
+    onupdate(id, value) {
+        console.log(`${this.socket.ip} received update id: ${id} -> ${value}`);
+
+        switch (id) {
+            case UPDATE.SERVER_PARTY:
+                const [server, party] = value?.split(':');
+                try {
+                    this.link = DiepSocket.getLink(server, party);
+                } catch (error) {
+                    console.log(
+                        `${this.socket.ip} couldn't update link: ${server},${party}\n${error}`
+                    );
+                    this.socket.close();
+                    return;
+                }
+                this.gamemode = undefined;
+                this.bots.forEach((bot) => bot.close());
+                break;
+            case UPDATE.NAME:
+                this.name = value;
+                break;
+            case UPDATE.GAMEMODE:
+                if (this.gamemode) return;
+                this.gamemode = value;
+                break;
+            default:
+                this.sendNotification('Please reinstall DiepTool', color.red, 0);
+                this.socket.close(4000, `UPDATE NOT RECOGNIZED: ${id} with data ${value}`);
+                break;
+        }
+    }
     oncommand(id, value) {
         if (this.rateLimited) {
             this.sendNotification('slow down', color.RED, 5000, 'slow_down');
@@ -348,7 +349,7 @@ class User extends EventEmitter {
                 this.clump = !!value;
                 break;
             case COMMAND.SPINBOT:
-                if (!(this.permissions & PERMISSIONS.MULTIBOX)) {
+                if (!(this.permissions & PERMISSIONS.SPINBOT)) {
                     this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
                     return;
                 }
