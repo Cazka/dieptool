@@ -147,14 +147,14 @@ class User extends EventEmitter {
                     else {
                         const tolerance = (4 + this.bots.size / 4) * 50;
                         this.bots.forEach((bot) => {
-                            const euclid_distance = Math.sqrt(
-                                Math.pow(bot.position.x - this.tankX, 2) +
-                                    Math.pow(bot.position.y - this.tankY, 2)
-                            );
-                            if (euclid_distance > tolerance) {
+                            const deltaX = this.tankX - bot.position.x;
+                            const deltaY = this.tankY - bot.position.y;
+                            const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+                            if (length > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags & 129,
+                                    content.flags & 129, // idk why & 129 which means leftclick and rightclick
                                     content.mouseX,
                                     content.mouseY
                                 );
