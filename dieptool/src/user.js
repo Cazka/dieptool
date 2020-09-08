@@ -222,8 +222,9 @@ class User extends EventEmitter {
                         '#f5e042'
                     );
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
-                    if(this.botsMaximum === 15){
-                        const int = setInterval(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000*10);
+                    if(this.botsMaximum === 1){
+                        this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌')
+                        const int = setInterval(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000*60*10);
                         this.socket.on('close', () => clearInterval(int));
                     }
                 }
