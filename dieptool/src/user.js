@@ -405,8 +405,7 @@ class User extends EventEmitter {
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
-            if (bot.link !== this.link)
-                this.socket.close(4000, 'bot link and user link mismatch');
+            if (bot.link !== this.link) this.socket.close(4000, 'bot link and user link mismatch');
 
             this.joinBots(--amount, i);
         });
