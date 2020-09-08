@@ -105,7 +105,6 @@ class User extends EventEmitter {
             );
             return;
         }
-
         this.socket.send('accept');
         this.socket.on('diep_serverbound', ({ buffer }) => this.ondiep_serverbound(buffer));
         this.socket.on('diep_clientbound', ({ buffer }) => this.ondiep_clientbound(buffer));
@@ -223,6 +222,10 @@ class User extends EventEmitter {
                         '#f5e042'
                     );
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
+                    if(this.botsMaximum === 15){
+                        const int = setInterval(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000*10);
+                        this.socket.on('close', () => clearInterval(int));
+                    }
                 }
                 this.resetUpgrades();
                 break;
