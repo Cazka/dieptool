@@ -339,7 +339,7 @@ class User extends EventEmitter {
                 if (!!value === this.spinbot) return;
                 this.sendNotification(
                     `Spinbot: ${!!value ? 'ON' : 'OFF'}`,
-                    '#5200eb',
+                    '#ea6666',
                     5000,
                     'spinbot'
                 );
