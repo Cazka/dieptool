@@ -551,7 +551,6 @@ function onBtnPatreon() {
 
 function _send(data) {
     dtSocket.send('diep_serverbound', { buffer: data });
-
     if (data[0] === 2) updateInformation(UPDATE.NAME, data);
     if (data[0] === 10) {
         const d = new Int8Array(data);
@@ -560,18 +559,21 @@ function _send(data) {
         return;
     }
     if(data[0] === 1){
-        if(gAfk) return;
-
         if(gSpinbot){
             const reader = new Reader(data);
             const id = reader.vu();
             const flags = reader.vu();
-            if(flags & 1) gCustomServerboundIsBlocked = true;
+            if(flags & 1) {
+                gCustomServerboundIsBlocked = true;
+                this._send(data);
+                return;
+            }
             else {
                 gCustomServerboundIsBlocked = false;
                 return;
             }
         }
+        if(gAfk) return;
     }
     this._send(data);
 }
