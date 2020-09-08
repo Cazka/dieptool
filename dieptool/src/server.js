@@ -144,28 +144,28 @@ class DiepToolServer {
             );
         } else if (discord.isBasic(dbUser.user_id)) {
             client.send('alert', {
-                message: '🔹Basic Tier🔹',
+                message: '🔹Basic🔹',
             });
             this.userManager(
                 new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 5 })
             );
         } else if (discord.isPremium(dbUser.user_id)) {
             client.send('alert', {
-                message: '🔹Premium Tier🔹',
+                message: '🔹Premium🔹',
             });
             this.userManager(
                 new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 10 })
             );
         } else if (discord.isDT_PRO(dbUser.user_id)) {
             client.send('alert', {
-                message: '🔹DT PRO Tier🔹',
+                message: '🔹DT PRO🔹',
             });
             this.userManager(
                 new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 15 })
             );
         } else {
             client.send('alert', {
-                message: '🔹Free Tier🔹',
+                message: '🔹Free🔹',
             });
             this.userManager(
                 new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 1 })
