@@ -405,8 +405,8 @@ class User extends EventEmitter {
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
-            if (bot.gamemode !== this.gamemode)
-                this.socket.close(4000, 'bot gamemode and user gamemode mismatch');
+            if (bot.link !== this.link)
+                this.socket.close(4000, 'bot link and user link mismatch');
 
             this.joinBots(--amount, i);
         });
@@ -458,37 +458,5 @@ class User extends EventEmitter {
         }, 5000);
     }
 }
-
-const displayUserInfo = (user) => {
-    console.log('ip:', user.ip);
-    console.log('version:', user.version);
-    console.log('authkey:', user.authKey);
-    console.log('name:', user.name);
-    console.log('wsURL:', user.wsURL);
-    console.log('party:', user.party);
-    console.log('link:', user.link);
-    console.log('gamemode:', user.gamemode);
-};
-
-const changeFlags = (data, flags) => {
-    let parsed;
-    try {
-        parsed = new DiepParser(data).serverbound().content;
-    } catch (error) {
-        return data;
-    }
-
-    flags |= parsed.flags;
-
-    const packet = new DiepBuilder({
-        type: 'input',
-        content: {
-            flags,
-            mouseX: parsed.mouseX,
-            mouseY: parsed.mouseY,
-        },
-    }).serverbound();
-    return packet;
-};
 
 module.exports = User;
