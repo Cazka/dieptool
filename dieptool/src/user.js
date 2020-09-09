@@ -154,7 +154,7 @@ class User extends EventEmitter {
                             if (length > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags & 129, // idk why & 129 which means leftclick and rightclick
+                                    content.flags & 129, // try without & 129 since we use gamepad
                                     content.mouseX,
                                     content.mouseY
                                 );
@@ -165,16 +165,17 @@ class User extends EventEmitter {
                     }
                 }
                 if (this.spinbot) {
-                    const now = Date.now() / 50;
+                    const now = Date.now() / 80;
                     const mx = Math.cos(now) * 1000000;
                     const my = Math.sin(now) * 1000000;
-                    content = {
-                        flags: content.flags,
-                        mouseX: mx,
-                        mouseY: my,
-                        velocityX: content.velocityX,
-                        velocityY: content.velocityY,
-                    };
+                    if (!(content.flags & 1))
+                        content = {
+                            flags: content.flags,
+                            mouseX: mx,
+                            mouseY: my,
+                            velocityX: content.velocityX,
+                            velocityY: content.velocityY,
+                        };
                 }
                 if (this.afk || this.spinbot) {
                     this.socket.send('custom_diep_serverbound', {
