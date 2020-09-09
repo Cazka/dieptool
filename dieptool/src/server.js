@@ -9,6 +9,7 @@ const database = require('./database');
 const DiepToolManager = async (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
+    // todo make this in a seperate script
     await database.setAllOffline();
     return new DiepToolServer(wss);
 };
@@ -147,21 +148,21 @@ class DiepToolServer {
                 message: '🔹Basic🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 5 })
+                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 5 })
             );
         } else if (discord.isPremium(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹Premium🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 10 })
+                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 10 })
             );
         } else if (discord.isDT_PRO(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹DT PRO🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 15 })
+                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 20 })
             );
         } else {
             client.send('alert', {
