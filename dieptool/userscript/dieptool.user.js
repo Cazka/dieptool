@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.7
+// @version      4.2.6
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -559,21 +559,19 @@ function _send(data) {
         return;
     }
     if(data[0] === 1){
+        if(gAfk) return;
+
         if(gSpinbot){
             const reader = new Reader(data);
             const id = reader.vu();
-            const flags = reader.vu();
-            if(flags & 1) {
-                gCustomServerboundIsBlocked = true;
-                this._send(data);
-                return;
+            if(reader.vu() & 1) {
+                gCSBisBlocked = true;
             }
             else {
-                gCustomServerboundIsBlocked = false;
+                gCSBisBlocked = false;
                 return;
             }
         }
-        if(gAfk) return;
     }
     this._send(data);
 }
@@ -662,7 +660,7 @@ let gWebSocket;
 let gAfk = false;
 let gFreezeMouse = false;
 let gSpinbot = false;
-let gCustomServerboundIsBlocked = false;
+let gCSBisBlocked = false;
 let gReadyToInit = false;
 let dtSocket = new DTSocket();
 /*
@@ -743,7 +741,7 @@ if (window.localStorage.DTTOKEN) {
         setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
     };
     dtSocket.oncustom_diep_serverbound = function (data) {
-        if(!gCustomServerboundIsBlocked) gWebSocket._send(data);
+        if(!gCSBisBlocked) gWebSocket._send(data);
     }
 
     if (window.localStorage.DTTOKEN) dtSocket.connect(url);

@@ -154,7 +154,7 @@ class User extends EventEmitter {
                             if (length > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags & 129, // try without & 129 since we use gamepad
+                                    content.flags, // try without & 129 since we use gamepad
                                     content.mouseX,
                                     content.mouseY
                                 );
