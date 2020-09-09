@@ -623,7 +623,7 @@ function _onmessage(event) {
     unsafeWindow._alert = unsafeWindow.alert;
     unsafeWindow.alert = function (msg) {
         if (msg.startsWith('Your browser version')) return;
-        this._alert(msg);
+        unsafeWindow._alert(msg);
     };
 })();
 (function authCallback() {
