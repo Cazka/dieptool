@@ -334,7 +334,6 @@ class DTSocket {
         }
     }
     _onclose(event) {
-        this._pow_workers.forEach((pow_worker) => pow_worker.terminate());
     }
 
     send(type, content) {
