@@ -428,9 +428,11 @@ class User extends EventEmitter {
         }
     }
     async joinBotProcess(amount, ipv6Index, cb) {
+        const start = Date.now();
         let joined = 0;
         for (let i = 0; i < amount; ) {
             if (ipv6Index >= ipv6pool.length) break;
+            if(Date.now()-start >= 1000*60*2) break;
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
                 bot.spawn(this.botname());
