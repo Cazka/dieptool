@@ -418,7 +418,7 @@ class User extends EventEmitter {
         }
         // initialize bot
         try {
-            const bot = await this.createBot();
+            const bot = await this.createBot(ipv6pool[i]);
             let int = setInterval(() => {
                 bot.spawn(this.botname());
                 // upgrade path
