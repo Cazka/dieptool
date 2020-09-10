@@ -375,7 +375,29 @@ class User extends EventEmitter {
     /*
      *    C O M M A N D S
      */
-    joinBots(amount, i = 0) {
+    onpow_result(id, result) {
+        const bot = Array.from(this.bots).find((bot) => bot.id === id);
+        if (bot)
+            setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
+    }
+    createBot(ipv6){
+        const bot = new DiepSocket(this.link, {ipv6, forceTeam: true});
+        bot.id = this.botCounter++;
+        bot.on('open', () => {
+            this.bots.add(bot);
+            bot.on('close', () => this.bots.delete(bot));
+            bot.on('pow_request', ({ difficulty, prefix }) => {
+                bot.lastPow = Date.now();
+                this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
+            });
+        });
+
+        return new Promise((resolve, reject) => {
+            bot.on('accept', () => resolve(bot));
+            bot.on('error', () => reject());
+        })
+    }
+    async joinBots(amount, i = 0) {
         if (i >= ipv6pool.length) {
             this.sendNotification(
                 `Can't join bots because your team is full. You have ${this.bots.size} bots`,
@@ -395,17 +417,8 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        let bot = new DiepSocket(this.link, { ipv6: ipv6pool[i], forceTeam: true });
-        bot.id = this.botCounter++;
-        bot.on('open', () => {
-            this.bots.add(bot);
-            bot.on('close', () => this.bots.delete(bot));
-            bot.on('pow_request', ({ difficulty, prefix }) => {
-                bot.lastPow = Date.now();
-                this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
-            });
-        });
-        bot.on('accept', () => {
+        try {
+            const bot = await this.createBot();
             let int = setInterval(() => {
                 bot.spawn(this.botname());
                 // upgrade path
@@ -427,16 +440,10 @@ class User extends EventEmitter {
             if (bot.link !== this.link) this.socket.close(4000, 'bot link and user link mismatch');
 
             this.joinBots(--amount, i);
-        });
-        bot.on('error', (err) => {
+
+        } catch(error){
             this.joinBots(amount, ++i);
-        });
-        //test
-    }
-    onpow_result(id, result) {
-        const bot = Array.from(this.bots).find((bot) => bot.id === id);
-        if (bot)
-            setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
+        }
     }
 
     /*
