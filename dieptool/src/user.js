@@ -326,6 +326,7 @@ class User extends EventEmitter {
                         : amount;
                 this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
                 this.joinBots(amount);
+                console.log('finished');
                 break;
             case COMMAND.MULTIBOX:
                 if (!(this.permissions & PERMISSIONS.MULTIBOX)) {
