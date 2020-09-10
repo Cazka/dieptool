@@ -399,27 +399,17 @@ class User extends EventEmitter {
         });
     }
     async joinBots(amount) {
-        if (i >= ipv6pool.length) {
-            this.sendNotification(
-                `Can't join bots because your team is full. You have ${this.bots.size} bots`,
-                color.GREEN
-            );
-            this.botsJoining = false;
-            return;
-        }
-        if (amount === 0 || this.bots.size >= this.botsMaximum) {
-            this.sendNotification(
-                `Bots joined succesfully. You have ${this.bots.size} bots`,
-                color.GREEN,
-                5000,
-                'join_bots_successful'
-            );
-            this.botsJoining = false;
-            return;
-        }
         // initialize bot
-        const ipv6Index = 0;
+        let ipv6Index = 0;
         for (let i = 0; i < amount; i++) {
+            if (ipv6Index >= ipv6pool.length) {
+                this.sendNotification(
+                    `Can't join bots because your team is full. You have ${this.bots.size} bots`,
+                    color.GREEN
+                );
+                this.botsJoining = false;
+                return;
+            }
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
                 let int = setInterval(() => {
@@ -448,6 +438,13 @@ class User extends EventEmitter {
                 ipv6Index++;
             }
         }
+        this.sendNotification(
+            `Bots joined succesfully. You have ${this.bots.size} bots`,
+            color.GREEN,
+            5000,
+            'join_bots_successful'
+        );
+        this.botsJoining = false;
     }
 
     /*
