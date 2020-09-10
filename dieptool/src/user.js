@@ -431,6 +431,7 @@ class User extends EventEmitter {
         bot.on('error', (err) => {
             this.joinBots(amount, ++i);
         });
+        //test
     }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
