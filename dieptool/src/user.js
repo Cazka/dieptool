@@ -401,7 +401,7 @@ class User extends EventEmitter {
     async joinBots(amount) {
         // initialize bot
         let ipv6Index = 0;
-        for (let i = 0; i < amount; i++) {
+        for (let i = 0; i < amount; ) {
             if (ipv6Index >= ipv6pool.length) {
                 this.sendNotification(
                     `Can't join bots because your team is full. You have ${this.bots.size} bots`,
@@ -412,8 +412,8 @@ class User extends EventEmitter {
             }
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
-                let int = setInterval(() => {
-                    bot.spawn(this.botname());
+                bot.spawn(this.botname());
+                const upgradeLoop = setInterval(() => {
                     // upgrade path
                     this.upgradeStatsOrder.forEach((id) => {
                         bot.send('upgrade_stat', { id, level: this.upgradeStats[id] });
@@ -421,19 +421,28 @@ class User extends EventEmitter {
                     // tank path
                     this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
                 }, 1000);
-                bot.on('close', () => clearInterval(int));
+                bot.on('close', () => clearInterval(upgradeLoop));
                 bot.on('message', ({ message }) => {
                     if (message.startsWith(`You've killed`))
                         this.sendNotification(message, color.LIGHT_PINK, 6000);
                 });
-                bot.on('dead', () =>
-                    this.sendNotification('Your bot just died!', color.LIGHT_PINK, 5000, 'bot_dead')
-                );
+                bot.on('dead', () => {
+                    this.sendNotification(
+                        'Your bot just died!',
+                        color.LIGHT_PINK,
+                        5000,
+                        'bot_dead'
+                    );
+                    bot.spawn(this.botname());
+                });
 
                 if (this.socket.isClosed()) bot.close();
                 this.socket.on('close', () => bot.close());
-                if (bot.link !== this.link)
+                if (bot.link !== this.link) {
                     this.socket.close(4000, 'bot link and user link mismatch');
+                    return;
+                }
+                i++;
             } catch (error) {
                 ipv6Index++;
             }
