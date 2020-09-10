@@ -420,6 +420,7 @@ class User extends EventEmitter {
                 if (message.startsWith(`You've killed`))
                     this.sendNotification(message, color.LIGHT_PINK, 6000);
             });
+            bot.on('dead', () => this.sendNotification('Your bot just died!', color.LIGHT_PINK, 5000, 'bot_dead'))
 
             if (this.socket.isClosed()) bot.close();
             this.socket.on('close', () => bot.close());
