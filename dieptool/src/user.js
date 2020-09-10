@@ -5,6 +5,7 @@ const DiepSocket = require('diepsocket');
 const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
+const { doesNotReject } = require('assert');
 const ipv6pool = fs
     .readFileSync(__dirname + '/ipv6')
     .toString('utf-8')
@@ -380,8 +381,8 @@ class User extends EventEmitter {
         if (bot)
             setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
     }
-    createBot(ipv6){
-        const bot = new DiepSocket(this.link, {ipv6, forceTeam: true});
+    createBot(ipv6) {
+        const bot = new DiepSocket(this.link, { ipv6, forceTeam: true });
         bot.id = this.botCounter++;
         bot.on('open', () => {
             this.bots.add(bot);
@@ -395,9 +396,9 @@ class User extends EventEmitter {
         return new Promise((resolve, reject) => {
             bot.on('accept', () => resolve(bot));
             bot.on('error', () => reject());
-        })
+        });
     }
-    async joinBots(amount, i = 0) {
+    async joinBots(amount) {
         if (i >= ipv6pool.length) {
             this.sendNotification(
                 `Can't join bots because your team is full. You have ${this.bots.size} bots`,
@@ -417,32 +418,35 @@ class User extends EventEmitter {
             return;
         }
         // initialize bot
-        try {
-            const bot = await this.createBot(ipv6pool[i]);
-            let int = setInterval(() => {
-                bot.spawn(this.botname());
-                // upgrade path
-                this.upgradeStatsOrder.forEach((id) => {
-                    bot.send('upgrade_stat', { id, level: this.upgradeStats[id] });
+        const ipv6Index = 0;
+        for (let i = 0; i < amount; i++) {
+            try {
+                const bot = await this.createBot(ipv6pool[ipv6Index]);
+                let int = setInterval(() => {
+                    bot.spawn(this.botname());
+                    // upgrade path
+                    this.upgradeStatsOrder.forEach((id) => {
+                        bot.send('upgrade_stat', { id, level: this.upgradeStats[id] });
+                    });
+                    // tank path
+                    this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
+                }, 1000);
+                bot.on('close', () => clearInterval(int));
+                bot.on('message', ({ message }) => {
+                    if (message.startsWith(`You've killed`))
+                        this.sendNotification(message, color.LIGHT_PINK, 6000);
                 });
-                // tank path
-                this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
-            }, 1000);
-            bot.on('close', () => clearInterval(int));
-            bot.on('message', ({ message }) => {
-                if (message.startsWith(`You've killed`))
-                    this.sendNotification(message, color.LIGHT_PINK, 6000);
-            });
-            bot.on('dead', () => this.sendNotification('Your bot just died!', color.LIGHT_PINK, 5000, 'bot_dead'))
+                bot.on('dead', () =>
+                    this.sendNotification('Your bot just died!', color.LIGHT_PINK, 5000, 'bot_dead')
+                );
 
-            if (this.socket.isClosed()) bot.close();
-            this.socket.on('close', () => bot.close());
-            if (bot.link !== this.link) this.socket.close(4000, 'bot link and user link mismatch');
-
-            this.joinBots(--amount, i);
-
-        } catch(error){
-            this.joinBots(amount, ++i);
+                if (this.socket.isClosed()) bot.close();
+                this.socket.on('close', () => bot.close());
+                if (bot.link !== this.link)
+                    this.socket.close(4000, 'bot link and user link mismatch');
+            } catch (error) {
+                ipv6Index++;
+            }
         }
     }
 
