@@ -325,7 +325,7 @@ class User extends EventEmitter {
                         ? this.botsMaximum - this.bots.size
                         : amount;
                 this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
-                this.joinBots(amount);
+                this.joinAllBots(amount);
                 console.log('finished');
                 break;
             case COMMAND.MULTIBOX:
@@ -377,6 +377,13 @@ class User extends EventEmitter {
     /*
      *    C O M M A N D S
      */
+    joinAllBots(amount){
+        const parallel = 4;
+        for(let i = 0; i< ~~(amount/parallel);i++){
+            this.joinBots(parallel);
+        }
+        this.joinBots(amount % parallel);
+    }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
         if (bot)
