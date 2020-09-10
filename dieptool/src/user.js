@@ -66,9 +66,9 @@ class User extends EventEmitter {
         this.rateLimitTime = 100;
 
         // Bots
-        this.ipv6Index = 0;
         this.bots = new Set();
         this.botCounter = 0;
+        this.parallelJoining = 5;
         this.botsjoining = false;
         this.botsMaximum = options.botsMaximum;
         this.botname = () => {
@@ -326,8 +326,7 @@ class User extends EventEmitter {
                         ? this.botsMaximum - this.bots.size
                         : amount;
                 this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
-                this.joinAllBots(amount);
-                console.log('finished');
+                this.joinBots(amount);
                 break;
             case COMMAND.MULTIBOX:
                 if (!(this.permissions & PERMISSIONS.MULTIBOX)) {
@@ -378,14 +377,6 @@ class User extends EventEmitter {
     /*
      *    C O M M A N D S
      */
-    joinAllBots(amount) {
-        const parallel = 4;
-        for (let i = 0; i < parallel; i++) {
-            if (i + 1 === parallel) {
-                this.joinBots((~~(amount / parallel)) + (amount % parallel));
-            } else this.joinBots(~~(amount / parallel));
-        }
-    }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
         if (bot)
@@ -408,19 +399,40 @@ class User extends EventEmitter {
             bot.on('error', () => reject());
         });
     }
-    async joinBots(amount) {
-        // initialize bot
-        for (let i = 0; i < amount; ) {
-            if (this.ipv6Index >= ipv6pool.length) {
+    joinBots(amount) {
+        let done = 0;
+        let joined = 0;
+        const cb = (n) => {
+            done++;
+            joined += n;
+            if (joined === amount) {
+                this.sendNotification(
+                    `Bots joined succesfully. You have ${this.bots.size} bots`,
+                    color.GREEN,
+                    5000,
+                    'join_bots_successful'
+                );
+                this.botsJoining = false;
+            } else if (done === this.parallelJoining) {
                 this.sendNotification(
                     `Can't join bots because your team is full. You have ${this.bots.size} bots`,
                     color.GREEN
                 );
                 this.botsJoining = false;
-                return;
             }
+        };
+        const amountPerProcess = ~~(amount / this.parallelJoining);
+        for (let i = 0; i < this.parallelJoining; i++) {
+            if (i < this.parallelJoining - 1) this.joinBotProcess(amountPerProcess, i, cb);
+            else this.joinBotProcess(amountPerProcess + (amount % this.parallelJoining), i, cb);
+        }
+    }
+    async joinBotProcess(amount, ipv6Index, cb) {
+        let joined = 0;
+        for (let i = 0; i < amount; ) {
+            if (ipv6Index >= ipv6pool.length) break;
             try {
-                const bot = await this.createBot(ipv6pool[this.ipv6Index]);
+                const bot = await this.createBot(ipv6pool[ipv6Index]);
                 bot.spawn(this.botname());
                 const upgradeLoop = setInterval(() => {
                     // upgrade path
@@ -452,17 +464,12 @@ class User extends EventEmitter {
                     return;
                 }
                 i++;
+                joined++;
             } catch (error) {
-                this.ipv6Index++;
+                ipv6Index += this.parallelJoining;
             }
         }
-        this.sendNotification(
-            `Bots joined succesfully. You have ${this.bots.size} bots`,
-            color.GREEN,
-            5000,
-            'join_bots_successful'
-        );
-        this.botsJoining = false;
+        cb(joined);
     }
 
     /*
