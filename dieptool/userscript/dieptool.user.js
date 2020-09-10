@@ -25,9 +25,7 @@ const COMMAND = {
     CLUMP: 3,
     SPINBOT: 4,
 };
-const SERVERS = [
-    'wss://ff7ffb71ec81.eu.ngrok.io',
-];
+const SERVERS = ['wss://ff7ffb71ec81.eu.ngrok.io'];
 /*
  *   C L A S S E S
  */
@@ -72,7 +70,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -238,7 +236,7 @@ class DTSocket {
     constructor() {
         this._socket;
         this._lastPing = Date.now();
-        this._pow_workers = [...Array(4)].map((x) => new PowWorker());
+        this._pow_workers = [...Array(5)].map((x) => new PowWorker());
         this.accepted = false;
     }
 
@@ -281,7 +279,7 @@ class DTSocket {
             case 1: {
                 const buffer = reader.buf();
 
-                if(this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
+                if (this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
                 break;
             }
             case 2: {
@@ -333,8 +331,7 @@ class DTSocket {
             }
         }
     }
-    _onclose(event) {
-    }
+    _onclose(event) {}
 
     send(type, content) {
         if (this.isClosed()) return;
@@ -416,9 +413,9 @@ class DTSocket {
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-        .split('')
-        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-        .join('')
+            .split('')
+            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+            .join('')
     );
 }
 function updateInformation(type, data) {
@@ -557,20 +554,19 @@ function _send(data) {
         setTimeout(() => this._send(d), 5000 - time);
         return;
     }
-    if(data[0] === 1){
-        if(gAfk) return;
-
-        if(gSpinbot){
+    if (data[0] === 1) {
+        if (gSpinbot) {
             const reader = new Reader(data);
-            const id = reader.vu();
-            if(reader.vu() & 1) {
+            reader.vu();
+            if (reader.vu() & 1 && !gAfk) {
                 gCSBisBlocked = true;
-            }
-            else {
+            } else {
                 gCSBisBlocked = false;
                 return;
             }
         }
+
+        if (gAfk) return;
     }
     this._send(data);
 }
@@ -632,9 +628,9 @@ function _onmessage(event) {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-            e = e.split('=');
-            parsed[e[0]] = e[1];
-        });
+                e = e.split('=');
+                parsed[e[0]] = e[1];
+            });
         return parsed;
     }
     const query = parseQuery(window.location.search);
@@ -740,8 +736,8 @@ if (window.localStorage.DTTOKEN) {
         setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
     };
     dtSocket.oncustom_diep_serverbound = function (data) {
-        if(!gCSBisBlocked) gWebSocket._send(data);
-    }
+        if (!gCSBisBlocked) gWebSocket._send(data);
+    };
 
     if (window.localStorage.DTTOKEN) dtSocket.connect(url);
 })();
