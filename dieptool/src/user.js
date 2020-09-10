@@ -382,7 +382,7 @@ class User extends EventEmitter {
         const parallel = 4;
         for (let i = 0; i < parallel; i++) {
             if (i + 1 === parallel) {
-                this.joinBots(amount % parallel);
+                this.joinBots((~~(amount / parallel)) + (amount % parallel));
             } else this.joinBots(~~(amount / parallel));
         }
     }
