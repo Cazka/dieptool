@@ -66,6 +66,7 @@ class User extends EventEmitter {
         this.rateLimitTime = 100;
 
         // Bots
+        this.ipv6Index = 0;
         this.bots = new Set();
         this.botCounter = 0;
         this.botsjoining = false;
@@ -409,9 +410,8 @@ class User extends EventEmitter {
     }
     async joinBots(amount) {
         // initialize bot
-        let ipv6Index = 0;
         for (let i = 0; i < amount; ) {
-            if (ipv6Index >= ipv6pool.length) {
+            if (this.ipv6Index >= ipv6pool.length) {
                 this.sendNotification(
                     `Can't join bots because your team is full. You have ${this.bots.size} bots`,
                     color.GREEN
@@ -420,7 +420,7 @@ class User extends EventEmitter {
                 return;
             }
             try {
-                const bot = await this.createBot(ipv6pool[ipv6Index]);
+                const bot = await this.createBot(ipv6pool[this.ipv6Index]);
                 bot.spawn(this.botname());
                 const upgradeLoop = setInterval(() => {
                     // upgrade path
@@ -453,7 +453,7 @@ class User extends EventEmitter {
                 }
                 i++;
             } catch (error) {
-                ipv6Index++;
+                this.ipv6Index++;
             }
         }
         this.sendNotification(
