@@ -377,12 +377,13 @@ class User extends EventEmitter {
     /*
      *    C O M M A N D S
      */
-    joinAllBots(amount){
+    joinAllBots(amount) {
         const parallel = 4;
-        for(let i = 0; i< ~~(amount/parallel);i++){
-            this.joinBots(parallel);
+        for (let i = 0; i < parallel; i++) {
+            if (i + 1 === parallel) {
+                this.joinBots(amount % parallel);
+            } else this.joinBots(~~(amount / parallel));
         }
-        this.joinBots(amount % parallel);
     }
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
