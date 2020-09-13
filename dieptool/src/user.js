@@ -72,7 +72,7 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = options.botsMaximum;
         this.botname = () => {
-            if (this.permissions & 64) return this.name;
+            if (this.permissions & 32) return this.name;
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
