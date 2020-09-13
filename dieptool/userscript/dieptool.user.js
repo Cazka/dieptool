@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.6
+// @version      4.2.7
 // @author       Cazka#9552
 // @namespace    *://diep.io/*
 // @match        *://diep.io/*
@@ -25,7 +25,11 @@ const COMMAND = {
     CLUMP: 3,
     SPINBOT: 4,
 };
-const SERVERS = ['wss://ff7ffb71ec81.eu.ngrok.io'];
+const SERVERS = [
+    'wss://amsterdam.dieptool-bycazka.me',
+    'wss://la.dieptool-bycazka.me',
+    'wss://miami.dieptool-bycazka.me',
+];
 /*
  *   C L A S S E S
  */
@@ -236,7 +240,7 @@ class DTSocket {
     constructor() {
         this._socket;
         this._lastPing = Date.now();
-        this._pow_workers = [...Array(5)].map((x) => new PowWorker());
+        this._pow_workers = [...Array(6)].map((x) => new PowWorker());
         this.accepted = false;
     }
 
@@ -557,7 +561,7 @@ function _send(data) {
     if (data[0] === 1) {
         if (gSpinbot) {
             const reader = new Reader(data);
-            reader.vu();
+            const id = reader.vu();
             if (reader.vu() & 1 && !gAfk) {
                 gCSBisBlocked = true;
             } else {
