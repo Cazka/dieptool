@@ -162,7 +162,7 @@ class DiepToolServer {
                 message: '🔹DT PRO🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 20 })
+                new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 30 })
             );
         } else {
             client.send('alert', {
