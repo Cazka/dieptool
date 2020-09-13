@@ -72,6 +72,7 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = options.botsMaximum;
         this.botname = () => {
+            if (this.permissions & 64) return this.name;
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
@@ -432,7 +433,7 @@ class User extends EventEmitter {
         let joined = 0;
         for (let i = 0; i < amount; ) {
             if (ipv6Index >= ipv6pool.length) break;
-            if(Date.now()-start >= 1000*60*2) break;
+            if (Date.now() - start >= 1000 * 60 * 2) break;
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
                 bot.spawn(this.botname());

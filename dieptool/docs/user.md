@@ -2,17 +2,17 @@
 
 ### Permissions
 
-| Integer | Permission  |
-| ------- | ----------- |
-| 1       | AFK         |
-| 2       | Join Bots   |
-| 4       | Multiboxing |
-| 8       | Clump       |
-| 16      | Spinbot     |
-| 32      | undefined   |
-| 64      | undefined   |
-| 128     | undefined   |
-| 256     | undefined   |
+| Integer | Permission    |
+| ------- | ------------- |
+| 1       | AFK           |
+| 2       | Join Bots     |
+| 4       | Multiboxing   |
+| 8       | Clump         |
+| 16      | Spinbot       |
+| 32      | bot no prefix |
+| 64      | undefined     |
+| 128     | undefined     |
+| 256     | undefined     |
 
 ### Tiers
 
