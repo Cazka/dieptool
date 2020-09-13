@@ -5,7 +5,6 @@ const DiepSocket = require('diepsocket');
 const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
 const fs = require('fs');
-const { doesNotReject } = require('assert');
 const ipv6pool = fs
     .readFileSync(__dirname + '/ipv6')
     .toString('utf-8')
@@ -105,7 +104,7 @@ class User extends EventEmitter {
             this.socket.send('alert', { message: 'Please update DiepTool to the newest version' });
             this.socket.close(
                 4000,
-                `outdated client expected: ${process.env.CLIENT_VERSION}, got: ${version}`
+                `outdated client expected: ${CLIENT_VERSION}, got: ${version}`
             );
             return;
         }
