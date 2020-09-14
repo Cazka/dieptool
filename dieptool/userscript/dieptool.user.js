@@ -26,9 +26,7 @@ const COMMAND = {
     SPINBOT: 4,
     PUSHBOT: 5,
 };
-const SERVERS = [
-    'wss://dev.dieptool.com',
-];
+const SERVERS = ['wss://dev.dieptool.com', 'wss://ff7ffb71ec81.eu.ngrok.io/'];
 /*
  *   C L A S S E S
  */
@@ -495,7 +493,7 @@ async function onBtnHead() {
     }
 }
 function onBtnJoinBots() {
-    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 5 });
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 10 });
 }
 function onBtnMultibox() {
     this.active = !this.active;
