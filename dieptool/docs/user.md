@@ -10,7 +10,7 @@
 | 8       | Clump         |
 | 16      | Spinbot       |
 | 32      | bot no prefix |
-| 64      | undefined     |
+| 64      | pushbot       |
 | 128     | undefined     |
 | 256     | undefined     |
 

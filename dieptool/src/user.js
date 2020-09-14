@@ -22,6 +22,7 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
     SPINBOT: 4,
+    PUSHBOT: 5,
 };
 const PERMISSIONS = {
     AFK: 1,
@@ -29,6 +30,8 @@ const PERMISSIONS = {
     MULTIBOX: 4,
     CLUMP: 8,
     SPINBOT: 16,
+    NO_PREFIX: 32,
+    PUSHBOT: 64,
 };
 const color = {
     PINK: '#ff00ff',
@@ -58,6 +61,7 @@ class User extends EventEmitter {
         this.afk = false;
         this.clump = false;
         this.spinbot = false;
+        this.pushbot = false;
 
         // Flags
         this.welcomeMessageSend = false;
@@ -71,7 +75,7 @@ class User extends EventEmitter {
         this.botsjoining = false;
         this.botsMaximum = options.botsMaximum;
         this.botname = () => {
-            if (this.permissions & 32) return this.name;
+            if (this.permissions & PERMISSIONS.NO_PREFIX) return this.name;
             if (!this.name) return 'DT';
             return this.name.startsWith('DT') ? this.name : `DT ${this.name}`;
         };
@@ -364,6 +368,21 @@ class User extends EventEmitter {
                     'spinbot'
                 );
                 this.spinbot = !!value;
+                break;
+            case COMMAND.PUSHBOT:
+                if (!(this.permissions & PERMISSIONS.PUSHBOT)) {
+                    this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
+                    return;
+                }
+                if (!!value === this.pushbot) return;
+                this.sendNotification(
+                    `Pushbot: ${!!value ? 'ON' : 'OFF'}`,
+                    '#ea6666',
+                    5000,
+                    'pushbot'
+                );
+                this.pushbot = !!value;
+
                 break;
             default:
                 this.sendNotification(
