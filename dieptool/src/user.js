@@ -98,6 +98,8 @@ class User extends EventEmitter {
         this.entityId;
         this.tankX = 0;
         this.tankY = 0;
+        this.mouseX = 0;
+        this.mouseY = 0;
 
         // Initialize
         this.socket.on('close', (code, reason) => {
@@ -132,6 +134,9 @@ class User extends EventEmitter {
                     content = new DiepParser(buffer).serverbound().content;
                 } catch (error) {}
 
+                this.mouseX = content.mouseX;
+                this.mouseY = content.mouseY;
+
                 if (this.afk) {
                     const deltaX = this.tankXFixed - this.tankX;
                     const deltaY = this.tankYFixed - this.tankY;
@@ -148,7 +153,7 @@ class User extends EventEmitter {
                         };
                     }
                 }
-                if (this.multibox) {
+                if (this.multibox && !this.pushbot) {
                     if (!this.clump) this.bots.forEach((bot) => bot.sendBinary(buffer));
                     else {
                         const tolerance = (4 + this.bots.size / 4) * 50;
@@ -169,6 +174,11 @@ class User extends EventEmitter {
                             }
                         });
                     }
+                }
+                else if(this.pushbot){
+                    this.bots.forEach((bot) => {
+                        bot.moveTo({x:this.mouseX, y:this.mouseY}, DiepSocket.INPUT.leftMouse, -(this.tankX - bot.position.x)+bot.position.x,-(this.tankY - bot.position.y)+bot.position.y);
+                    });
                 }
                 if (this.spinbot) {
                     const now = Date.now() / 80;
@@ -382,7 +392,6 @@ class User extends EventEmitter {
                     'pushbot'
                 );
                 this.pushbot = !!value;
-
                 break;
             default:
                 this.sendNotification(
