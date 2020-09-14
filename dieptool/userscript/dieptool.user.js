@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Diep.io Tool
+// @name         Diep.io Tool (DEVELOPER VERSION)
 // @description  made with much love.
 // @version      4.2.7
 // @author       Cazka#9552
@@ -27,9 +27,7 @@ const COMMAND = {
     PUSHBOT: 5,
 };
 const SERVERS = [
-    'wss://amsterdam.dieptool-bycazka.me',
-    'wss://la.dieptool-bycazka.me',
-    'wss://miami.dieptool-bycazka.me',
+    'wss://dev.dieptool.com',
 ];
 /*
  *   C L A S S E S
@@ -241,7 +239,7 @@ class DTSocket {
     constructor() {
         this._socket;
         this._lastPing = Date.now();
-        this._pow_workers = [...Array(6)].map((x) => new PowWorker());
+        this._pow_workers = [...Array(8)].map((x) => new PowWorker());
         this.accepted = false;
     }
 
@@ -710,7 +708,7 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
     addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
     addButton(guiBody, 'Spinbot OFF', onBtnSpinbot);
-    addButton(guiBody, 'Pushbot OFF', onBtnPushBot);
+    addButton(guiBody, 'Pushbot OFF', onBtnPushbot);
     disableGui();
 } else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
