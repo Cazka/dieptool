@@ -155,7 +155,7 @@ class DiepToolServer {
                 message: '🔹Premium🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 10 })
+                new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 10 })
             );
         } else if (discord.isDT_PRO(dbUser.user_id)) {
             client.send('alert', {
