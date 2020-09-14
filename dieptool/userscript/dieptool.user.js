@@ -24,6 +24,7 @@ const COMMAND = {
     AFK: 2,
     CLUMP: 3,
     SPINBOT: 4,
+    PUSHBOT: 5,
 };
 const SERVERS = [
     'wss://amsterdam.dieptool-bycazka.me',
@@ -542,6 +543,16 @@ function onBtnSpinbot() {
         dtSocket.send('command', { id: COMMAND.SPINBOT, value: 0 });
     }
 }
+function onBtnPushbot() {
+    this.active = !this.active;
+    if (this.active) {
+        this.innerHTML = 'Pushbot: ON';
+        dtSocket.send('command', { id: COMMAND.PUSHBOT, value: 1 });
+    } else {
+        this.innerHTML = 'Pushbot: OFF';
+        dtSocket.send('command', { id: COMMAND.PUSHBOT, value: 0 });
+    }
+}
 function onBtnDiscord() {
     window.open('https://discord.gg/8saC9pq');
 }
@@ -699,6 +710,7 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
     addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
     addButton(guiBody, 'Spinbot OFF', onBtnSpinbot);
+    addButton(guiBody, 'Pushbot OFF', onBtnPushBot);
     disableGui();
 } else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
