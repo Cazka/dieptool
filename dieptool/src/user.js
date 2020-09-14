@@ -108,10 +108,7 @@ class User extends EventEmitter {
 
         if (version !== CLIENT_VERSION) {
             this.socket.send('alert', { message: 'Please update DiepTool to the newest version' });
-            this.socket.close(
-                4000,
-                `outdated client expected: ${CLIENT_VERSION}, got: ${version}`
-            );
+            this.socket.close(4000, `outdated client expected: ${CLIENT_VERSION}, got: ${version}`);
             return;
         }
         this.socket.send('accept');
@@ -174,10 +171,14 @@ class User extends EventEmitter {
                             }
                         });
                     }
-                }
-                else if(this.pushbot){
+                } else if (this.pushbot) {
                     this.bots.forEach((bot) => {
-                        bot.moveTo({x:this.mouseX, y:this.mouseY}, DiepSocket.INPUT.leftMouse, -(this.tankX - bot.position.x)+bot.position.x,-(this.tankY - bot.position.y)+bot.position.y);
+                        bot.moveTo(
+                            { x: this.mouseX, y: this.mouseY },
+                            DiepSocket.INPUT.leftMouse,
+                            -(this.tankX - bot.position.x) + bot.position.x,
+                            -(this.tankY - bot.position.y) + bot.position.y
+                        );
                     });
                 }
                 if (this.spinbot) {
