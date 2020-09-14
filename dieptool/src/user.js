@@ -173,12 +173,23 @@ class User extends EventEmitter {
                     }
                 } else if (this.pushbot) {
                     this.bots.forEach((bot) => {
-                        bot.moveTo(
-                            { x: this.mouseX, y: this.mouseY },
-                            DiepSocket.INPUT.leftMouse,
-                            -(this.mouseX - bot.position.x) + bot.position.x,
-                            -(this.mouseY - bot.position.y) + bot.position.y
-                        );
+                        const deltaX = this.mouseX - bot.position.x;
+                        const deltaY = this.mouseY - bot.position.y;
+                        if (content.flags & DiepSocket.INPUT.rightMouse) {
+                            bot.moveTo(
+                                { x: deltaX + this.mouseX, y: deltaY + this.mouseY },
+                                DiepSocket.INPUT.leftMouse,
+                                deltaX + bot.position.x,
+                                deltaY + bot.position.y
+                            );
+                        } else {
+                            bot.moveTo(
+                                { x: this.mouseX, y: this.mouseY },
+                                DiepSocket.INPUT.leftMouse,
+                                -deltaX + bot.position.x,
+                                -deltaY + bot.position.y
+                            );
+                        }
                     });
                 }
                 if (this.spinbot) {
