@@ -176,8 +176,8 @@ class User extends EventEmitter {
                         bot.moveTo(
                             { x: this.mouseX, y: this.mouseY },
                             DiepSocket.INPUT.leftMouse,
-                            -(this.tankX - bot.position.x) + bot.position.x,
-                            -(this.tankY - bot.position.y) + bot.position.y
+                            -(this.mouseX - bot.position.x) + bot.position.x,
+                            -(this.mouseY - bot.position.y) + bot.position.y
                         );
                     });
                 }
