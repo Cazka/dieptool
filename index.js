@@ -40,6 +40,9 @@ app.use(bodyParser.json());
 app.get('/dieptool.user.js', (req, res) => {
     res.download(__dirname + '/dieptool/userscript/dieptool.user.js');
 })
+app.get('/dieptool_dev.user.js', (req, res) => {
+    res.download(__dirname + '/dieptool/userscript/dieptool_dev.user.js');
+})
 app.get('/', (req, res) => {
     if (req.session.loggedIn){
         if(req.session.username === 'admin') res.sendFile(__dirname + '/views/dashboard/admin.html');
