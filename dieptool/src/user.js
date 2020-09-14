@@ -177,7 +177,7 @@ class User extends EventEmitter {
                         const deltaY = this.mouseY - bot.position.y;
                         if (content.flags & DiepSocket.INPUT.rightMouse) {
                             bot.moveTo(
-                                { x: deltaX + this.mouseX, y: deltaY + this.mouseY },
+                                { x: -deltaX + this.mouseX, y: -deltaY + this.mouseY },
                                 DiepSocket.INPUT.leftMouse,
                                 deltaX + bot.position.x,
                                 deltaY + bot.position.y
