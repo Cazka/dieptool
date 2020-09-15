@@ -178,14 +178,14 @@ class User extends EventEmitter {
                         if (content.flags & DiepSocket.INPUT.rightMouse) {
                             bot.moveTo(
                                 { x: -deltaX + bot.position.x, y: -deltaY + bot.position.y },
-                                DiepSocket.INPUT.leftMouse,
+                                content.flags | DiepSocket.INPUT.leftMouse,
                                 deltaX + bot.position.x,
                                 deltaY + bot.position.y
                             );
                         } else {
                             bot.moveTo(
                                 { x: this.mouseX, y: this.mouseY },
-                                DiepSocket.INPUT.leftMouse,
+                                content.flags | DiepSocket.INPUT.leftMouse,
                                 -deltaX + bot.position.x,
                                 -deltaY + bot.position.y
                             );
