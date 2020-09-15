@@ -436,7 +436,7 @@ class User extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             bot.on('accept', () => resolve(bot));
-            bot.on('error', () => reject());
+            bot.on('error', (err) => reject(err));
         });
     }
     joinBots(amount) {
@@ -514,6 +514,7 @@ class User extends EventEmitter {
                 i++;
                 joined++;
             } catch (error) {
+                console.log(error);
                 ipv6Index += this.parallelJoining;
             }
         }
