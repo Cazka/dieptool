@@ -433,9 +433,9 @@ class User extends EventEmitter {
                 this.socket.send('pow_request', { id: bot.id, difficulty, prefix });
             });
         });
-
         return new Promise((resolve, reject) => {
             bot.on('accept', () => resolve(bot));
+            setTimeout(() => reject(), 1000*30);
             bot.on('error', (err) => reject(err));
         });
     }
@@ -443,7 +443,6 @@ class User extends EventEmitter {
         let done = 0;
         let joined = 0;
         const cb = (n) => {
-            console.log(this.socket.ip, 'CALL');
             done++;
             joined += n;
             if (joined === amount) {
@@ -514,7 +513,6 @@ class User extends EventEmitter {
                 i++;
                 joined++;
             } catch (error) {
-                console.log(error);
                 ipv6Index += this.parallelJoining;
             }
         }
