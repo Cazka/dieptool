@@ -471,12 +471,10 @@ class User extends EventEmitter {
         const start = Date.now();
         let joined = 0;
         for (let i = 0; i < amount; ) {
+            const elapsed = Date.now() - start;
             if (ipv6Index >= ipv6pool.length) break;
-            if ((Date.now() - start) >= 1000 * 10) {
-                console.log('timeout');
-                break;
-            }
-            console.log(start, Date.now(), Date.now() - start);
+            if (elapsed >= 1000 * 30) break;
+
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
                 bot.spawn(this.botname());
