@@ -486,7 +486,10 @@ class User extends EventEmitter {
                     // tank path
                     this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
                 }, 1000);
-                bot.on('close', () => clearInterval(upgradeLoop));
+                bot.on('close', () => {
+                    this.sendNotification(`Bot disconnected. You have ${this.bots.size} bots.`);
+                    clearInterval(upgradeLoop);
+                });
                 bot.on('message', ({ message }) => {
                     if (message.startsWith(`You've killed`))
                         this.sendNotification(message, color.LIGHT_PINK, 6000);
