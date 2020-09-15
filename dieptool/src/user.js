@@ -399,7 +399,7 @@ class User extends EventEmitter {
                 if (!!value === this.pushbot) return;
                 this.sendNotification(
                     `Pushbot: ${!!value ? 'ON' : 'OFF'}`,
-                    '#ea6666',
+                    '#92ea66',
                     5000,
                     'pushbot'
                 );
@@ -435,7 +435,7 @@ class User extends EventEmitter {
         });
         return new Promise((resolve, reject) => {
             bot.on('accept', () => resolve(bot));
-            setTimeout(() => reject(), 1000*30);
+            setTimeout(() => reject(), 1000 * 30);
             bot.on('error', (err) => reject(err));
         });
     }
@@ -487,7 +487,12 @@ class User extends EventEmitter {
                     this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
                 }, 1000);
                 bot.on('close', () => {
-                    this.sendNotification(`Bot disconnected. You have ${this.bots.size} bots.`);
+                    this.sendNotification(
+                        `Bot disconnected. You have ${this.bots.size} bots.`,
+                        0,
+                        5000,
+                        'bot_close'
+                    );
                     clearInterval(upgradeLoop);
                 });
                 bot.on('message', ({ message }) => {
@@ -495,12 +500,7 @@ class User extends EventEmitter {
                         this.sendNotification(message, color.LIGHT_PINK, 6000);
                 });
                 bot.on('dead', () => {
-                    this.sendNotification(
-                        'Your bot just died!',
-                        color.LIGHT_PINK,
-                        5000,
-                        'bot_dead'
-                    );
+                    this.sendNotification('Your bot just died', color.LIGHT_PINK, 5000, 'bot_dead');
                     bot.spawn(this.botname());
                 });
 
