@@ -443,7 +443,7 @@ class User extends EventEmitter {
         let done = 0;
         let joined = 0;
         const cb = (n) => {
-            console.log('CALL');
+            console.log(this.socket.ip, 'CALL');
             done++;
             joined += n;
             if (joined === amount) {
