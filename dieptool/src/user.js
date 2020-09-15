@@ -476,6 +476,7 @@ class User extends EventEmitter {
                 console.log('timeout');
                 break;
             }
+            console.log(start, Date.now(), Date.now()-start);
             try {
                 const bot = await this.createBot(ipv6pool[ipv6Index]);
                 bot.spawn(this.botname());
