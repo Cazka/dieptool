@@ -489,7 +489,7 @@ class User extends EventEmitter {
                 bot.on('close', () => {
                     this.sendNotification(
                         `Bot disconnected. You have ${this.bots.size} bots.`,
-                        0,
+                        '0',
                         5000,
                         'bot_close'
                     );
