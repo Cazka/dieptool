@@ -71,7 +71,7 @@ const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
 const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -409,14 +409,91 @@ class DTSocket {
     }
 }
 /*
+ *   T H E M E
+ */
+Object.defineProperty(unsafeWindow, 'input', {
+    set: (value) => {
+        delete unsafeWindow.input;
+        unsafeWindow.input = value;
+
+        unsafeWindow.input.execute('ren_solid_background = true');
+        unsafeWindow.input.execute('ren_background_color 0x131313');
+    },
+
+    configurable: true,
+    enumerable: true,
+});
+const THEME_COLORS = {
+    '#eeeeee': ['textInput'],
+    '#929292': ['achievements_gray'],
+    '#888888': ['stats_uprgrade_gray'],
+
+    '#bbbbbb': ['walls_fill'],
+    '#555555': ['dom_base'],
+    '#000000': ['minimap_arrow'],
+
+    '#999999': ['tank_barrel_fill'],
+    '#b7b7b7': ['tank_barrel_fill_light'],
+
+    '#fcbd91': ['achievements_orange', 'stats_health-regen_upgrade_hover'],
+    '#fa68ff': ['achievements_magenta', 'stats_max-health_upgrade_hover'],
+    '#9d68ff': ['achievements_purple', 'stats_body-damage_upgrade_hover'],
+    '#6898ff': ['achievements_blue', 'stats_bullet-speed_upgrade_hover'],
+    '#ffe468': ['achievements_yellow', 'stats_bullet-penetration_upgrade_hover'],
+    '#ff6868': ['achievements_red', 'stats_bullet-damage_upgrade_hover'],
+    '#9bff68': ['achievements_green', 'stats_reload_upgrade_hover'],
+    '#68fffa': ['achievements_cyan', 'stats_movement-speed_upgrade_hover'],
+
+    '#fcad76': ['stats_healt-regen_upgrade'],
+    '#f943ff': ['stats_max-health_upgrade'],
+    '#8543ff': ['stats_body-damage_upgrade'],
+    '#437fff': ['stats_bullet-speed_upgrade'],
+    '#ffde43': ['stats_bullet-penetration_upgrade'],
+    '#ff4343': ['stats_bullet-damage_upgrade'],
+    '#82ff43': ['stats_reload_upgrade'],
+    '#43fff9': ['stats_movement-speed_upgrade'],
+
+
+    '#bf7ff5': ['minimap_teams_purple', 'teams_purple_tank_fill'],
+    '#00b2e1': ['minimap_teams_blue', 'teams_blue_tank_fill'],
+    '#f14e54': ['minimap_teams_red', 'teams_red_tank_fill'],
+    '#00e16e': ['minimap_teams_green', 'teams_green_tank_fill'],
+
+    '#4cc9ea': ['teams_blue_tank_body_light'],
+    '#4cea99': ['teams_green_tank_body_light'],
+    '#f58387': ['teams_red_tank_body_light'],
+
+    '#0085a8': ['teams_purple_tank_body_stroke', 'teams_purple_bullet_body_stroke'],
+    '#b43a3f': ['teams_red_tank_body_stroke', 'teams_red_bullet_body_stroke'],
+    '#00a852': ['teams_green_tank_body_stroke', 'teams_green_bullet_stroke'],
+    '#bfae4e': ['teams_yellow_tank_body_stroke'],
+
+    '#ffe869': ['shapes_square_fill'],
+    '#fc7677': ['shapes_triangle_fill'],
+    '#768dfc': ['shapes_pentagon_fill'],
+}
+//const ctx = document.getElementById('canvas');
+const THEME_COLORS_ARRAY = Array.from(Object.keys(THEME_COLORS));
+window.CanvasRenderingContext2D.prototype._fill = window.CanvasRenderingContext2D.prototype.fill;
+window.CanvasRenderingContext2D.prototype.fill = function(a){
+    //if(!THEME_COLORS_ARRAY.includes(this.fillStyle)) console.log(this.fillStyle);
+
+    if(['#ffe869', '#fc7677', '#768dfc', /* tanks*/ '#0085a8', '#b43a3f', '#00a852', '#bfae4e', /* barrel */'#999999'].includes(this.fillStyle)){
+        this.shadowColor = '#000000';
+        this.shadowBlur = 5;
+    }
+    this._fill();
+}
+
+/*
  *   H E L P E R   F U N C T I O N S
  */
 function UTF8ToString(utf8 = '') {
     return decodeURI(
         utf8
-            .split('')
-            .map((c) => `%${c.charCodeAt(0).toString(16)}`)
-            .join('')
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
     );
 }
 function updateInformation(type, data) {
@@ -639,9 +716,9 @@ function _onmessage(event) {
         q.substring(1)
             .split('&')
             .forEach((e) => {
-                e = e.split('=');
-                parsed[e[0]] = e[1];
-            });
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
         return parsed;
     }
     const query = parseQuery(window.location.search);
