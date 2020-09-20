@@ -26,6 +26,7 @@ class DiepToolServer {
             const client = new Client(ws, ip);
             client.on('error', (err) => {});
             client.on('close', (code, reason) => console.log(ip, ' closed', code, reason));
+            console.log(this.ips[ip]);
             if (this.ips[ip] === 2) {
                 const message = 'ip connection limit';
                 client.send('alert', { message });
