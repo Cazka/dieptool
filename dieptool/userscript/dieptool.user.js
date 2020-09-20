@@ -39,13 +39,7 @@ class PowWorker {
         this.worker.onmessage = (e) => this._onmessage(e);
     }
     _getWorkerPath() {
-        return (
-            window.location.protocol +
-            '//' +
-            window.location.hostname +
-            window.location.pathname +
-            'pow_worker.js'
-        );
+        return window.location.protocol + '//' + window.location.hostname + window.location.pathname + 'pow_worker.js';
     }
     _onmessage(e) {
         const data = e.data;
@@ -70,8 +64,7 @@ const u8 = new Uint8Array(convo);
 const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
-const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+const endianSwap = (val) => ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -408,6 +401,7 @@ class DTSocket {
         });
     }
 }
+
 /*
  *   H E L P E R   F U N C T I O N S
  */
@@ -474,9 +468,7 @@ function disableGui() {
 }
 async function onBtnHead() {
     if (dtSocket.isClosed()) {
-        if (!window.localStorage.DTTOKEN)
-            window.location.href =
-                'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+        if (!window.localStorage.DTTOKEN) window.location.href = 'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
         else {
             const url = await DTSocket.findServerPreference(SERVERS);
             if (!url) {
@@ -550,7 +542,7 @@ function onBtnPushbot() {
     }
 }
 function onBtnDiscord() {
-    window.open('https://discord.gg/8saC9pq');
+    window.open('https://discord.gg/5q2E3Sx');
 }
 function onBtnPatreon() {
     window.open('https://www.patreon.com/dieptool');
@@ -591,7 +583,7 @@ function _onmessage(event) {
     else if (data[0] === 11) this.lastPow = Date.now();
     this._onmessage(event);
 }
-(function hijackWebSocket() {
+(function wsHook() {
     const wsInstances = new Set();
     window.WebSocket.prototype._send = window.WebSocket.prototype.send;
     window.WebSocket.prototype.send = function (data) {
@@ -675,16 +667,7 @@ let dtSocket = new DTSocket();
 GM_addStyle(`
 .gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:0;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}
 `);
-const guiColors = [
-    '#E8B18A',
-    '#E666EA',
-    '#9566EA',
-    '#6690EA',
-    '#E7D063',
-    '#EA6666',
-    '#92EA66',
-    '#66EAE6',
-];
+const guiColors = ['#E8B18A', '#E666EA', '#9566EA', '#6690EA', '#E7D063', '#EA6666', '#92EA66', '#66EAE6'];
 const guiButtons = [];
 
 const guiDiepTool = document.createElement('div');
@@ -706,7 +689,7 @@ if (window.localStorage.DTTOKEN) {
     addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
     addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
     addButton(guiBody, 'Spinbot OFF', onBtnSpinbot);
-    addButton(guiBody, 'Pushbot OFF', onBtnPushbot);
+    addButton(guiBody, 'Pushbot OFF', onBtnPushbot, 'KeyP');
     disableGui();
 } else {
     btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
@@ -733,8 +716,7 @@ if (window.localStorage.DTTOKEN) {
             if (gReadyToInit) {
                 clearInterval(int);
 
-                for (let [key, value] of Object.entries(gUserInfo))
-                    this.send('update', { id: key, value });
+                for (let [key, value] of Object.entries(gUserInfo)) this.send('update', { id: key, value });
             }
         }, 100);
     };

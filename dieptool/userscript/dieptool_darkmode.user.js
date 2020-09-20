@@ -1,457 +1,832 @@
 // ==UserScript==
-// @name         Darkmode
-// @author       Cazka#0001
-// @description  darkmode
-// @version 	 0.0.1
+// @name         Diep.io Tool (DEVELOPER VERSION)
+// @description  made with much love.
+// @version      4.2.7
+// @author       Cazka#9552
+// @namespace    *://diep.io/*
 // @match        *://diep.io/*
+// @grant        GM_info
+// @grant        GM_addStyle
 // ==/UserScript==
-(function () {
-    if (localStorage.no_wasm != 'true') localStorage.setItem('no_wasm', true), location.reload();
+'use strict';
 
-    const fillColors = [
-            { color: '#000001', cmd: ['net_replace_color 2', 'net_replace_color 3'] },
-            { color: '#000002', new: '#00c0ff' },
-            {
-                color: '#000100',
-                cmd: ['net_replace_color 0', 'net_replace_color 1', 'net_replace_color 10'],
-            },
-            { color: '#000200', new: '#cf33ff' },
-            {
-                color: '#010000',
-                cmd: ['net_replace_color 8', 'net_replace_color 12', 'net_replace_color 6'],
-            },
-            {
-                color: '#000003',
-                cmd: [
-                    'net_replace_color 4',
-                    'net_replace_color 9',
-                    'net_replace_color 15',
-                    'ren_health_fill_color',
-                ],
-            },
-            { color: '#000006', new: '#ff0080' },
-            { color: '#010001', cmd: ['net_replace_color 11'] },
-            { color: '#010100', cmd: ['net_replace_color 14'], new: '#030006' },
-            { color: '#030000', cmd: ['net_replace_color 17'] },
-            { color: '#020000', new: '#ffff33' },
-            { color: '#000300', cmd: ['net_replace_color 7'] },
-            { color: '#000101', cmd: ['net_replace_color 16'] },
-            { color: '#060000', new: '#ffffff' },
-            { color: '#010002', cmd: ['net_replace_color 5'] },
-            { color: '#020004', new: '#ca80ff' },
-        ],
-        strokeColors = [
-            { color: '#123456', cmd: ['ren_xp_bar_fill_color'] },
-            { color: '#123321', cmd: ['ren_health_background_color'] },
-            { color: '#010101', cmd: ['ren_score_bar_fill_color', 'net_replace_color 13'] },
-            { color: '#000200', new: '#cf33ff' },
-            { color: '#321123', cmd: ['ren_bar_background_color'] },
-            { color: '#000002', new: '#00c0ff' },
-            { color: '#020000', new: '#ffff33' },
-            { color: '#000003', new: '#ff0080' },
-            { color: '#000006', new: '#ff0080' },
-            { color: '#020002', new: '#ff33bb' },
-            { color: '#020200', new: '#cf33ff' },
-            { color: '#060000', new: '#ffffff' },
-            { color: '#000600', new: '#00ff00' },
-            { color: '#000202', new: '#ff8000' },
-            { color: '#020004', new: '#ca80ff' },
-        ],
-        p = CanvasRenderingContext2D.prototype,
-        _fill = p.fill,
-        _stroke = p.stroke,
-        _fillText = p.fillText,
-        _strokeText = p.strokeText,
-        _fillRect = p.fillRect,
-        _setTransform = p.setTransform,
-        _drawImage = p.drawImage,
-        _toString = Function.prototype.toString,
-        darkenColor = (color, m) => {
-            m = m || 1;
-            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
-            return result
-                ? `rgb(${parseInt(result[1], 16) / (2.5 * m)},${
-                      parseInt(result[2], 16) / (2.5 * m)
-                  },${parseInt(result[3], 16) / (2.5 * m)})`
-                : null;
-        };
-
-    strokeColors[1].new = darkenColor(strokeColors[7].new, 2);
-
-    const UIColors = [
-            '#987789',
-            '#789987',
-            '#4c3b44',
-            '#3c4c43',
-            '#ac92a0',
-            '#93ad9f',
-            '#795f6d',
-            '#607a6c',
-        ],
-        fill = function () {
-            if (['#888888', '#eeeeee'].includes(this.fillStyle)) return;
-            if (this.fillStyle == '#000000') this.fillStyle = strokeColors[7].new;
-            if (this.fillStyle == '#4c4c4d') this.fillStyle = fillColors[1].new;
-            if (this.fillStyle == '#4c4d4c') this.fillStyle = fillColors[3].new;
-            if (this.fillStyle == '#4c4c4e') this.fillStyle = fillColors[6].new;
-
-            if (UIColors.includes(this.fillStyle)) {
-                let i = UIColors.indexOf(this.fillStyle),
-                    color = [
-                        strokeColors[3].new,
-                        strokeColors[7].new,
-                        darkenColor(strokeColors[3].new),
-                        darkenColor(strokeColors[7].new),
-                        strokeColors[3].new,
-                        strokeColors[7].new,
-                        strokeColors[3].new,
-                        strokeColors[7].new,
-                    ][i];
-
-                if (i < UIColors.length - 4) {
-                    this.strokeStyle = color;
-
-                    this.save();
-                    this.clip();
-                    this.lineWidth *= 0.4;
-                    _stroke.call(this);
-                    this.restore();
-                    return;
-                }
-
-                this.fillStyle = color;
-            }
-
-            for (let x of fillColors) {
-                if (x.color == this.fillStyle) {
-                    this.fillStyle = x.new || '#000000';
-                    break;
-                }
-            }
-
-            if (this.fillStyle == '#030006') {
-                this.strokeStyle = strokeColors[3].new;
-
-                this.save();
-                this.clip();
-                this.lineWidth = c.height / 100;
-                _stroke.call(this);
-                this.restore();
-
-                this.globalCompositeOperation = 'lighten';
-            }
-
-            _fill.call(this);
-        },
-        stroke = function () {
-            if (!strokeColors.map((x) => x.color).includes(this.strokeStyle)) return;
-            if (['#123456', '#321123', '#010101'].includes(this.strokeStyle)) return;
-
-            for (let x of strokeColors) {
-                if (x.color == this.strokeStyle) {
-                    this.strokeStyle = x.new || '#000000';
-                    break;
-                }
-            }
-
-            _stroke.call(this);
-        },
-        regexpC = new RegExp(
-            `^(${[
-                'Score: ([0-9]{1,3})(,[0-9]{1,3})?(,[0-9]{1,3})?',
-                'Scoreboard',
-                'diep\\.io',
-                '[0-9]+\\.[0-9] ms vultr-(amsterdam|miami|la|singapore|sydney)',
-                '[0-9]+\\.[0-9] FPS',
-                '([0-9]+h )?([0-9]{1,2}m )?[0-9]{1,2}s',
-                '([0-9]{1,3})(,[0-9]{1,3})(,[0-9]{1,3})?',
-                'You were killed by:',
-                '\\(press enter to continue\\)',
-                '\\(they seem to prefer to keep an air of mystery about them\\)',
-                "You've killed [^]+",
-                'Game mode',
-            ].join('|')})$`
-        ),
-        regexpR = new RegExp(
-            `^(${[
-                '\\[[0-8]\\]',
-                'Health Regen',
-                'Max Health',
-                'Body Damage',
-                '(Bullet|Drone) Speed',
-                '(Bullet|Drone) (Health|Penetration)',
-                '(Bullet|Drone) Damage',
-                'Drone Count',
-                'Reload',
-                'Movement Speed',
-                'More games',
-            ].join('|')})$`
-        ),
-        fillText = function (text, ...args) {
-            if (regexpR.test(text)) return;
-
-            let i;
-
-            if (regexpC.test(text) || this.fillStyle == '#ffff90')
-                (this.fillStyle = strokeColors[7].new), (i = 1);
-            else this.fillStyle = strokeColors[3].new;
-
-            i ^= 1;
-
-            if (/^[0-9]+(\.[0-9][km])?$/.test(text))
-                this.fillStyle = [strokeColors[3].new, strokeColors[7].new][i];
-
-            _fillText.apply(this, [text, ...args]);
-        },
-        strokeText = () => {},
-        fillRect = function (x, y, w, h) {
-            if (
-                [
-                    '#456654',
-                    '#321123',
-                    '#0000ff',
-                    '#f3f1a9',
-                    '#c1adb8',
-                    '#aec1b7',
-                    '#becdc5',
-                    '#cdbdc6',
-                    '#8b9a92',
-                    '#9a8a93',
-                    '#adadad',
-                    '#bdbdbd',
-                    '#8a8a8a',
-                    '#ff0000',
-                ].includes(this.fillStyle)
-            )
-                return;
-
-            _fillRect.apply(this, arguments);
-        },
-        setTransform = function (a, b, c, d, e, f) {
-            if (this.fillStyle == '#456654') return _fillRect.apply(ctx7, [e, f, a, d]);
-            if (['#8b9a92', '#9a8a93', '#8a8a8a'].includes(this.fillStyle)) {
-                this.shadowColor = '#ff0000';
-                this.shadowBlur = 1;
-            }
-
-            _setTransform.apply(this, arguments);
-        },
-        drawImage = function (img) {
-            if (img.src == `https://static.diep.io/title.png`)
-                img.src = `https://i.imgur.com/hTy66ES.png`;
-
-            _drawImage.apply(this, arguments);
-        },
-        toString = function () {
-            switch (this) {
-                case fill:
-                    return _toString.call(_fill);
-                case stroke:
-                    return _toString.call(_stroke);
-                case fillText:
-                    return _toString.call(_fillText);
-                case strokeText:
-                    return _toString.call(_strokeText);
-                case fillRect:
-                    return _toString.call(_fillRect);
-                case toString:
-                    return _toString.call(_toString);
-            }
-
-            return _toString.call(this);
-        };
-
-    p.fill = fill;
-    p.stroke = stroke;
-    p.fillText = fillText;
-    p.strokeText = strokeText;
-    p.fillRect = fillRect;
-    (p.setTransform = setTransform),
-        (p.drawImage = drawImage),
-        (Function.prototype.toString = toString);
-
-    // // // //
-
-    let c = document.getElementById('canvas'),
-        c2 = document.createElement('canvas'),
-        ctx2 = c2.getContext('2d'),
-        c3 = document.createElement('canvas'),
-        ctx3 = c3.getContext('2d'),
-        c4 = document.createElement('canvas'),
-        ctx4 = c4.getContext('2d'),
-        c5 = document.createElement('canvas'),
-        ctx5 = c5.getContext('2d'),
-        c6 = document.createElement('canvas'),
-        ctx6 = c6.getContext('2d'),
-        c7 = document.createElement('canvas'),
-        ctx7 = c7.getContext('2d'),
-        t = document.getElementById('textInput'),
-        body = document.getElementsByTagName('body')[0];
-
-    t.style.color = strokeColors[7].new;
-    c.style['mix-blend-mode'] = 'screen';
-
-    c2.width = c.width;
-    c2.height = c.height;
-    c2.style.width = '100%';
-    c2.style.height = '100%';
-    c2.style.position = 'absolute';
-    c2.style.top = '0px';
-    c2.style.left = '0px';
-    c2.style.zIndex = -3;
-
-    ctx2.fillStyle = '#1a0626';
-    _fillRect.apply(ctx2, [0, 0, c.width, c.height]);
-
-    c3.width = c.width;
-    c3.height = c.height;
-    c3.style.width = '100%';
-    c3.style.height = '100%';
-    c3.style.position = 'absolute';
-    c3.style.top = '0px';
-    c3.style.left = '0px';
-    c3.style.zIndex = -1;
-    c3.style.filter = 'blur(0.15vw)';
-    c3.style['mix-blend-mode'] = 'screen';
-
-    c4.width = c.width;
-    c4.height = c.height;
-    c4.style.width = '100%';
-    c4.style.height = '100%';
-    c4.style.position = 'absolute';
-    c4.style.top = '0px';
-    c4.style.left = '0px';
-    c4.style.zIndex = -1;
-    c4.style.filter = 'blur(0.3vw)';
-    c4.style['mix-blend-mode'] = 'screen';
-
-    c5.width = c.width;
-    c5.height = c.height;
-    c5.style.width = '100%';
-    c5.style.height = '100%';
-    c5.style.position = 'absolute';
-    c5.style.top = '0px';
-    c5.style.left = '0px';
-    c5.style.zIndex = -1;
-    c5.style.filter = 'blur(0.9vw)';
-    c5.style['mix-blend-mode'] = 'screen';
-
-    c6.width = c.width;
-    c6.height = c.height;
-    c6.style.width = '100%';
-    c6.style.height = '100%';
-    c6.style.position = 'absolute';
-    c6.style.top = '0px';
-    c6.style.left = '0px';
-    c6.style.zIndex = -1;
-    c6.style.filter = 'blur(1.8vw)';
-    c6.style['mix-blend-mode'] = 'screen';
-
-    c7.width = c.width;
-    c7.height = c.height;
-    c7.style.width = '100%';
-    c7.style.height = '100%';
-    c7.style.position = 'absolute';
-    c7.style.top = '0px';
-    c7.style.left = '0px';
-    c7.style.zIndex = -2;
-
-    ctx7.fillStyle = '#15051f';
-
-    body.appendChild(c2);
-    body.appendChild(c3);
-    body.appendChild(c4);
-    body.appendChild(c5);
-    body.appendChild(c6);
-    body.appendChild(c7);
-
-    window.addEventListener(
-        'resize',
-        () => {
-            c2.width = c.width;
-            c2.height = c.height;
-            ctx2.fillStyle = '#1a0626';
-            _fillRect.apply(ctx2, [0, 0, c.width, c.height]);
-
-            c3.width = c.width;
-            c3.height = c.height;
-
-            c4.width = c.width;
-            c4.height = c.height;
-
-            c5.width = c.width;
-            c5.height = c.height;
-
-            c6.width = c.width;
-            c6.height = c.height;
-
-            c7.width = c.width;
-            c7.height = c.height;
-            ctx7.fillStyle = '#15051f';
-        },
-        false
-    );
-
-    Object.defineProperty(window, 'input', {
-        set: (x) => {
-            delete window.input;
-            window.input = x;
-
-            [
-                'ui_replace_colors' + ' 0x987789 0x789987'.repeat(4),
-                'ren_fps true',
-                'ren_changelog false',
-                'ren_achievements false',
-                'ren_background_solid_color true',
-                'ren_background_color 0x000000',
-                'ren_border_color_alpha 1',
-                'ren_border_color 0x456654',
-                'ren_minimap_border_color 0xcf33ff',
-                'ren_minimap_background_color 0x321123',
-                'ren_stroke_soft_color_intensity -1',
-            ].forEach((x) => input.execute(x));
-
-            for (let x of fillColors.concat(strokeColors)) {
-                if (!x.cmd) continue;
-                x.cmd.forEach((cmd) => input.execute(`${cmd} 0x${x.color.slice(1)}`));
-            }
-        },
-
-        configurable: true,
-        enumerable: true,
-    });
-
-    const contexts = [ctx3, ctx4, ctx5, ctx6],
-        canvases = [c3, c4, c5, c6];
-
-    let mode = localStorage.diepNeonMode;
-    if (mode === undefined) {
-        mode = contexts.length - 1;
-        localStorage.setItem('diepNeonMode', contexts.length - 1);
+/*
+ *   C O N S T A N T S
+ */
+const UPDATE = {
+    SERVER_PARTY: 0,
+    NAME: 1,
+    GAMEMODE: 2,
+};
+const COMMAND = {
+    JOIN_BOTS: 0,
+    MULTIBOX: 1,
+    AFK: 2,
+    CLUMP: 3,
+    SPINBOT: 4,
+    PUSHBOT: 5,
+};
+const SERVERS = ['wss://dev.dieptool.com', 'wss://ff7ffb71ec81.eu.ngrok.io/'];
+/*
+ *   C L A S S E S
+ */
+class PowWorker {
+    constructor() {
+        this.worker = new Worker(this._getWorkerPath());
+        this.nextJobId = 0;
+        this.busy = false;
+        this.workerCallbacks = {};
+        this.worker.onmessage = (e) => this._onmessage(e);
+    }
+    _getWorkerPath() {
+        return (
+            window.location.protocol +
+            '//' +
+            window.location.hostname +
+            window.location.pathname +
+            'pow_worker.js'
+        );
+    }
+    _onmessage(e) {
+        const data = e.data;
+        const id = data[0];
+        this.workerCallbacks[id](data.slice(1));
+    }
+    solve(prefix, difficulty, cb) {
+        const id = this.nextJobId++;
+        this.worker.postMessage([id, 'solve', prefix, difficulty]);
+        this.workerCallbacks[id] = cb;
+    }
+    terminate() {
+        this.worker.terminate();
+    }
+}
+/*
+ * This is from @cx88 with little modifications made by me.
+ * https://github.com/cx88/diepssect/blob/master/diep-bot/coder.js
+ */
+const convo = new ArrayBuffer(4);
+const u8 = new Uint8Array(convo);
+const u16 = new Uint16Array(convo);
+const u32 = new Uint32Array(convo);
+const float = new Float32Array(convo);
+const endianSwap = (val) =>
+((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+class Reader {
+    constructor(content) {
+        this.at = 0;
+        this.buffer = new Uint8Array(content);
+    }
+    u8() {
+        const out = this.buffer[this.at++];
+        this.assertNotOOB();
+        return out;
+    }
+    u16() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 2)));
+        this.assertNotOOB();
+        return u16[0];
+    }
+    u32() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 4)));
+        this.assertNotOOB();
+        return u32[0];
+    }
+    float() {
+        u8.set(this.buffer.subarray(this.at, (this.at += 4)));
+        this.assertNotOOB();
+        return float[0];
+    }
+    vu() {
+        let out = 0;
+        let at = 0;
+        while (this.buffer[this.at] & 0x80) {
+            out |= (this.buffer[this.at++] & 0x7f) << at;
+            at += 7;
+        }
+        out |= this.buffer[this.at++] << at;
+        this.assertNotOOB();
+        return out;
+    }
+    vi() {
+        let out = this.vu();
+        const sign = out & 1;
+        out >>= 1;
+        if (sign) out = ~out;
+        this.assertNotOOB();
+        return out;
+    }
+    vf() {
+        u32[0] = endianSwap(this.vi());
+        this.assertNotOOB();
+        return float[0];
+    }
+    string() {
+        let out;
+        const at = this.at;
+        while (this.buffer[this.at]) this.at++;
+        out = new TextDecoder().decode(this.buffer.subarray(at, this.at++));
+        this.assertNotOOB();
+        return out;
+    }
+    buf() {
+        let out;
+        const length = this.vu();
+        out = this.buffer.slice(this.at, this.at + length);
+        this.at += length;
+        this.assertNotOOB();
+        return out;
+    }
+    flush() {
+        const slice = this.buffer.slice(this.at);
+        this.at += slice.length;
+        return slice;
+    }
+    isEOF() {
+        return this.at === this.buffer.byteLength;
+    }
+    assertNotOOB() {
+        if (this.at > this.buffer.byteLength) {
+            throw new Error(`Error at ${this.at}: Out of Bounds.\n${this.debugStringFullBuffer()}`);
+        }
+    }
+    debugStringFullBuffer() {
+        const s = this.buffer.reduce((acc, x, i) => {
+            x = x.toString(16).padStart(2, 0).toUpperCase();
+            if (this.at === i) x = `>${x}`;
+            if (i % 16 === 0) acc = `${acc}\n${x}`;
+            else acc = `${acc} ${x}`;
+            return acc;
+        }, '');
+        return s.trim();
+    }
+}
+class Writer {
+    constructor() {
+        this.length = 0;
+        this.buffer = new Uint8Array(16384);
+    }
+    u8(num) {
+        this.buffer[this.length] = num;
+        this.length += 1;
+        return this;
+    }
+    u16(num) {
+        u16[0] = num;
+        this.buffer.set(u8, this.length);
+        this.length += 2;
+        return this;
+    }
+    u32(num) {
+        u32[0] = num;
+        this.buffer.set(u8, this.length);
+        this.length += 4;
+        return this;
+    }
+    float(num) {
+        float[0] = num;
+        this.buffer.set(u8, this.length);
+        this.length += 4;
+        return this;
+    }
+    vu(num) {
+        do {
+            let part = num;
+            num >>>= 7;
+            if (num) part |= 0x80;
+            this.buffer[this.length++] = part;
+        } while (num);
+        return this;
+    }
+    vi(num) {
+        const sign = (num & 0x80000000) >>> 31;
+        if (sign) num = ~num;
+        const part = (num << 1) | sign;
+        this.vu(part);
+        return this;
+    }
+    vf(num) {
+        float[0] = num;
+        this.vi(endianSwap(u32[0]));
+        return this;
+    }
+    string(str) {
+        const bytes = new TextEncoder().encode(str);
+        this.buffer.set(bytes, this.length);
+        this.length += bytes.length;
+        this.buffer[this.length++] = 0;
+        return this;
+    }
+    buf(buf) {
+        const length = buf.byteLength;
+        this.vu(length);
+        this.buffer.set(buf, this.length);
+        this.length += length;
+        return this;
+    }
+    out() {
+        return this.buffer.slice(0, this.length);
+    }
+    dump() {
+        return Array.from(this.buffer.subarray(0, this.length))
+            .map((r) => r.toString(16).padStart(2, 0))
+            .join(' ');
+    }
+}
+class DTSocket {
+    constructor() {
+        this._socket;
+        this._lastPing = Date.now();
+        this._pow_workers = [...Array(8)].map((x) => new PowWorker());
+        this.accepted = false;
     }
 
-    let loop;
+    get region() {
+        return new URL(this._socket.url).host.split('.')[0];
+    }
 
-    const getLoop = (e, f) => {
-        if (e.code === 'KeyG') {
-            !f && mode++;
-            if (mode > contexts.length) mode = 0;
-            localStorage.setItem('diepNeonMode', mode);
+    connect(url) {
+        this._socket = new WebSocket(url);
+        this._socket.binaryType = 'arraybuffer';
+        this._socket.onopen = () => {
+            this._onopen();
+            if (this.onopen) this.onopen();
+        };
+        this._socket.onmessage = (event) => {
+            this._onmessage(event);
+            if (this.onmessage) this.onmessage(event);
+        };
+        this._socket.onclose = (event) => {
+            this._onclose(event);
+            if (this.onclose) this.onclose(event);
+        };
+    }
+    _onopen() {
+        this.send('heartbeat');
+        this.send('initial', {
+            version: GM_info.script.version,
+            authToken: window.localStorage.DTTOKEN,
+        });
+    }
+    _onmessage(event) {
+        const reader = new Reader(event.data);
+        switch (reader.vu()) {
+            case 0: {
+                const authToken = reader.string();
 
-            loop = () => {
-                contexts.slice(0, mode).forEach((ctx) => ctx.drawImage(c, 0, 0));
-                ctx7.clearRect(0, 0, c.width * 2, c.height * 2);
-                requestAnimationFrame(loop);
-            };
+                window.localStorage.DTTOKEN = authToken;
+                break;
+            }
+            case 1: {
+                const buffer = reader.buf();
 
-            canvases.slice(0, mode).forEach((el) => body.appendChild(el));
-            canvases.slice(mode, canvases.length).forEach((el) => body.removeChild(el));
+                if (this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
+                break;
+            }
+            case 2: {
+                const buffer = reader.buf();
+
+                gWebSocket._onmessage({ data: buffer });
+                break;
+            }
+            case 3: {
+                this.accepted = true;
+                if (this.onaccept) this.onaccept();
+                break;
+            }
+            case 4: {
+                if (this.ondeny) this.ondeny();
+                break;
+            }
+            case 5: {
+                const latency = Date.now() - this._lastPing;
+                this.send('heartbeat');
+                this._lastPing = Date.now();
+
+                if (this.onlatency) this.onlatency(latency);
+                break;
+            }
+            case 6: {
+                const id = reader.vu();
+                const difficulty = reader.vu();
+                const prefix = reader.string();
+
+                //look for a worker thats not busy, but definetly take the last one
+                for (let i = 0; i < this._pow_workers.length; i++) {
+                    if (!this._pow_workers[i].busy || i + 1 === this._pow_workers.length) {
+                        this._pow_workers[i].busy = true;
+                        this._pow_workers[i].solve(prefix, difficulty, (result) => {
+                            this._pow_workers[i].busy = false;
+                            this.send('pow_result', { id, result });
+                        });
+                        return;
+                    }
+                }
+                break;
+            }
+            case 7: {
+                const message = reader.string();
+
+                if (this.onalert) this.onalert(message);
+                break;
+            }
         }
+    }
+    _onclose(event) {}
+
+    send(type, content) {
+        if (this.isClosed()) return;
+        const writer = new Writer();
+
+        switch (type) {
+            case 'initial': {
+                const { version, authToken } = content;
+                writer.vu(0);
+                writer.string(version);
+                writer.string(authToken);
+                break;
+            }
+            case 'diep_serverbound': {
+                const { buffer } = content;
+                writer.vu(1);
+                writer.buf(buffer);
+                break;
+            }
+            case 'diep_clientbound': {
+                const { buffer } = content;
+                writer.vu(2);
+                writer.buf(buffer);
+                break;
+            }
+            case 'update': {
+                const { id, value } = content;
+                writer.vu(3);
+                writer.vu(id);
+                writer.string(value);
+                break;
+            }
+            case 'command': {
+                const { id, value } = content;
+                writer.vu(4);
+                writer.vu(id);
+                writer.vu(value);
+                break;
+            }
+            case 'heartbeat': {
+                writer.vu(5);
+                break;
+            }
+            case 'pow_result': {
+                const { id, result } = content;
+                writer.vu(6);
+                writer.vu(id);
+                writer.string(result);
+                break;
+            }
+            default:
+                console.error('unrecognized packet type:', type);
+        }
+        this._socket.send(writer.out());
+    }
+
+    isClosed() {
+        if (this._socket) return this._socket.readyState !== WebSocket.OPEN;
+        return true;
+    }
+
+    static findServerPreference(urls) {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => resolve(), 5000);
+            for (let i = 0; i < urls.length; i++) {
+                const ws = new WebSocket(urls[i]);
+                ws.onopen = function () {
+                    clearTimeout(timeout);
+                    ws.close();
+                    resolve(ws.url);
+                };
+            }
+        });
+    }
+}
+/*
+ *   T H E M E
+ */
+Object.defineProperty(unsafeWindow, 'input', {
+    set: (value) => {
+        delete unsafeWindow.input;
+        unsafeWindow.input = value;
+
+        unsafeWindow.input.execute('ren_solid_background = true');
+        unsafeWindow.input.execute('ren_background_color 0x131313');
+    },
+
+    configurable: true,
+    enumerable: true,
+});
+const THEME_COLORS = {
+    '#eeeeee': ['textInput'],
+    '#929292': ['achievements_gray'],
+    '#888888': ['stats_uprgrade_gray'],
+
+    '#bbbbbb': ['walls_fill'],
+    '#555555': ['dom_base'],
+    '#000000': ['minimap_arrow'],
+
+    '#999999': ['tank_barrel_fill'],
+    '#b7b7b7': ['tank_barrel_fill_light'],
+
+    '#fcbd91': ['achievements_orange', 'stats_health-regen_upgrade_hover'],
+    '#fa68ff': ['achievements_magenta', 'stats_max-health_upgrade_hover'],
+    '#9d68ff': ['achievements_purple', 'stats_body-damage_upgrade_hover'],
+    '#6898ff': ['achievements_blue', 'stats_bullet-speed_upgrade_hover'],
+    '#ffe468': ['achievements_yellow', 'stats_bullet-penetration_upgrade_hover'],
+    '#ff6868': ['achievements_red', 'stats_bullet-damage_upgrade_hover'],
+    '#9bff68': ['achievements_green', 'stats_reload_upgrade_hover'],
+    '#68fffa': ['achievements_cyan', 'stats_movement-speed_upgrade_hover'],
+
+    '#fcad76': ['stats_healt-regen_upgrade'],
+    '#f943ff': ['stats_max-health_upgrade'],
+    '#8543ff': ['stats_body-damage_upgrade'],
+    '#437fff': ['stats_bullet-speed_upgrade'],
+    '#ffde43': ['stats_bullet-penetration_upgrade'],
+    '#ff4343': ['stats_bullet-damage_upgrade'],
+    '#82ff43': ['stats_reload_upgrade'],
+    '#43fff9': ['stats_movement-speed_upgrade'],
+
+
+    '#bf7ff5': ['minimap_teams_purple', 'teams_purple_tank_fill'],
+    '#00b2e1': ['minimap_teams_blue', 'teams_blue_tank_fill'],
+    '#f14e54': ['minimap_teams_red', 'teams_red_tank_fill'],
+    '#00e16e': ['minimap_teams_green', 'teams_green_tank_fill'],
+
+    '#4cc9ea': ['teams_blue_tank_body_light'],
+    '#4cea99': ['teams_green_tank_body_light'],
+    '#f58387': ['teams_red_tank_body_light'],
+
+    '#0085a8': ['teams_purple_tank_body_stroke', 'teams_purple_bullet_body_stroke'],
+    '#b43a3f': ['teams_red_tank_body_stroke', 'teams_red_bullet_body_stroke'],
+    '#00a852': ['teams_green_tank_body_stroke', 'teams_green_bullet_stroke'],
+    '#bfae4e': ['teams_yellow_tank_body_stroke'],
+
+    '#ffe869': ['shapes_square_fill'],
+    '#fc7677': ['shapes_triangle_fill'],
+    '#768dfc': ['shapes_pentagon_fill'],
+}
+//const ctx = document.getElementById('canvas');
+const THEME_COLORS_ARRAY = Array.from(Object.keys(THEME_COLORS));
+window.CanvasRenderingContext2D.prototype._fill = window.CanvasRenderingContext2D.prototype.fill;
+window.CanvasRenderingContext2D.prototype.fill = function(a){
+    //if(!THEME_COLORS_ARRAY.includes(this.fillStyle)) console.log(this.fillStyle);
+
+    if(['#ffe869', '#fc7677', '#768dfc', /* tanks*/ '#0085a8', '#b43a3f', '#00a852', '#bfae4e', /* barrel */'#999999'].includes(this.fillStyle)){
+        this.shadowColor = '#000000';
+        this.shadowBlur = 5;
+    }
+    this._fill();
+}
+
+/*
+ *   H E L P E R   F U N C T I O N S
+ */
+function UTF8ToString(utf8 = '') {
+    return decodeURI(
+        utf8
+        .split('')
+        .map((c) => `%${c.charCodeAt(0).toString(16)}`)
+        .join('')
+    );
+}
+function updateInformation(type, data) {
+    const updates = {
+        [UPDATE.NAME](data) {
+            let name = new TextDecoder().decode(data.slice(1, data.length - 1));
+            return name;
+        },
+        [UPDATE.SERVER_PARTY]({ url, party }) {
+            let [userURL, userParty] = gUserInfo[UPDATE.SERVER_PARTY].split(':');
+            if (url) {
+                userURL = url.match(/(?<=wss:\/\/).[0-9a-z]{3}(?=.s.m28n.net\/)/)[0];
+                userParty = '';
+            }
+            if (party) {
+                function parseParty(data) {
+                    let party = '';
+                    for (let i = 1; i < data.byteLength; i++) {
+                        let byte = data[i].toString(16).split('');
+                        if (byte.length === 1) {
+                            party += byte[0] + '0';
+                        } else {
+                            party += byte[1] + byte[0];
+                        }
+                    }
+                    return party;
+                }
+                userParty = parseParty(party);
+            }
+            return `${userURL}:${userParty}`;
+        },
+        [UPDATE.GAMEMODE](data) {
+            let gamemode = new TextDecoder().decode(data.slice(1, data.length)).split('\u0000')[0];
+            return gamemode;
+        },
+    };
+    gUserInfo[type] = updates[type](data);
+    dtSocket.send('update', { id: type, value: gUserInfo[type] });
+}
+function addButton(parent, text, onclick, keyCode) {
+    let button = document.createElement('button');
+    parent.appendChild(button);
+    button.innerHTML = text;
+    button.keyCode = keyCode;
+    button.onclick = onclick;
+    button.style['background-color'] = guiColors[guiButtons.length % guiColors.length];
+    guiButtons.push(button);
+    return button;
+}
+function enableGui() {
+    guiBody.style.display = 'block';
+}
+function disableGui() {
+    guiBody.style.display = 'none';
+}
+async function onBtnHead() {
+    if (dtSocket.isClosed()) {
+        if (!window.localStorage.DTTOKEN)
+            window.location.href =
+                'https://discord.com/api/oauth2/authorize?client_id=737680273860329553&redirect_uri=https%3A%2F%2Fdiep.io&response_type=code&scope=identify&prompt=none';
+        else {
+            const url = await DTSocket.findServerPreference(SERVERS);
+            if (!url) {
+                console.log('Please try again later.');
+                btnHead.innerHTML = 'Please try again later';
+                return;
+            }
+            this.innerHTML = 'Connecting...';
+            dtSocket.connect(url);
+        }
+    } else if (dtSocket.accepted) {
+        if (guiBody.style.display === 'block') disableGui();
+        else enableGui();
+    }
+}
+function onBtnJoinBots() {
+    dtSocket.send('command', { id: COMMAND.JOIN_BOTS, value: 10 });
+}
+function onBtnMultibox() {
+    this.active = !this.active;
+    if (this.active) {
+        this.innerHTML = 'Multiboxing: ON';
+        dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 1 });
+    } else {
+        this.innerHTML = 'Multiboxing: OFF';
+        dtSocket.send('command', { id: COMMAND.MULTIBOX, value: 0 });
+    }
+}
+function onBtnAfk() {
+    this.active = !this.active;
+    if (this.active) {
+        gAfk = true;
+        this.innerHTML = 'AFK: ON';
+        dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
+    } else {
+        gAfk = false;
+        this.innerHTML = 'AFK: OFF';
+        dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
+    }
+}
+function onBtnClump() {
+    this.active = !this.active;
+    if (this.active) {
+        this.innerHTML = 'Clump: ON';
+        dtSocket.send('command', { id: COMMAND.CLUMP, value: 1 });
+    } else {
+        this.innerHTML = 'Clump: OFF';
+        dtSocket.send('command', { id: COMMAND.CLUMP, value: 0 });
+    }
+}
+function onBtnSpinbot() {
+    this.active = !this.active;
+    if (this.active) {
+        gSpinbot = true;
+        this.innerHTML = 'Spinbot: ON';
+        dtSocket.send('command', { id: COMMAND.SPINBOT, value: 1 });
+    } else {
+        gSpinbot = false;
+        this.innerHTML = 'Spinbot: OFF';
+        dtSocket.send('command', { id: COMMAND.SPINBOT, value: 0 });
+    }
+}
+function onBtnPushbot() {
+    this.active = !this.active;
+    if (this.active) {
+        this.innerHTML = 'Pushbot: ON';
+        dtSocket.send('command', { id: COMMAND.PUSHBOT, value: 1 });
+    } else {
+        this.innerHTML = 'Pushbot: OFF';
+        dtSocket.send('command', { id: COMMAND.PUSHBOT, value: 0 });
+    }
+}
+function onBtnDiscord() {
+    window.open('https://discord.gg/8saC9pq');
+}
+function onBtnPatreon() {
+    window.open('https://www.patreon.com/dieptool');
+}
+
+function _send(data) {
+    dtSocket.send('diep_serverbound', { buffer: data });
+    if (data[0] === 2) updateInformation(UPDATE.NAME, data);
+    if (data[0] === 10) {
+        const d = new Int8Array(data);
+        const time = Date.now() - this.lastPow;
+        setTimeout(() => this._send(d), 5000 - time);
+        return;
+    }
+    if (data[0] === 1) {
+        if (gSpinbot) {
+            const reader = new Reader(data);
+            const id = reader.vu();
+            if (reader.vu() & 1 && !gAfk) {
+                gCSBisBlocked = true;
+            } else {
+                gCSBisBlocked = false;
+                return;
+            }
+        }
+
+        if (gAfk) return;
+    }
+    this._send(data);
+}
+function _onmessage(event) {
+    const data = new Uint8Array(event.data);
+    dtSocket.send('diep_clientbound', { buffer: data });
+
+    if (data[0] === 4) updateInformation(UPDATE.GAMEMODE, data);
+    else if (data[0] === 6) updateInformation(UPDATE.SERVER_PARTY, { party: data });
+    else if (data[0] === 10) gReadyToInit = true;
+    else if (data[0] === 11) this.lastPow = Date.now();
+    this._onmessage(event);
+}
+(function hijackWebSocket() {
+    const wsInstances = new Set();
+    window.WebSocket.prototype._send = window.WebSocket.prototype.send;
+    window.WebSocket.prototype.send = function (data) {
+        if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
+            _send.call(this, data);
+
+            if (!wsInstances.has(this)) {
+                wsInstances.add(this);
+                gWebSocket = this;
+                if (updateInformation) updateInformation(UPDATE.SERVER_PARTY, { url: this.url });
+
+                this._onmessage = this.onmessage;
+                this.onmessage = function (event) {
+                    _onmessage.call(this, event);
+                };
+            }
+        } else this._send(data);
+    };
+})();
+(function enableShortcuts() {
+    document.addEventListener('keydown', (event) => {
+        if (document.getElementById('textInputContainer').style.display === 'block') return;
+        guiButtons.forEach((button) => {
+            if (button.keyCode === event.code) button.onclick();
+        });
+    });
+})();
+(function freezeMouse() {
+    const canvas = document.getElementById('canvas');
+    canvas._onmousemove = canvas.onmousemove;
+    canvas.onmousemove = function (e) {
+        if (!gFreezeMouse) this._onmousemove(e);
+    };
+})();
+(function removeAnnoyingAlert() {
+    unsafeWindow._alert = unsafeWindow.alert;
+    unsafeWindow.alert = function (msg) {
+        if (msg.startsWith('Your browser version')) return;
+        unsafeWindow._alert(msg);
+    };
+})();
+(function authCallback() {
+    function parseQuery(q) {
+        const parsed = {};
+        q.substring(1)
+            .split('&')
+            .forEach((e) => {
+            e = e.split('=');
+            parsed[e[0]] = e[1];
+        });
+        return parsed;
+    }
+    const query = parseQuery(window.location.search);
+    if (query.code) {
+        window.localStorage.DTTOKEN = query.code;
+        window.history.pushState(null, 'diep.io', 'https://diep.io/');
+    } else if (query.error) {
+        window.localStorage.DTTOKEN = '';
+        window.history.pushState(null, 'diep.io', 'https://diep.io/');
+    }
+})();
+
+/*
+ *   M A I N
+ */
+const gUserInfo = {
+    [UPDATE.NAME]: UTF8ToString(window.localStorage.name),
+    [UPDATE.SERVER_PARTY]: '',
+    [UPDATE.GAMEMODE]: window.localStorage.gamemode,
+};
+let gWebSocket;
+let gAfk = false;
+let gFreezeMouse = false;
+let gSpinbot = false;
+let gCSBisBlocked = false;
+let gReadyToInit = false;
+let dtSocket = new DTSocket();
+/*
+ *   G U I
+ */
+GM_addStyle(`
+.gui-dieptool button{display:block;font-family:Ubuntu;color:#fff;text-shadow:-.1em -.1em 0 #000,0 -.1em 0 #000,.1em -.1em 0 #000,.1em 0 0 #000,.1em .1em 0 #000,0 .1em 0 #000,-.1em .1em 0 #000,-.1em 0 0 #000;opacity:.8;border:0;padding:.3em .5em;width:100%;transition:all .15s}.gui-dieptool{top:0;left:0;position:absolute}.gui-dieptool button:active:not([disabled]){filter:brightness(.9)}.gui-dieptool button:hover:not([disabled]):not(:active){filter:brightness(1.1)}
+`);
+const guiColors = [
+    '#E8B18A',
+    '#E666EA',
+    '#9566EA',
+    '#6690EA',
+    '#E7D063',
+    '#EA6666',
+    '#92EA66',
+    '#66EAE6',
+];
+const guiButtons = [];
+
+const guiDiepTool = document.createElement('div');
+guiDiepTool.className = 'gui-dieptool';
+document.body.appendChild(guiDiepTool);
+
+const guiHead = document.createElement('div');
+guiDiepTool.appendChild(guiHead);
+
+const guiBody = document.createElement('div');
+guiDiepTool.appendChild(guiBody);
+
+//add buttons
+let btnHead;
+if (window.localStorage.DTTOKEN) {
+    btnHead = addButton(guiHead, 'Connecting...', onBtnHead);
+    addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
+    addButton(guiBody, 'Multiboxing: OFF', onBtnMultibox, 'KeyF');
+    addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
+    addButton(guiBody, 'AFK: OFF', onBtnAfk, 'KeyQ');
+    addButton(guiBody, 'Spinbot OFF', onBtnSpinbot);
+    addButton(guiBody, 'Pushbot OFF', onBtnPushbot);
+    disableGui();
+} else {
+    btnHead = addButton(guiHead, 'Login to DiepTool', onBtnHead);
+    addButton(guiBody, 'Discord Server', onBtnDiscord);
+    addButton(guiBody, 'Membership', onBtnPatreon);
+}
+
+(async function initializeSocket() {
+    const url = await DTSocket.findServerPreference(SERVERS);
+    console.log('found server preference', url);
+    if (!url) {
+        console.log('Please try again later.');
+        btnHead.innerHTML = 'Please try again later';
+        return;
+    }
+    dtSocket.onclose = function () {
+        console.log('disconnected from DT server');
+        btnHead.innerHTML = 'Disconnected';
+        disableGui();
+    };
+    dtSocket.onaccept = function () {
+        this.onlatency = (latency) => (btnHead.innerHTML = `${latency} ms ${this.region} DiepTool`);
+        const int = setInterval(() => {
+            if (gReadyToInit) {
+                clearInterval(int);
+
+                for (let [key, value] of Object.entries(gUserInfo))
+                    this.send('update', { id: key, value });
+            }
+        }, 100);
+    };
+    dtSocket.ondeny = function () {
+        window.localStorage.DTTOKEN = '';
+        setTimeout(() => window.location.reload(), 4000);
+    };
+    dtSocket.onalert = function (message) {
+        console.log('DiepTool alert:', message);
+        const btnAlert = addButton(guiHead, message);
+        setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
+    };
+    dtSocket.oncustom_diep_serverbound = function (data) {
+        if (!gCSBisBlocked) gWebSocket._send(data);
     };
 
-    getLoop({ code: 'KeyG' }, true);
-
-    document.addEventListener('keydown', getLoop);
-
-    loop();
+    if (window.localStorage.DTTOKEN) dtSocket.connect(url);
 })();
