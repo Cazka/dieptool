@@ -10,7 +10,7 @@ const ipv6pool = fs
     .toString('utf-8')
     .split('\n');
 
-const CLIENT_VERSION = '4.2.8';
+const CLIENT_VERSION = '4.2.9';
 const UPDATE = {
     SERVER_PARTY: 0,
     NAME: 1,
