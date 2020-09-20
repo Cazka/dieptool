@@ -348,7 +348,7 @@ class User extends EventEmitter {
                 this.botsJoining = true;
                 let amount = value;
                 if(amount+ this.bots.size > this.botsMaximum){
-                    this.sendNotification(`You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`, '#00FFFF');
+                    this.sendNotification(`You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`, '#00FFFF', 10000);
                 }
                 amount =
                     this.bots.size + amount > this.botsMaximum
