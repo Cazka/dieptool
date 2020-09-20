@@ -137,18 +137,15 @@ class DiepToolServer {
 
         // Determine which tier the user has, free, basic, premium, premium+(dt_pro)
         if (!discord.isInGuild(dbUser.user_id)) {
-            client.send('alert', {
-                message: 'Join our awesome discord server!',
-            });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 1 })
+                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 })
             );
         } else if (discord.isBasic(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹Basic🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 5 })
+                new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 5 })
             );
         } else if (discord.isPremium(dbUser.user_id)) {
             client.send('alert', {
@@ -169,7 +166,7 @@ class DiepToolServer {
                 message: '🔹Free🔹',
             });
             this.userManager(
-                new User(client, content.version, dbUser, { permissions: 15, botsMaximum: 1 })
+                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 })
             );
         }
     }
