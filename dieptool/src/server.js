@@ -17,7 +17,7 @@ const DiepToolManager = async (server) => {
 class DiepToolServer {
     constructor(wss) {
         this.users = new Set();
-        this.ips = new Set();
+        this.ips = {};
 
         wss.on('connection', (ws, req) => {
             const ip = req.headers['x-forwarded-for']
@@ -26,14 +26,15 @@ class DiepToolServer {
             const client = new Client(ws, ip);
             client.on('error', (err) => {});
             client.on('close', (code, reason) => console.log(ip, ' closed', code, reason));
-            if (this.ips.has(ip)) {
+            if (this.ips[ip] === 2) {
                 const message = 'ip connection limit';
                 client.send('alert', { message });
                 client.close(4000, message);
                 return;
             }
-            client.on('close', () => this.ips.delete(ip));
-            this.ips.add(ip);
+            client.on('close', () => this.ips[ip]--);
+            this.ips[ip] = this.ips[ip] || 0;
+            this.ips[ip]++;
 
             if (!(discord.ready && database.ready)) {
                 const message = 'Server not ready';
