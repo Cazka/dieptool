@@ -21,4 +21,4 @@
 | Free     | 7           | 2          |
 | Basic    | 31          | 5          |
 | Premium  | 31          | 10         |
-| Premium+ | 31          | 15         |
+| Premium+ | 31          | 30         |

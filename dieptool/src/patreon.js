@@ -14,6 +14,11 @@ class PatreonClient {
         return this.oAuthResponse.refresh_token;
     }
 
+    async login({ code, refresh_token }) {
+        if (code) this.oAuthResponse = await this._exchangeToken(code);
+        else if (refresh_token) this.oAuthResponse = this._refreshToken(refresh_token);
+    }
+
     async _exchangeToken(code) {
         const data = {
             client_id: process.env.PATREON_CLIENT_ID,
@@ -47,16 +52,13 @@ class PatreonClient {
         }).then((res) => res.json());
         return res;
     }
-    async login({ code, refresh_token }) {
-        if (code) this.oAuthResponse = await this._exchangeToken(code);
-        else if (refresh_token) this.oAuthResponse = this._refreshToken(refresh_token);
-        console.log(this.oAuthResponse);
-    }
 
     async getUser() {
         const user = {};
         const res = await fetch(
-            encodeURI('https://www.patreon.com/api/oauth2/v2/identity?include=memberships,memberships.currently_entitled_tiers&fields[member]=last_charge_date,last_charge_status,pledge_relationship_start&fields[tier]=title,amount_cents'),
+            encodeURI(
+                'https://www.patreon.com/api/oauth2/v2/identity?include=memberships,memberships.currently_entitled_tiers&fields[member]=last_charge_date,last_charge_status,pledge_relationship_start&fields[tier]=title,amount_cents'
+            ),
             {
                 headers: {
                     authorization: `Bearer ${this.access_token}`,

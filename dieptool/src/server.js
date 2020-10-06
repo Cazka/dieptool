@@ -3,14 +3,14 @@
 const Client = require('./client.js');
 const User = require('./user.js');
 const { nanoid } = require('nanoid');
-const discord = require('./discord');
 const database = require('./database');
+const PatreonClient = require('./patreon');
 
 const DiepToolManager = async (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ server });
     // todo make this in a seperate script
-    await database.setAllOffline();
+    //await database.setAllOffline();
     return new DiepToolServer(wss);
 };
 
@@ -36,7 +36,7 @@ class DiepToolServer {
             this.ips[ip] = this.ips[ip] || 0;
             this.ips[ip]++;
 
-            if (!(discord.ready && database.ready)) {
+            if (!database.ready) {
                 const message = 'Server not ready';
                 client.send('alert', { message });
                 client.close(4000, message);
@@ -49,136 +49,135 @@ class DiepToolServer {
         setInterval(() => {
             this.connectionLog.push({ x: Date.now(), y: this.users.size });
             // reset connectionLog at midnight
-            if (new Date().getHours() === 0 && new Date().getMinutes() <= 5)
-                this.connectionLog = [];
+            if (new Date().getHours() === 0 && new Date().getMinutes() <= 5) this.connectionLog = [];
         }, 1000 * 60 * 5);
     }
 
     async oninitial(client, content) {
-        let dbUser;
-        if (content.authToken.startsWith('DT_')) {
-            // what do we do here?
-            // search token in database
-            // update access token
-            // update username
-            // return dbUser
-            dbUser = await database.getUserByToken(content.authToken);
-            if (!dbUser) {
-                const message = 'Unknown DT Token';
-                client.send('deny');
-                client.send('alert', { message });
-                client.close(4000, message);
-                return;
-            }
-            if (dbUser.online) {
-                const message = 'DT Token is already in use';
-                client.send('alert', { message });
-                client.close(4000, message);
-                return;
-            }
-            // use refresh token
-            const exchange = await discord.refreshToken(dbUser.refresh_token);
-            if (exchange.error) {
-                const message = 'Discord authentification failed';
-                client.send('deny');
-                client.send('alert', { message });
-                client.close(4000, exchange.error_description);
-                await dbUser.deleteOne();
-                return;
-            }
-            // Use accesstoken to get user information
-            const discordResult = await discord.apiFetch(exchange);
-            dbUser.username = `${discordResult.username}#${discordResult.discriminator}`;
-            dbUser.refresh_token = exchange.refresh_token;
-            await dbUser.save();
+        if (content.authToken === '') {
+            client.send('alert', { message: '🎈 Free Tier 🎈' });
+            this.userManager(client, content.version, undefined, { permissions: 31, botsMaximum: 1 });
         } else {
-            //what do we do here?
-            // exchange code for accesstoken
-            // get user information
-            // save user in database
-            // return dbUser
+            if (content.authToken.startsWith('DT_')) {
+                // what do we do here?
+                // search token in database
+                // update access token
+                // update username
+                // return dbUser
+                dbUser = await database.getUserByToken(content.authToken);
+                if (!dbUser) {
+                    const message = 'Unknown DT Token';
+                    client.send('deny');
+                    client.send('alert', { message });
+                    client.close(4000, message);
+                    return;
+                }
+                if (dbUser.online) {
+                    const message = 'DT Token is already in use';
+                    client.send('alert', { message });
+                    client.close(4000, message);
+                    return;
+                }
+                // use refresh token
+                const exchange = await discord.refreshToken(dbUser.refresh_token);
+                if (exchange.error) {
+                    const message = 'Discord authentification failed';
+                    client.send('deny');
+                    client.send('alert', { message });
+                    client.close(4000, exchange.error_description);
+                    await dbUser.deleteOne();
+                    return;
+                }
+                // Use accesstoken to get user information
+                const discordResult = await discord.apiFetch(exchange);
+                dbUser.username = `${discordResult.username}#${discordResult.discriminator}`;
+                dbUser.refresh_token = exchange.refresh_token;
+                await dbUser.save();
+            } else {
+                // what do we do here?
+                // exchange code for accesstoken
+                // get user information
+                // save user in database
+                // return dbUser
 
-            // Exchange code for accesstoken
-            const exchange = await discord.exchangeToken(content.authToken);
-            if (exchange.error) {
-                const message = 'Discord authentification failed';
-                client.send('deny');
-                client.send('alert', { message });
-                client.close(4000, exchange.error_description);
+                // Exchange code for accesstoken
+                const patreon = new PatreonClient();
+                try {
+                    await patreon.login({ code: content.authToken });
+                } catch (error) {
+                    console.log(error);
+                }
+                const user = await patreon.getUser();
+                return;
+                const exchange = await patreon.exchangeToken(content.authToken);
+                if (exchange.error) {
+                    const message = 'Patreon authentification failed';
+                    client.send('deny');
+                    client.send('alert', { message });
+                    client.close(4000, exchange.error_description);
+                    return;
+                }
+                // Use accesstoken to get patreon pledges
+                const response = await patreon.getUser(exchange);
+                console.log(response);
+                return;
+                // Find user in database.
+                dbUser = await database.getUserById(discordResult.id);
+                if (!dbUser) {
+                    dbUser = {
+                        auth_token: `DT_${nanoid(32)}`,
+                        user_id: discordResult.id,
+                        username: `${discordResult.username}#${discordResult.discriminator}`,
+                        refresh_token: exchange.refresh_token,
+                    };
+                    dbUser = await database.addUser(dbUser);
+                }
+                content.authToken = dbUser.auth_token;
+                client.send('authtoken', { authtoken: dbUser.auth_token });
+                this.oninitial(client, content);
                 return;
             }
-            // Use accesstoken to get user information
-            const discordResult = await discord.apiFetch(exchange);
-            // Find user in database.
-            dbUser = await database.getUserById(discordResult.id);
-            if (!dbUser) {
-                dbUser = {
-                    auth_token: `DT_${nanoid(32)}`,
-                    user_id: discordResult.id,
-                    username: `${discordResult.username}#${discordResult.discriminator}`,
-                    refresh_token: exchange.refresh_token,
-                };
-                dbUser = await database.addUser(dbUser);
-            }
-            content.authToken = dbUser.auth_token;
-            client.send('authtoken', { authtoken: dbUser.auth_token });
-            this.oninitial(client, content);
-            return;
-        }
 
-        // Set dbUser to online
-        if (client.isClosed()) return;
-        dbUser.online = true;
-        client.on('close', async () => {
-            dbUser.online = false;
+            // Set dbUser to online
+            if (client.isClosed()) return;
+            dbUser.online = true;
+            client.on('close', async () => {
+                dbUser.online = false;
+                await dbUser.save();
+            });
             await dbUser.save();
-        });
-        await dbUser.save();
-        if (client.isClosed()) return;
-
+            if (client.isClosed()) return;
+        } /*
         // Determine which tier the user has, free, basic, premium, premium+(dt_pro)
         if (!discord.isInGuild(dbUser.user_id)) {
-            this.userManager(
-                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 })
-            );
+            this.userManager(new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 }));
         } else if (discord.isBasic(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹Basic🔹',
             });
-            this.userManager(
-                new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 5 })
-            );
+            this.userManager(new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 5 }));
         } else if (discord.isPremium(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹Premium🔹',
             });
-            this.userManager(
-                new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 10 })
-            );
+            this.userManager(new User(client, content.version, dbUser, { permissions: 63, botsMaximum: 10 }));
         } else if (discord.isDT_PRO(dbUser.user_id)) {
             client.send('alert', {
                 message: '🔹DT PRO🔹',
             });
-            this.userManager(
-                new User(client, content.version, dbUser, { permissions: 127, botsMaximum: 30 })
-            );
+            this.userManager(new User(client, content.version, dbUser, { permissions: 127, botsMaximum: 30 }));
         } else {
             client.send('alert', {
                 message: '🔹Free🔹',
             });
-            this.userManager(
-                new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 })
-            );
-        }
+            this.userManager(new User(client, content.version, dbUser, { permissions: 31, botsMaximum: 1 }));
+        }*/
     }
 
-    userManager(user) {
+    userManager(client, version, dbUser, options) {
+        const user = new User(client, version, dbUser, options);
         this.users.add(user);
-        console.log(
-            user.socket.ip,
-            'User connected, waiting for User Information:',
-            this.users.size
-        );
+        console.log(user.socket.ip, 'User connected, waiting for User Information:', this.users.size);
         user.on('close', (code, reason) => {
             this.users.delete(user);
         });

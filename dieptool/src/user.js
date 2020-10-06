@@ -162,7 +162,7 @@ class User extends EventEmitter {
                             if (length > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags, // try without & 129 since we use gamepad
+                                    content.flags,
                                     content.mouseX,
                                     content.mouseY
                                 );
@@ -216,10 +216,7 @@ class User extends EventEmitter {
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
                     this.sendNotification(undefined, undefined, 1, 'adblock');
-                    this.sendNotification(
-                        `💎 Welcome back ${this.dbUser.username.split('#')[0]} 💎`,
-                        '#f5e042'
-                    );
+                    this.sendNotification(`💎 Welcome back ${this.dbUser?.username?.split('#')[0]} 💎`, '#f5e042');
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
                     if (this.botsMaximum === 1) {
                         setTimeout(
@@ -282,9 +279,7 @@ class User extends EventEmitter {
                 try {
                     this.link = DiepSocket.getLink(server, party);
                 } catch (error) {
-                    console.log(
-                        `${this.socket.ip} couldn't update link: ${server},${party}\n${error}`
-                    );
+                    console.log(`${this.socket.ip} couldn't update link: ${server},${party}\n${error}`);
                     this.socket.close();
                     return;
                 }
@@ -347,13 +342,14 @@ class User extends EventEmitter {
 
                 this.botsJoining = true;
                 let amount = value;
-                if(amount+ this.bots.size > this.botsMaximum){
-                    this.sendNotification(`You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`, '#00FFFF', 10000);
+                if (amount + this.bots.size > this.botsMaximum) {
+                    this.sendNotification(
+                        `You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`,
+                        '#00FFFF',
+                        10000
+                    );
                 }
-                amount =
-                    this.bots.size + amount > this.botsMaximum
-                        ? this.botsMaximum - this.bots.size
-                        : amount;
+                amount = this.bots.size + amount > this.botsMaximum ? this.botsMaximum - this.bots.size : amount;
                 this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
                 this.joinBots(amount);
                 break;
@@ -363,12 +359,7 @@ class User extends EventEmitter {
                     return;
                 }
                 if (!!value === this.multibox) return;
-                this.sendNotification(
-                    `Multiboxing: ${!!value ? 'ON' : 'OFF'}`,
-                    '#5200eb',
-                    5000,
-                    'multibox'
-                );
+                this.sendNotification(`Multiboxing: ${!!value ? 'ON' : 'OFF'}`, '#5200eb', 5000, 'multibox');
                 this.multibox = !!value;
                 break;
             case COMMAND.CLUMP:
@@ -386,12 +377,7 @@ class User extends EventEmitter {
                     return;
                 }
                 if (!!value === this.spinbot) return;
-                this.sendNotification(
-                    `Spinbot: ${!!value ? 'ON' : 'OFF'}`,
-                    '#ea6666',
-                    5000,
-                    'spinbot'
-                );
+                this.sendNotification(`Spinbot: ${!!value ? 'ON' : 'OFF'}`, '#ea6666', 5000, 'spinbot');
                 this.spinbot = !!value;
                 break;
             case COMMAND.PUSHBOT:
@@ -400,12 +386,7 @@ class User extends EventEmitter {
                     return;
                 }
                 if (!!value === this.pushbot) return;
-                this.sendNotification(
-                    `Pushbot: ${!!value ? 'ON' : 'OFF'}`,
-                    '#92ea66',
-                    5000,
-                    'pushbot'
-                );
+                this.sendNotification(`Pushbot: ${!!value ? 'ON' : 'OFF'}`, '#92ea66', 5000, 'pushbot');
                 this.pushbot = !!value;
                 break;
             default:
@@ -422,8 +403,7 @@ class User extends EventEmitter {
      */
     onpow_result(id, result) {
         const bot = Array.from(this.bots).find((bot) => bot.id === id);
-        if (bot)
-            setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
+        if (bot) setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
     }
     createBot(ipv6) {
         const bot = new DiepSocket(this.link, { ipv6, forceTeam: true });
@@ -490,17 +470,11 @@ class User extends EventEmitter {
                     this.upgradeTanks.forEach((id) => bot.send('upgrade_tank', { id }));
                 }, 1000);
                 bot.on('close', () => {
-                    this.sendNotification(
-                        `Bot disconnected. You have ${this.bots.size} bots.`,
-                        '0',
-                        5000,
-                        'bot_close'
-                    );
+                    this.sendNotification(`Bot disconnected. You have ${this.bots.size} bots.`, '0', 5000, 'bot_close');
                     clearInterval(upgradeLoop);
                 });
                 bot.on('message', ({ message }) => {
-                    if (message.startsWith(`You've killed`))
-                        this.sendNotification(message, color.LIGHT_PINK, 6000);
+                    if (message.startsWith(`You've killed`)) this.sendNotification(message, color.LIGHT_PINK, 6000);
                 });
                 bot.on('dead', () => {
                     this.sendNotification('Your bot just died', color.LIGHT_PINK, 5000, 'bot_dead');
@@ -526,9 +500,7 @@ class User extends EventEmitter {
      *    H E L P E R   F U N C T I O N S
      */
     sendNotification(message, hexcolor = '0', time = 5000, unique = '') {
-        const color = hexcolor.startsWith('#')
-            ? parseInt(hexcolor.slice(1), 16)
-            : parseInt(hexcolor, 16);
+        const color = hexcolor.startsWith('#') ? parseInt(hexcolor.slice(1), 16) : parseInt(hexcolor, 16);
         const packet = new DiepBuilder({
             type: 'message',
             content: { message, color, time, unique },
