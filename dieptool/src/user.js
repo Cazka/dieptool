@@ -253,8 +253,8 @@ class User extends EventEmitter {
                 this.gamemode = packet.content.gamemode;
                 break;
             case 'party':
-                this.diepShuffler = new DiepShuffler();
-                this.diepUnshuffler = new DiepUnshuffler();
+                //this.diepShuffler = new DiepShuffler();
+                //this.diepUnshuffler = new DiepUnshuffler();
                 const { id, party } = DiepSocket.linkParse(this.link);
                 this.link = DiepSocket.getLink(id, packet.content.party);
 
