@@ -163,12 +163,7 @@ class User extends EventEmitter {
                             const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
 
                             if (length > tolerance) {
-                                bot.moveTo(
-                                    { x: this.tankX, y: this.tankY },
-                                    packet.content.flags,
-                                    packet.content.mouseX,
-                                    packet.content.mouseY
-                                );
+                                bot.moveTo({ x: this.tankX, y: this.tankY }, packet.content.flags, packet.content.mouseX, packet.content.mouseY);
                             } else {
                                 bot.sendBinary(buffer);
                             }
@@ -179,19 +174,9 @@ class User extends EventEmitter {
                         const deltaX = this.mouseX - bot.position.x;
                         const deltaY = this.mouseY - bot.position.y;
                         if (packet.content.flags & DiepSocket.INPUT.rightMouse) {
-                            bot.moveTo(
-                                { x: -deltaX + bot.position.x, y: -deltaY + bot.position.y },
-                                packet.content.flags | DiepSocket.INPUT.leftMouse,
-                                deltaX + bot.position.x,
-                                deltaY + bot.position.y
-                            );
+                            bot.moveTo({ x: -deltaX + bot.position.x, y: -deltaY + bot.position.y }, packet.content.flags | DiepSocket.INPUT.leftMouse, deltaX + bot.position.x, deltaY + bot.position.y);
                         } else {
-                            bot.moveTo(
-                                { x: this.mouseX, y: this.mouseY },
-                                packet.content.flags | DiepSocket.INPUT.leftMouse,
-                                -deltaX + bot.position.x,
-                                -deltaY + bot.position.y
-                            );
+                            bot.moveTo({ x: this.mouseX, y: this.mouseY }, packet.content.flags | DiepSocket.INPUT.leftMouse, -deltaX + bot.position.x, -deltaY + bot.position.y);
                         }
                     });
                 }
@@ -217,20 +202,8 @@ class User extends EventEmitter {
                     //this.sendNotification(undefined, undefined, 1, 'adblock');
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
                     if (this.botsMaximum === 1) {
-                        setTimeout(
-                            () =>
-                                this.sendNotification(
-                                    '🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'
-                                ),
-                            1000 * 5
-                        );
-                        const int = setInterval(
-                            () =>
-                                this.sendNotification(
-                                    '🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'
-                                ),
-                            1000 * 60 * 8
-                        );
+                        setTimeout(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000 * 5);
+                        const int = setInterval(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000 * 60 * 8);
                         this.socket.on('close', () => clearInterval(int));
                     }
                 }
@@ -276,6 +249,18 @@ class User extends EventEmitter {
                     this.tankY = pos?.y || this.tankY;
                 }
             }
+            case 'server_info':
+                this.gamemode = packet.content.gamemode;
+                break;
+            case 'party':
+                this.diepShuffler = new DiepShuffler();
+                this.diepUnshuffler = new DiepUnshuffler();
+                const { id, party } = DiepSocket.linkParse(this.link);
+                this.link = DiepSocket.getLink(id, packet.content.party);
+
+                this.gamemode = undefined;
+                this.bots.forEach((bot) => bot.close());
+                break;
         }
     }
     onupdate(id, value) {
@@ -334,12 +319,7 @@ class User extends EventEmitter {
                     return;
                 }
                 if (this.bots.size >= this.botsMaximum) {
-                    this.sendNotification(
-                        `You cant have more than ${this.botsMaximum} bots`,
-                        undefined,
-                        5000,
-                        'max_bots'
-                    );
+                    this.sendNotification(`You cant have more than ${this.botsMaximum} bots`, undefined, 5000, 'max_bots');
                     return;
                 }
                 if (this.botsJoining) return;
@@ -348,11 +328,7 @@ class User extends EventEmitter {
                 this.botsJoining = true;
                 let amount = value;
                 if (amount + this.bots.size > this.botsMaximum) {
-                    this.sendNotification(
-                        `You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`,
-                        '#00FFFF',
-                        10000
-                    );
+                    this.sendNotification(`You can only have ${this.botsMaximum} bots. Become a patron or upgrade your Tier to join more`, '#00FFFF', 10000);
                 }
                 amount = this.bots.size + amount > this.botsMaximum ? this.botsMaximum - this.bots.size : amount;
                 this.sendNotification(`Joining ${amount} bots`, '#e300eb', 5000, 'join_bots');
@@ -397,12 +373,7 @@ class User extends EventEmitter {
                 this.pushbot = !!value;
                 break;
             default:
-                this.sendNotification(
-                    `This feature will be available in the next update!`,
-                    color.GREEN,
-                    5000,
-                    'unknown_command'
-                );
+                this.sendNotification(`This feature will be available in the next update!`, color.GREEN, 5000, 'unknown_command');
         }
     }
     /*
@@ -436,18 +407,10 @@ class User extends EventEmitter {
             done++;
             joined += n;
             if (joined === amount) {
-                this.sendNotification(
-                    `Bots joined succesfully. You have ${this.bots.size} bots`,
-                    color.GREEN,
-                    5000,
-                    'join_bots_successful'
-                );
+                this.sendNotification(`Bots joined succesfully. You have ${this.bots.size} bots`, color.GREEN, 5000, 'join_bots_successful');
                 this.botsJoining = false;
             } else if (done === this.parallelJoining) {
-                this.sendNotification(
-                    `Can't join bots because your team is full. You have ${this.bots.size} bots`,
-                    color.GREEN
-                );
+                this.sendNotification(`Can't join bots because your team is full. You have ${this.bots.size} bots`, color.GREEN);
                 this.botsJoining = false;
             }
         };
