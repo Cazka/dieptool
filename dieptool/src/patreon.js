@@ -14,9 +14,13 @@ class PatreonClient {
         return this.oAuthResponse.refresh_token;
     }
 
-    async login({ code, refresh_token }) {
-        if (code) this.oAuthResponse = await this._exchangeToken(code);
-        else if (refresh_token) this.oAuthResponse = this._refreshToken(refresh_token);
+    async login({ code, access_token }) {
+        let exchange;
+        if (code) exchange = await this._exchangeToken(code);
+        else if (access_token) exchange = { access_token };
+
+        if (exchange.error) throw new Error('Failed to Log In');
+        this.oAuthResponse = exchange;
     }
 
     async _exchangeToken(code) {
@@ -68,9 +72,11 @@ class PatreonClient {
             .then((res) => res.json())
             .then((json) => jsonApi.parse(json));
         user.id = res.data.id;
-        user.memberships = res.data.memberships[0];
+        user.membership = res.data.memberships[0];
         return user;
     }
+
+    get HighestTier() {}
 }
 
 module.exports = PatreonClient;

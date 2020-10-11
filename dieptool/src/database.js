@@ -5,10 +5,9 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 
 const userSchema = new mongoose.Schema({
-    auth_token: String,
-    user_id: String,
-    username: String,
-    refresh_token: String,
+    dt_token: String,
+    patron_id: String,
+    access_token: String,
     online: Boolean,
 });
 const User = mongoose.model('User', userSchema);
@@ -37,11 +36,11 @@ class MongoDB {
         return u;
     }
 
-    async getUserByToken(auth_token) {
-        return await User.findOne({ auth_token });
+    async getUserByToken(dt_token) {
+        return await User.findOne({ dt_token });
     }
-    async getUserById(user_id) {
-        return await User.findOne({ user_id });
+    async getUserById(patron_id) {
+        return await User.findOne({ patron_id });
     }
 
     async setAllOffline(){

@@ -29,14 +29,16 @@ This packet is used whenever we start a connection. it has the client's version 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
-| 1     | `buffer`   | serverbound packet |
+| 1     | `vu`       | packet count       |
+| 2     | `buffer`   | serverbound packet |
 
 #### `02` diep_clientbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
-| 1     | `buffer`   | clientbound packet |
+| 1     | `vu`       | packet count       |
+| 2     | `buffer`   | clientbound packet |
 
 #### `03` update
 
@@ -116,14 +118,16 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
-| 1     | `buffer`   | serverbound packet |
+| 1     | `vu`       | packet count       |
+| 2     | `buffer`   | serverbound packet |
 
 #### `02` custom_diep_clientbound
 
 | index | Value Type | Description        |
 | ----- | ---------- | ------------------ |
 | 0     | `vu`       | packet id          |
-| 1     | `buffer`   | clientbound packet |
+| 1     | `vu`       | packet count       |
+| 2     | `buffer`   | clientbound packet |
 
 #### `03` accept
 
@@ -132,6 +136,7 @@ When the client sends the discord access-grant- token we respond with an unqiue 
 | 0     | `vu`       | packet id   |
 
 #### `04` deny
+
 Is send when the DT_TOKEN or the CODE is invalid
 
 | index | Value Type | Description |

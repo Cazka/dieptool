@@ -4,17 +4,18 @@ const EventEmitter = require('events');
 const DiepSocket = require('diepsocket');
 const DiepParser = DiepSocket.Parser;
 const DiepBuilder = DiepSocket.Builder;
+const DiepShuffler = DiepSocket.Shuffler;
+const DiepUnshuffler = DiepSocket.Unshuffler;
+
 const fs = require('fs');
 const ipv6pool = fs
     .readFileSync(__dirname + '/ipv6')
     .toString('utf-8')
     .split('\n');
 
-const CLIENT_VERSION = '4.2.9';
+const CLIENT_VERSION = '4.2.11';
 const UPDATE = {
-    SERVER_PARTY: 0,
-    NAME: 1,
-    GAMEMODE: 2,
+    SERVER: 0,
 };
 const COMMAND = {
     JOIN_BOTS: 0,
@@ -41,14 +42,13 @@ const color = {
 };
 
 class User extends EventEmitter {
-    constructor(socket, version, dbUser, options) {
+    constructor(socket, version, options) {
         super();
         // Socket information
         this.socket = socket;
         this.latency = 0;
 
         // User information
-        this.dbUser = dbUser;
         this.permissions = options.permissions;
         this.link;
         this.name;
@@ -102,6 +102,8 @@ class User extends EventEmitter {
         this.mouseY = 0;
 
         // Initialize
+        this.diepShuffler = new DiepShuffler();
+        this.diepUnshuffler = new DiepUnshuffler();
         this.socket.on('close', (code, reason) => {
             super.emit('close', code, reason);
         });
@@ -112,8 +114,8 @@ class User extends EventEmitter {
             return;
         }
         this.socket.send('accept');
-        this.socket.on('diep_serverbound', ({ buffer }) => this.ondiep_serverbound(buffer));
-        this.socket.on('diep_clientbound', ({ buffer }) => this.ondiep_clientbound(buffer));
+        this.socket.on('diep_serverbound', ({ count, buffer }) => this.ondiep_serverbound(count, buffer));
+        this.socket.on('diep_clientbound', ({ count, buffer }) => this.ondiep_clientbound(count, buffer));
 
         this.socket.on('latency', (latency) => (this.latency = latency));
         this.socket.on('update', ({ id, value }) => this.onupdate(id, value));
@@ -123,28 +125,29 @@ class User extends EventEmitter {
     /*
      *    E V E N T   H A N D L E R S
      */
-    ondiep_serverbound(buffer) {
-        switch (buffer[0]) {
-            case 0x01: {
-                let content;
-                try {
-                    content = new DiepParser(buffer).serverbound().content;
-                } catch (error) {}
-
-                this.mouseX = content.mouseX;
-                this.mouseY = content.mouseY;
+    ondiep_serverbound(count, buffer) {
+        buffer = this.diepUnshuffler.serverbound(buffer);
+        let packet;
+        try {
+            packet = new DiepParser(buffer).serverbound();
+        } catch (error) {
+            return;
+        }
+        switch (packet.type) {
+            case 'input': {
+                this.mouseX = packet.content.mouseX;
+                this.mouseY = packet.content.mouseY;
 
                 if (this.afk) {
                     const deltaX = this.tankXFixed - this.tankX;
                     const deltaY = this.tankYFixed - this.tankY;
                     const length = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
                     const tolerance = 2 * 50;
                     if (length > tolerance) {
-                        content = {
-                            flags: content.flags | DiepSocket.INPUT.gamepad,
-                            mouseX: content.mouseX,
-                            mouseY: content.mouseY,
+                        packet.content = {
+                            flags: packet.content.flags | DiepSocket.INPUT.gamepad,
+                            mouseX: packet.content.mouseX,
+                            mouseY: packet.content.mouseY,
                             velocityX: deltaX / length,
                             velocityY: deltaY / length,
                         };
@@ -162,9 +165,9 @@ class User extends EventEmitter {
                             if (length > tolerance) {
                                 bot.moveTo(
                                     { x: this.tankX, y: this.tankY },
-                                    content.flags,
-                                    content.mouseX,
-                                    content.mouseY
+                                    packet.content.flags,
+                                    packet.content.mouseX,
+                                    packet.content.mouseY
                                 );
                             } else {
                                 bot.sendBinary(buffer);
@@ -175,17 +178,17 @@ class User extends EventEmitter {
                     this.bots.forEach((bot) => {
                         const deltaX = this.mouseX - bot.position.x;
                         const deltaY = this.mouseY - bot.position.y;
-                        if (content.flags & DiepSocket.INPUT.rightMouse) {
+                        if (packet.content.flags & DiepSocket.INPUT.rightMouse) {
                             bot.moveTo(
                                 { x: -deltaX + bot.position.x, y: -deltaY + bot.position.y },
-                                content.flags | DiepSocket.INPUT.leftMouse,
+                                packet.content.flags | DiepSocket.INPUT.leftMouse,
                                 deltaX + bot.position.x,
                                 deltaY + bot.position.y
                             );
                         } else {
                             bot.moveTo(
                                 { x: this.mouseX, y: this.mouseY },
-                                content.flags | DiepSocket.INPUT.leftMouse,
+                                packet.content.flags | DiepSocket.INPUT.leftMouse,
                                 -deltaX + bot.position.x,
                                 -deltaY + bot.position.y
                             );
@@ -196,27 +199,22 @@ class User extends EventEmitter {
                     const now = Date.now() / 80;
                     const mx = Math.cos(now) * 1000000;
                     const my = Math.sin(now) * 1000000;
-                    if (!(content.flags & 1))
-                        content = {
-                            flags: content.flags,
+                    if (!(packet.content.flags & 1))
+                        packet.content = {
+                            flags: packet.content.flags,
                             mouseX: mx,
                             mouseY: my,
-                            velocityX: content.velocityX,
-                            velocityY: content.velocityY,
+                            velocityX: packet.content.velocityX,
+                            velocityY: packet.content.velocityY,
                         };
                 }
-                if (this.afk || this.spinbot) {
-                    this.socket.send('custom_diep_serverbound', {
-                        buffer: new DiepBuilder({ type: 'input', content }).serverbound(),
-                    });
-                }
+                buffer = new DiepBuilder({ type: 'input', content: packet.content }).serverbound();
                 break;
             }
-            case 0x02: {
+            case 'spawn': {
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
-                    this.sendNotification(undefined, undefined, 1, 'adblock');
-                    this.sendNotification(`💎 Welcome back ${this.dbUser?.username?.split('#')[0]} 💎`, '#f5e042');
+                    //this.sendNotification(undefined, undefined, 1, 'adblock');
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
                     if (this.botsMaximum === 1) {
                         setTimeout(
@@ -231,7 +229,7 @@ class User extends EventEmitter {
                                 this.sendNotification(
                                     '🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'
                                 ),
-                            1000 * 60 * 10
+                            1000 * 60 * 8
                         );
                         this.socket.on('close', () => clearInterval(int));
                     }
@@ -239,8 +237,8 @@ class User extends EventEmitter {
                 this.resetUpgrades();
                 break;
             }
-            case 0x03: {
-                const { id, level } = new DiepParser(buffer).serverbound().content;
+            case 'upgrade_stat': {
+                const { id, level } = packet.content;
                 if (!this.upgradeStats[id]) {
                     this.upgradeStats[id] = 0;
                     this.upgradeStatsOrder.push(id);
@@ -249,15 +247,25 @@ class User extends EventEmitter {
                 else this.upgradeStats[id] = level;
                 break;
             }
-            case 0x04: {
-                const { id } = new DiepParser(buffer).serverbound().content;
+            case 'upgrade_tank': {
+                const { id } = packet.content;
                 this.upgradeTanks.push(id);
                 break;
             }
         }
+        buffer = this.diepShuffler.serverbound(buffer);
+        if (this.afk || this.spinbot) {
+            this.socket.send('custom_diep_serverbound', { count, buffer });
+        }
     }
-    ondiep_clientbound(buffer) {
-        const packet = new DiepParser(buffer).clientbound();
+    ondiep_clientbound(count, buffer) {
+        buffer = this.diepUnshuffler.clientbound(buffer);
+        let packet;
+        try {
+            packet = new DiepParser(buffer).clientbound();
+        } catch (error) {
+            return;
+        }
 
         switch (packet.type) {
             case 'update': {
@@ -274,10 +282,12 @@ class User extends EventEmitter {
         console.log(`${this.socket.ip} received update id: ${id} -> ${value}`);
 
         switch (id) {
-            case UPDATE.SERVER_PARTY:
-                const [server, party] = value?.split(':');
+            case UPDATE.SERVER:
+                this.diepShuffler = new DiepShuffler();
+                this.diepUnshuffler = new DiepUnshuffler();
+                const server = value;
                 try {
-                    this.link = DiepSocket.getLink(server, party);
+                    this.link = DiepSocket.getLink(server);
                 } catch (error) {
                     console.log(`${this.socket.ip} couldn't update link: ${server},${party}\n${error}`);
                     this.socket.close();
@@ -285,13 +295,6 @@ class User extends EventEmitter {
                 }
                 this.gamemode = undefined;
                 this.bots.forEach((bot) => bot.close());
-                break;
-            case UPDATE.NAME:
-                this.name = value;
-                break;
-            case UPDATE.GAMEMODE:
-                if (this.gamemode) return;
-                this.gamemode = value;
                 break;
             default:
                 this.sendNotification('Please reinstall DiepTool', color.red, 0);
@@ -314,6 +317,8 @@ class User extends EventEmitter {
                     this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
                     return;
                 }
+                this.sendNotification('this feature is currently not available.');
+                break;
                 if (!!value === this.afk) return;
                 this.sendNotification(`AFK: ${!!value ? 'ON' : 'OFF'}`, '#e8c100', 5000, 'afk');
                 this.afk = !!value;
@@ -376,6 +381,8 @@ class User extends EventEmitter {
                     this.sendNotification('Missing Permission', color.RED, 5000, 'no_permission');
                     return;
                 }
+                this.sendNotification('this feature is currently not available.');
+                break;
                 if (!!value === this.spinbot) return;
                 this.sendNotification(`Spinbot: ${!!value ? 'ON' : 'OFF'}`, '#ea6666', 5000, 'spinbot');
                 this.spinbot = !!value;
@@ -506,7 +513,7 @@ class User extends EventEmitter {
             content: { message, color, time, unique },
         }).clientbound();
 
-        this.socket.send('custom_diep_clientbound', { buffer: packet });
+        this.socket.send('alert', { message });
         this.updateStatus(message);
     }
     toDataObject() {
