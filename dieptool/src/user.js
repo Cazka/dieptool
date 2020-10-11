@@ -255,8 +255,13 @@ class User extends EventEmitter {
             case 'party':
                 //this.diepShuffler = new DiepShuffler();
                 //this.diepUnshuffler = new DiepUnshuffler();
-                const { id, party } = DiepSocket.linkParse(this.link);
-                this.link = DiepSocket.getLink(id, packet.content.party);
+                try {
+                    const { id, party } = DiepSocket.linkParse(this.link);
+                    this.link = DiepSocket.getLink(id, packet.content.party);
+                } catch (error) {
+                    this.sendNotification('Please refresh the window');
+                    this.socket.close(4000);
+                }
 
                 this.gamemode = undefined;
                 this.bots.forEach((bot) => bot.close());
