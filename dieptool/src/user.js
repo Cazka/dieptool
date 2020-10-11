@@ -197,9 +197,9 @@ class User extends EventEmitter {
                 break;
             }
             case 'spawn': {
+                this.name = packet.content.name;
                 if (!this.welcomeMessage) {
                     this.welcomeMessage = true;
-                    //this.sendNotification(undefined, undefined, 1, 'adblock');
                     this.sendNotification('🔥 Thank you for using DiepTool 🔥', color.GREEN);
                     if (this.botsMaximum === 1) {
                         setTimeout(() => this.sendNotification('🌌 Please consider becoming a patreon if you enjoy using DiepTool 🌌'), 1000 * 5);
