@@ -9,7 +9,7 @@ const DiepUnshuffler = DiepSocket.Unshuffler;
 
 const fs = require('fs');
 const ipv6pool = fs
-    .readFileSync(__dirname + '/ipv6')
+    .readFileSync(__dirname + '/proxy')
     .toString('utf-8')
     .split('\n');
 
@@ -389,7 +389,7 @@ class User extends EventEmitter {
         if (bot) setTimeout(() => bot.send('pow_result', { result }), 9000 - (Date.now() - bot.lastPow));
     }
     createBot(ipv6) {
-        const bot = new DiepSocket(this.link, { ipv6, forceTeam: true });
+        const bot = new DiepSocket(this.link, { proxy, forceTeam: true });
         bot.id = this.botCounter++;
         bot.on('open', () => {
             this.bots.add(bot);
