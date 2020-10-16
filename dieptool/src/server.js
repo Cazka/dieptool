@@ -158,6 +158,7 @@ class DiepToolServer {
         });
     }
 
+    //not used anymore
     adminManager(admin) {
         console.log('Admin connected');
 

@@ -1,5 +1,7 @@
 # dieptool
 
+# outdated
+
 ## Admin Protocol
 
 ### Encodings

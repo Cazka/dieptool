@@ -46,7 +46,6 @@ app.get('/dieptool_dev.user.js', (req, res) => {
 app.get('/', (req, res) => {
     if (req.session.loggedIn){
         if(req.session.username === 'admin') res.sendFile(__dirname + '/views/dashboard/admin.html');
-        if(req.session.username === 'moderator') res.sendFile(__dirname + '/views/dashboard/moderator.html');
     }
     else res.sendFile(__dirname + '/views/');
 });
@@ -58,10 +57,6 @@ app.post('/login', (req, res) => {
     const username = req.body.username + '';
     const password = req.body.password + '';
     if (username === 'admin' && password === process.env.ADMIN_PASSWORD) {
-        req.session.loggedIn = true;
-        req.session.username = username;
-    }
-    else if(username === 'moderator' && password === process.env.MODERATOR_PASSWORD){
         req.session.loggedIn = true;
         req.session.username = username;
     }
