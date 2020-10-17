@@ -1,9 +1,8 @@
 // ==UserScript==
 // @name         Diep.io Tool
 // @description  made with much love.
-// @version      4.2.11
+// @version      4.2.12
 // @author       Cazka#9552
-// @namespace    *://diep.io/*
 // @match        *://diep.io/*
 // @grant        GM_info
 // @grant        GM_addStyle
@@ -15,9 +14,7 @@
  */
 const DTTOKEN = 'Cazka_wants_to_be_in_the_source_code';
 const UPDATE = {
-    SERVER_PARTY: 0,
-    NAME: 1,
-    GAMEMODE: 2,
+    SERVER: 0,
 };
 const COMMAND = {
     JOIN_BOTS: 0,
@@ -29,11 +26,10 @@ const COMMAND = {
 };
 const SERVERS = [
     'wss://amsterdam.s.dieptool.com',
-    'wss://la.s.dieptool.com/',
-    'wss://miami.s.dieptool.com',
-    'wss://singapore.s.dieptool.com',
+    //'wss://la.s.dieptool.com/',
+    //'wss://miami.s.dieptool.com',
+    //'wss://singapore.s.dieptool.com',
 ];
-//const SERVERS = ['ws://localhost:3000'];
 /*
  *   C L A S S E S
  */
@@ -77,8 +73,7 @@ const u8 = new Uint8Array(convo);
 const u16 = new Uint16Array(convo);
 const u32 = new Uint32Array(convo);
 const float = new Float32Array(convo);
-const endianSwap = (val) =>
-    ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
+const endianSwap = (val) => ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val >> 8) & 0xff00) | ((val >> 24) & 0xff);
 class Reader {
     constructor(content) {
         this.at = 0;
@@ -285,15 +280,17 @@ class DTSocket {
                 break;
             }
             case 1: {
+                const count = reader.vu();
                 const buffer = reader.buf();
 
-                if (this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(buffer);
+                if (this.oncustom_diep_serverbound) this.oncustom_diep_serverbound(count, buffer);
                 break;
             }
             case 2: {
+                const count = reader.vu();
                 const buffer = reader.buf();
 
-                WebSocket_onmessage.call(gWebSocket, { data: buffer });
+                if (this.oncustom_diep_clientbound) this.oncustom_diep_clientbound(count, buffer);
                 break;
             }
             case 3: {
@@ -318,13 +315,15 @@ class DTSocket {
                 const difficulty = reader.vu();
                 const prefix = reader.string();
 
+                console.log(id, difficulty, prefix);
                 //look for a worker thats not busy, but definetly take the last one
                 for (let i = 0; i < this._pow_workers.length; i++) {
                     if (!this._pow_workers[i].busy || i + 1 === this._pow_workers.length) {
                         this._pow_workers[i].busy = true;
                         this._pow_workers[i].solve(prefix, difficulty, (result) => {
+                            console.log(id, result);
                             this._pow_workers[i].busy = false;
-                            this.send('pow_result', { id, result });
+                            this.send('pow_result', { id, result: result });
                         });
                         return;
                     }
@@ -354,14 +353,16 @@ class DTSocket {
                 break;
             }
             case 'diep_serverbound': {
-                const { buffer } = content;
+                const { count, buffer } = content;
                 writer.vu(1);
+                writer.vu(count);
                 writer.buf(buffer);
                 break;
             }
             case 'diep_clientbound': {
-                const { buffer } = content;
+                const { count, buffer } = content;
                 writer.vu(2);
+                writer.vu(count);
                 writer.buf(buffer);
                 break;
             }
@@ -393,7 +394,8 @@ class DTSocket {
             default:
                 console.error('unrecognized packet type:', type);
         }
-        WebSocket_send.call(this._socket, writer.out());
+        //WebSocket_send.call(this._socket, writer.out());
+        this._socket.send(writer.out());
     }
 
     isClosed() {
@@ -429,40 +431,12 @@ function UTF8ToString(utf8 = '') {
 }
 function updateInformation(type, data) {
     const updates = {
-        [UPDATE.NAME](data) {
-            let name = new TextDecoder().decode(data.slice(1, data.length - 1));
-            return name;
-        },
-        [UPDATE.SERVER_PARTY]({ url, party }) {
-            let [userURL, userParty] = gUserInfo[UPDATE.SERVER_PARTY].split(':');
-            if (url) {
-                userURL = url.match(/(?<=wss:\/\/).[0-9a-z]{3}(?=.s.m28n.net\/)/)[0];
-                userParty = '';
-            }
-            if (party) {
-                function parseParty(data) {
-                    let party = '';
-                    for (let i = 1; i < data.byteLength; i++) {
-                        let byte = data[i].toString(16).split('');
-                        if (byte.length === 1) {
-                            party += byte[0] + '0';
-                        } else {
-                            party += byte[1] + byte[0];
-                        }
-                    }
-                    return party;
-                }
-                userParty = parseParty(party);
-            }
-            return `${userURL}:${userParty}`;
-        },
-        [UPDATE.GAMEMODE](data) {
-            let gamemode = new TextDecoder().decode(data.slice(1, data.length)).split('\u0000')[0];
-            return gamemode;
-        },
+        [UPDATE.SERVER](url) {
+            url = url.match(/(?<=wss:\/\/).[0-9a-z]{3}(?=.s.m28n.net\/)/)[0];
+            return url;
+        }
     };
-    gUserInfo[type] = updates[type](data);
-    dtSocket.send('update', { id: type, value: gUserInfo[type] });
+    dtSocket.send('update', { id: type, value: updates[type](data) });
 }
 function addButton(parent, text, onclick, keyCode) {
     let button = document.createElement('button');
@@ -480,7 +454,7 @@ function enableGui() {
 function disableGui() {
     guiBody.style.display = 'none';
 }
-async function onBtnHead() {
+function onBtnHead() {
     if (guiBody.style.display === 'block') {
         this.innerHTML = 'Open DiepTool Menu';
         disableGui();
@@ -508,11 +482,12 @@ function onBtnMultibox() {
 function onBtnAfk() {
     this.active = !this.active;
     if (this.active) {
-        gAfk = true;
+        //gSendIsBlocked++;
+        gSBCountStop = gSBCount;
         this.innerHTML = 'AFK: ON';
         dtSocket.send('command', { id: COMMAND.AFK, value: 1 });
     } else {
-        gAfk = false;
+        //gSendIsBlocked--;
         this.innerHTML = 'AFK: OFF';
         dtSocket.send('command', { id: COMMAND.AFK, value: 0 });
     }
@@ -530,11 +505,11 @@ function onBtnClump() {
 function onBtnSpinbot() {
     this.active = !this.active;
     if (this.active) {
-        gSpinbot = true;
+        //gSendIsBlocked++;
         this.innerHTML = 'Spinbot: ON';
         dtSocket.send('command', { id: COMMAND.SPINBOT, value: 1 });
     } else {
-        gSpinbot = false;
+        //gSendIsBlocked--;
         this.innerHTML = 'Spinbot: OFF';
         dtSocket.send('command', { id: COMMAND.SPINBOT, value: 0 });
     }
@@ -551,7 +526,7 @@ function onBtnPushbot() {
 }
 function onBtnSettings() {}
 function onBtnDiscord() {
-    window.open('https://discord.gg/8saC9pq');
+    window.open('https://discord.gg/5q2E3Sx');
 }
 function onBtnPatreon() {
     window.open('https://www.patreon.com/dieptool');
@@ -562,39 +537,17 @@ function onBtnLogin() {
 }
 
 function _send(data) {
-    dtSocket.send('diep_serverbound', { buffer: data });
-    /*if (data[0] === 2) updateInformation(UPDATE.NAME, data);
-    if (data[0] === 10) {
-        const d = new Int8Array(data);
-        const time = Date.now() - this.lastPow;
-        setTimeout(() => WebSocket_send.call(this, d), 5000 - time);
-        return;
-    }
-    if (data[0] === 1) {
-        if (gSpinbot) {
-            const reader = new Reader(data);
-            const id = reader.vu();
-            if (reader.vu() & 1 && !gAfk) {
-                gCSBisBlocked = true;
-            } else {
-                gCSBisBlocked = false;
-                return;
-            }
-        }
+    gSBCount++;
+    dtSocket.send('diep_serverbound', { count: gSBCount, buffer: data });
+    if (gSendIsBlocked) return;
 
-        if (gAfk) return;
-    }
-    if(data[0] === 7) return;*/
     WebSocket_send.call(this, data);
 }
 function _onmessage(event) {
     const data = new Uint8Array(event.data);
-    dtSocket.send('diep_clientbound', { buffer: data });
+    gCBCount++;
+    dtSocket.send('diep_clientbound', { count: gCBCount, buffer: data });
 
-    /*if (data[0] === 4) updateInformation(UPDATE.GAMEMODE, data);
-    else if (data[0] === 6) updateInformation(UPDATE.SERVER_PARTY, { party: data });
-    else if (data[0] === 10) gReadyToInit = true;
-    else if (data[0] === 11) this.lastPow = Date.now();*/
     WebSocket_onmessage.call(this, event);
 }
 const WebSocket_send = window.WebSocket.prototype.send;
@@ -603,18 +556,19 @@ let WebSocket_onmessage;
     const wsInstances = new Set();
     window.WebSocket.prototype.send = function (data) {
         if (this.url.match(/s.m28n.net/) && data instanceof Int8Array) {
-            _send.call(this, data);
-
             if (!wsInstances.has(this)) {
                 wsInstances.add(this);
                 gWebSocket = this;
-                if (updateInformation) updateInformation(UPDATE.SERVER_PARTY, { url: this.url });
+                gSBCount = 0;
+                gCBCount = 0;
+                updateInformation(UPDATE.SERVER, this.url );
 
                 WebSocket_onmessage = this.onmessage;
                 this.onmessage = function (event) {
                     _onmessage.call(this, event);
                 };
             }
+            _send.call(this, data);
         } else WebSocket_send.call(this, data);
     };
 })();
@@ -657,17 +611,13 @@ let WebSocket_onmessage;
 /*
  *   M A I N
  */
-const gUserInfo = {
-    [UPDATE.NAME]: UTF8ToString(window.localStorage.name),
-    [UPDATE.SERVER_PARTY]: '',
-    [UPDATE.GAMEMODE]: window.localStorage.gamemode,
-};
 let gWebSocket;
-let gAfk = false;
 let gFreezeMouse = false;
-let gSpinbot = false;
-let gCSBisBlocked = false;
-let gReadyToInit = false;
+let gSendIsBlocked = 0;
+let gSBCount = 0;
+let gCBCount = 0;
+let gSBCountStop = 0;
+let gCBCountStop = 0;
 let dtSocket = new DTSocket();
 /*
  *   G U I
@@ -733,14 +683,12 @@ guiDiepTool.appendChild(guiHead);
 const guiBody = document.createElement('div');
 guiDiepTool.appendChild(guiBody);
 
-// server information
 const guiServerInfo = document.createElement('div');
 guiServerInfo.className = 'gui-dieptool-serverinfo';
 document.body.appendChild(guiServerInfo);
 guiServerInfo.innerText = 'DiepTool connecting...';
 
-//add buttons
-let btnHead = addButton(guiHead, 'Open DiepTool Menu', onBtnHead);
+addButton(guiHead, 'Open DiepTool Menu', onBtnHead);
 addButton(guiBody, 'Join Bots', onBtnJoinBots, 'KeyJ');
 addButton(guiBody, 'Multiboxing: OFF', onBtnMultibox, 'KeyF');
 addButton(guiBody, 'Clump: OFF', onBtnClump, 'KeyX');
@@ -770,31 +718,26 @@ disableGui();
         setTimeout(() => {
             guiServerInfo.innerText = 'Reconnecting...';
             dtSocket.connect(url);
-        }, 4000);
+        }, 5000);
     };
     dtSocket.onaccept = function () {
-        this.onlatency = (latency) =>
-            (guiServerInfo.innerText = `${latency} ms ${this.region} DiepTool`);
-        const int = setInterval(() => {
-            if (gReadyToInit) {
-                clearInterval(int);
-
-                for (let [key, value] of Object.entries(gUserInfo))
-                    this.send('update', { id: key, value });
-            }
-        }, 100);
+        this.onlatency = (latency) => (guiServerInfo.innerText = `${latency} ms ${this.region} DiepTool`);
     };
     dtSocket.ondeny = function () {
         window.localStorage[DTTOKEN] = '';
+        setTimeout(() => window.location.reload(), 3000);
     };
     dtSocket.onalert = function (message) {
         console.log('DiepTool alert:', message);
         const btnAlert = addButton(guiHead, message);
-        setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 4000);
+        setTimeout(() => btnAlert.parentNode.removeChild(btnAlert), 5000);
     };
-    dtSocket.oncustom_diep_serverbound = function (data) {
-        if (!gCSBisBlocked) WebSocket_send.call(gWebSocket, data);
+    dtSocket.oncustom_diep_clientbound = function (count, data) {
+        WebSocket_onmessage.call(gWebSocket, { data });
     };
-
+    dtSocket.oncustom_diep_serverbound = function (count, data) {
+        if(gSendIsBlocked) console.log(count, gSBCountStop);
+        if (count >= gSBCountStop) WebSocket_send.call(gWebSocket, data);
+    };
     dtSocket.connect(url);
 })();
