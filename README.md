@@ -1,4 +1,4 @@
-# dieptool
+# dieptool 🌌
 
 ### Whats this?
 
