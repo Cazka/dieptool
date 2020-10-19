@@ -22,4 +22,4 @@ maybe.
 
 ### what is diepsocket?
 
-its a bot api i made for the game that will remain private.
+its a bot api i made for the game.  https://github.com/Cazka/diepsocket
