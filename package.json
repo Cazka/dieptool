@@ -21,7 +21,7 @@
     "express-session": "^1.17.1",
     "jsonapi-parse": "^2.0.0",
     "mongoose": "^5.10.7",
-    "nanoid": "^3.1.12",
+    "nanoid": "^3.1.31",
     "node-fetch": "^2.6.1",
     "ws": "^7.4.6"
   },
